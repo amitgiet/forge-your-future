@@ -1,14 +1,17 @@
- import { Flame, Star, Upload, BookOpen } from 'lucide-react';
+ import { Flame, Star, Upload, BookOpen, Brain } from 'lucide-react';
  import { useNavigate } from 'react-router-dom';
  import { motion } from 'framer-motion';
  import { useLanguage } from '@/contexts/LanguageContext';
  import ShieldCard from '@/components/ShieldCard';
  import QuizCard from '@/components/QuizCard';
  import BottomNav from '@/components/BottomNav';
+ import { useRevision } from '@/contexts/RevisionContext';
  
  const Dashboard = () => {
    const { t } = useLanguage();
    const navigate = useNavigate();
+   const { getStats } = useRevision();
+   const revisionStats = getStats();
  
    return (
      <div className="min-h-screen bg-background pb-24">
@@ -69,37 +72,55 @@
          </div>
  
          {/* Quick Actions */}
-         <div className="mt-6 grid grid-cols-2 gap-4">
+         <div className="mt-6 grid grid-cols-3 gap-3">
            <motion.button
-             onClick={() => navigate('/mock-analyzer')}
-             className="nf-card flex flex-col items-center justify-center py-6 hover:border-secondary/50 transition-colors"
+             onClick={() => navigate('/revision')}
+             className="nf-card flex flex-col items-center justify-center py-5 hover:border-accent/50 transition-colors"
              whileHover={{ scale: 1.02 }}
              whileTap={{ scale: 0.98 }}
              initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.2 }}
            >
-             <div className="w-12 h-12 rounded-2xl bg-secondary/20 flex items-center justify-center mb-3">
-               <Upload className="w-6 h-6 text-secondary" />
+             <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center mb-2">
+               <Brain className="w-5 h-5 text-accent" />
              </div>
-             <span className="font-semibold text-foreground">{t('dashboard.uploadMock')}</span>
-             <span className="text-xs text-muted-foreground mt-1">Analyze weaknesses</span>
+             <span className="font-semibold text-foreground text-sm">Revise</span>
+             {revisionStats.dueToday > 0 && (
+               <span className="text-[10px] text-accent mt-1">{revisionStats.dueToday} due</span>
+             )}
+           </motion.button>
+ 
+           <motion.button
+             onClick={() => navigate('/mock-analyzer')}
+             className="nf-card flex flex-col items-center justify-center py-5 hover:border-secondary/50 transition-colors"
+             whileHover={{ scale: 1.02 }}
+             whileTap={{ scale: 0.98 }}
+             initial={{ opacity: 0, y: 20 }}
+             animate={{ opacity: 1, y: 0 }}
+             transition={{ delay: 0.25 }}
+           >
+             <div className="w-10 h-10 rounded-xl bg-secondary/20 flex items-center justify-center mb-2">
+               <Upload className="w-5 h-5 text-secondary" />
+             </div>
+             <span className="font-semibold text-foreground text-sm">Mock</span>
+             <span className="text-[10px] text-muted-foreground mt-1">Analyze</span>
            </motion.button>
  
            <motion.button
              onClick={() => navigate('/ncert-search')}
-             className="nf-card flex flex-col items-center justify-center py-6 hover:border-primary/50 transition-colors"
+             className="nf-card flex flex-col items-center justify-center py-5 hover:border-primary/50 transition-colors"
              whileHover={{ scale: 1.02 }}
              whileTap={{ scale: 0.98 }}
              initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.3 }}
            >
-             <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center mb-3">
-               <BookOpen className="w-6 h-6 text-primary" />
+             <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center mb-2">
+               <BookOpen className="w-5 h-5 text-primary" />
              </div>
-             <span className="font-semibold text-foreground">{t('dashboard.ncert')}</span>
-             <span className="text-xs text-muted-foreground mt-1">Search concepts</span>
+             <span className="font-semibold text-foreground text-sm">NCERT</span>
+             <span className="text-[10px] text-muted-foreground mt-1">Search</span>
            </motion.button>
          </div>
  

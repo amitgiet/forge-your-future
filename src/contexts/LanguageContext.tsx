@@ -156,6 +156,43 @@
      en: 'Profile',
      hi: 'प्रोफाइल',
    },
+   'nav.revision': {
+     en: 'Revise',
+     hi: 'दोहराएं',
+   },
+   // Revision
+   'revision.title': {
+     en: 'NEURONZ Spaced Revision',
+     hi: 'NEURONZ स्पेस्ड रिविजन',
+   },
+   'revision.dueToday': {
+     en: 'Due Today',
+     hi: 'आज बाकी',
+   },
+   'revision.mastered': {
+     en: 'Mastered',
+     hi: 'माहिर',
+   },
+   'revision.avgLevel': {
+     en: 'Avg Level',
+     hi: 'औसत स्तर',
+   },
+   'revision.dailyLimit': {
+     en: 'Daily Limit',
+     hi: 'दैनिक सीमा',
+   },
+   'revision.levelUp': {
+     en: 'Level Up!',
+     hi: 'लेवल अप!',
+   },
+   'revision.levelDown': {
+     en: 'Level Down',
+     hi: 'लेवल डाउन',
+   },
+   'revision.allCaughtUp': {
+     en: 'All caught up!',
+     hi: 'सब हो गया!',
+   },
    // Profile
    'profile.title': {
      en: 'Profile',
