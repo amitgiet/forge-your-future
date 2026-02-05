@@ -1,4 +1,4 @@
- import { Home, BookOpen, User } from 'lucide-react';
+ import { Home, BookOpen, User, Brain } from 'lucide-react';
  import { NavLink } from 'react-router-dom';
  import { useLanguage } from '@/contexts/LanguageContext';
  import { motion } from 'framer-motion';
@@ -8,6 +8,7 @@
  
    const navItems = [
      { to: '/dashboard', icon: Home, label: t('nav.home') },
+     { to: '/revision', icon: Brain, label: t('nav.revision') },
      { to: '/quiz', icon: BookOpen, label: t('nav.quiz') },
      { to: '/profile', icon: User, label: t('nav.profile') },
    ];
