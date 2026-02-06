@@ -7,9 +7,17 @@ const Splash = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    
     const timer = setTimeout(() => {
-      navigate('/onboarding');
-    }, 2500);
+      if (token) {
+        // Verify token is valid by checking auth
+        navigate('/dashboard');
+      } else {
+        navigate('/login');
+      }
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [navigate]);

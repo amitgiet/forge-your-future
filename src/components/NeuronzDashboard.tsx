@@ -1,16 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Clock, Trophy, Zap, Lock } from 'lucide-react';
+import { Brain, Trophy, Zap, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { loadDueQuestions } from '@/store/slices/neuronzSlice';
+import { loadDueLines, getMasteryProgress } from '@/store/slices/neuronzSlice';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import TrackChapter from './TrackChapter';
 
 const NeuronzDashboard: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { dueQuestions, masteryProgress, isLoading } = useAppSelector((state) => state.neuronz);
+  const navigate = useNavigate();
+  const { dueLines, masteryProgress, isLoading } = useAppSelector((state) => state.neuronz);
+  const [showTrackModal, setShowTrackModal] = useState(false);
+
+  useEffect(() => {
+    dispatch(loadDueLines());
+    dispatch(getMasteryProgress());
+  }, [dispatch]);
 
   if (isLoading) {
     return (
@@ -32,6 +41,8 @@ const NeuronzDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <TrackChapter isOpen={showTrackModal} onClose={() => setShowTrackModal(false)} />
+      
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -44,23 +55,39 @@ const NeuronzDashboard: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-foreground">NeuronZ</h2>
-            <p className="text-sm text-muted-foreground">Spaced Repetition System</p>
+            <p className="text-sm text-muted-foreground">NCERT Line Revision</p>
           </div>
         </div>
         
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => dispatch(loadDueQuestions())}
-          className="gap-2"
-        >
-          <Clock className="w-4 h-4" />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTrackModal(true)}
+            className="gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Track Chapter
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!dueLines || dueLines.total === 0}
+            onClick={() => {
+              if (dueLines && dueLines.lines && dueLines.lines.length > 0) {
+                const firstDueLine = dueLines.lines[0];
+                navigate(`/revision?revisionId=${firstDueLine._id}`);
+              }
+            }}
+            className="gap-2"
+          >
+            Start Revision
+          </Button>
+        </div>
       </motion.div>
 
       {/* Due Today Summary */}
-      {dueQuestions && (
+      {dueLines && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -70,13 +97,13 @@ const NeuronzDashboard: React.FC = () => {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Zap className="w-5 h-5 text-primary" />
-                Due Today: {dueQuestions.total} questions
+                Due Today: {dueLines.total} lines
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
                 {levelInfo.map(({ level, interval, color }) => {
-                  const count = dueQuestions.byLevel[`L${level}` as keyof typeof dueQuestions.byLevel]?.length || 0;
+                  const count = dueLines.byLevel[`L${level}` as keyof typeof dueLines.byLevel]?.length || 0;
                   return (
                     <div
                       key={level}
@@ -94,20 +121,6 @@ const NeuronzDashboard: React.FC = () => {
                   );
                 })}
               </div>
-
-              {dueQuestions.limitReached && (
-                <div className="mt-4 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                  <div className="flex items-center gap-2 text-orange-600">
-                    <Lock className="w-4 h-4" />
-                    <span className="text-sm font-medium">
-                      Daily limit reached ({dueQuestions.dailyLimit} questions)
-                    </span>
-                  </div>
-                  <p className="text-xs text-orange-600/80 mt-1">
-                    Upgrade to Pro for unlimited revisions
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -139,15 +152,15 @@ const NeuronzDashboard: React.FC = () => {
 
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-2xl font-bold text-primary">{masteryProgress.totalQuestions}</p>
-                    <p className="text-xs text-muted-foreground">Total Questions</p>
+                    <p className="text-2xl font-bold text-primary">{masteryProgress.totalLines}</p>
+                    <p className="text-xs text-muted-foreground">Total Lines</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-green-500">{masteryProgress.masteredQuestions}</p>
+                    <p className="text-2xl font-bold text-green-500">{masteryProgress.masteredLines}</p>
                     <p className="text-xs text-muted-foreground">Mastered (L7)</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-blue-500">{masteryProgress.averageLevel}</p>
+                    <p className="text-2xl font-bold text-blue-500">{masteryProgress.averageLevel.toFixed(1)}</p>
                     <p className="text-xs text-muted-foreground">Avg Level</p>
                   </div>
                 </div>

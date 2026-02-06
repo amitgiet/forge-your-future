@@ -100,6 +100,14 @@ export const resetLineLevel = createAsyncThunk(
   }
 );
 
+export const trackChapter = createAsyncThunk(
+  'neuronz/trackChapter',
+  async (chapterId: string) => {
+    const response = await apiService.neuronz.trackChapter(chapterId);
+    return response.data;
+  }
+);
+
 const neuronzSlice = createSlice({
   name: 'neuronz',
   initialState,
@@ -152,6 +160,20 @@ const neuronzSlice = createSlice({
       })
       .addCase(resetLineLevel.rejected, (state, action) => {
         state.error = action.error.message || 'Failed to reset line level';
+      })
+
+      // Track chapter
+      .addCase(trackChapter.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(trackChapter.fulfilled, (state) => {
+        state.isLoading = false;
+        // Will reload due lines after tracking
+      })
+      .addCase(trackChapter.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to track chapter';
       });
   },
 });

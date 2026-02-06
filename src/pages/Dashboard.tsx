@@ -1,10 +1,12 @@
-import { Flame, Star, Upload, BookOpen, Brain, Trophy, Zap, Target } from 'lucide-react';
+import { Flame, Star, Upload, BookOpen, Brain, Trophy, Zap, Target, Sparkles, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ShieldCard from '@/components/ShieldCard';
 import QuizCard from '@/components/QuizCard';
 import BottomNav from '@/components/BottomNav';
+import ActiveChallenges from '@/components/ActiveChallenges';
+import RevisionWidget from '@/components/RevisionWidget';
 import { useRevision } from '@/contexts/RevisionContext';
 
 const Dashboard = () => {
@@ -125,6 +127,22 @@ const Dashboard = () => {
             </motion.button>
 
             <motion.button
+              onClick={() => navigate('/my-learning-paths')}
+              className="nf-card flex flex-col items-center justify-center py-4 group"
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.23 }}
+            >
+              <div className="nf-stat-icon nf-stat-icon-warning mb-2 group-hover:scale-110 transition-transform">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <span className="font-bold text-foreground text-sm">Learn</span>
+              <span className="text-[10px] text-muted-foreground mt-1">AI Path</span>
+            </motion.button>
+
+            <motion.button
               onClick={() => navigate('/mock-analyzer')}
               className="nf-card flex flex-col items-center justify-center py-4 group"
               whileHover={{ scale: 1.02, y: -2 }}
@@ -139,7 +157,8 @@ const Dashboard = () => {
               <span className="font-bold text-foreground text-sm">Mock</span>
               <span className="text-[10px] text-muted-foreground mt-1">Analyze</span>
             </motion.button>
-
+          </div>
+          <div className="grid grid-cols-3 gap-3 mt-3">
             <motion.button
               onClick={() => navigate('/ncert-search')}
               className="nf-card flex flex-col items-center justify-center py-4 group"
@@ -154,6 +173,22 @@ const Dashboard = () => {
               </div>
               <span className="font-bold text-foreground text-sm">NCERT</span>
               <span className="text-[10px] text-muted-foreground mt-1">Search</span>
+            </motion.button>
+
+            <motion.button
+              onClick={() => navigate('/tests')}
+              className="nf-card flex flex-col items-center justify-center py-4 group"
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.33 }}
+            >
+              <div className="nf-stat-icon nf-stat-icon-warning mb-2 group-hover:scale-110 transition-transform">
+                <FileText className="w-5 h-5" />
+              </div>
+              <span className="font-bold text-foreground text-sm">Tests</span>
+              <span className="text-[10px] text-muted-foreground mt-1">Series</span>
             </motion.button>
           </div>
         </div>
@@ -207,6 +242,12 @@ const Dashboard = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Active Challenges */}
+        <ActiveChallenges />
+
+        {/* 7-Level Revision Widget */}
+        <RevisionWidget />
       </div>
 
       <BottomNav />

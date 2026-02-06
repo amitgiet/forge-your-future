@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowLeft, Lightbulb, ChevronRight, Flame, CheckCircle2, XCircle, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { apiService } from '@/lib/apiService';
 import BottomNav from '@/components/BottomNav';
 
 const mockQuestions = [
@@ -32,14 +33,56 @@ const mockQuestions = [
 const Quiz = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  const [questions, setQuestions] = useState(mockQuestions);
+  const [loading, setLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [streak, setStreak] = useState(0);
   const [showStreakPopup, setShowStreakPopup] = useState(false);
 
-  const question = mockQuestions[currentQuestion];
-  const progress = ((currentQuestion + 1) / mockQuestions.length) * 100;
+  useEffect(() => {
+    const loadQuestions = async () => {
+      try {
+        const subject = searchParams.get('subject');
+        const chapter = searchParams.get('chapter');
+        
+        if (subject || chapter) {
+          const filters: any = {};
+          if (subject) filters.subject = subject;
+          if (chapter) filters.chapter = chapter;
+          
+          const response = await apiService.questions.getQuestions(filters);
+          if (response.data.data && response.data.data.length > 0) {
+            setQuestions(response.data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load questions:', error);
+        // Fall back to mock questions
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadQuestions();
+  }, [searchParams]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pb-24 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const question = questions[currentQuestion];
+  const progress = ((currentQuestion + 1) / questions.length) * 100;
 
   const handleSelect = (index: number) => {
     if (selectedAnswer !== null) return;
@@ -53,7 +96,7 @@ const Quiz = () => {
   };
 
   const handleNext = () => {
-    if (currentQuestion < mockQuestions.length - 1) {
+    if (currentQuestion < questions.length - 1) {
       setCurrentQuestion((prev) => prev + 1);
       setSelectedAnswer(null);
       setShowExplanation(false);
@@ -95,10 +138,10 @@ const Quiz = () => {
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground font-medium">
-              Question {currentQuestion + 1} of {mockQuestions.length}
+              Question {currentQuestion + 1} of {questions.length}
             </span>
             <span className="nf-badge nf-badge-outline text-xs">
-              Cell Division
+              {(question as any).chapter || 'Biology'}
             </span>
           </div>
           <div className="nf-progress-bar">
@@ -127,14 +170,14 @@ const Quiz = () => {
         </AnimatePresence>
 
         {/* Options */}
-        <div className="space-y-3 mb-4">
+        <div className="space-y-3 mb-4 w-full">
           {question.options.map((option, index) => {
-            let optionClass = 'nf-option';
+            let optionClass = 'nf-option w-full';
             if (selectedAnswer !== null) {
               if (index === question.correct) {
-                optionClass = 'nf-option nf-option-correct';
+                optionClass = 'nf-option nf-option-correct w-full';
               } else if (index === selectedAnswer && index !== question.correct) {
-                optionClass = 'nf-option nf-option-incorrect animate-shake';
+                optionClass = 'nf-option nf-option-incorrect animate-shake w-full';
               }
             }
 
@@ -149,7 +192,7 @@ const Quiz = () => {
                 transition={{ delay: index * 0.05 }}
                 whileTap={selectedAnswer === null ? { scale: 0.98 } : {}}
               >
-                <div className={`nf-level-badge ${
+                <div className={`nf-level-badge flex-shrink-0 ${
                   selectedAnswer !== null && index === question.correct
                     ? 'bg-success/10 border-success text-success'
                     : selectedAnswer === index && index !== question.correct
@@ -158,12 +201,12 @@ const Quiz = () => {
                 }`}>
                   {String.fromCharCode(65 + index)}
                 </div>
-                <span className="font-semibold text-foreground">{option}</span>
+                <span className="font-semibold text-foreground flex-1 text-left">{option}</span>
                 {selectedAnswer !== null && index === question.correct && (
-                  <CheckCircle2 className="w-5 h-5 text-success ml-auto" />
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
                 )}
                 {selectedAnswer === index && index !== question.correct && (
-                  <XCircle className="w-5 h-5 text-destructive ml-auto" />
+                  <XCircle className="w-5 h-5 text-destructive flex-shrink-0" />
                 )}
               </motion.button>
             );
@@ -174,9 +217,10 @@ const Quiz = () => {
         <AnimatePresence>
           {showExplanation && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
               className="nf-card bg-muted/30 mb-4"
             >
               <div className="flex items-start gap-3">
@@ -207,7 +251,7 @@ const Quiz = () => {
               onClick={handleNext}
               className="nf-btn-primary flex-1"
             >
-              {currentQuestion < mockQuestions.length - 1 ? t('quiz.next') : 'Finish'}
+              {currentQuestion < questions.length - 1 ? t('quiz.next') : 'Finish'}
               <ChevronRight className="w-5 h-5" />
             </button>
           </motion.div>

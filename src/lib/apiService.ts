@@ -11,7 +11,12 @@ export const apiService = {
 
     logout: () => api.post('/auth/logout'),
 
-    getProfile: () => api.get('/auth/profile'),
+    getProfile: () => api.get('/auth/me'),
+
+    updateProfile: (data: any) => api.put('/auth/profile', data),
+
+    updateOnboarding: (data: { step: number; completed?: boolean; data?: any }) =>
+      api.put('/auth/onboarding', data),
   },
 
   // NeuronZ APIs
@@ -34,6 +39,9 @@ export const apiService = {
 
     getLinesByChapter: (chapterId: string, subject?: string, ncertClass?: number) =>
       api.get('/neuronz/chapter', { params: { chapterId, subject, class: ncertClass } }),
+
+    trackChapter: (chapterId: string) =>
+      api.post('/neuronz/track-chapter', { chapterId }),
   },
 
   // Questions APIs
@@ -79,6 +87,108 @@ export const apiService = {
 
     updateSession: (sessionId: string, data: any) =>
       api.put(`/sessions/${sessionId}`, data),
+  },
+
+  // Learning Paths APIs
+  learningPaths: {
+    createPath: (data: { title: string; description?: string; goals: any[]; dailyGoal?: number }) =>
+      api.post('/learning-paths', data),
+
+    getUserPaths: () => api.get('/learning-paths'),
+
+    getPathById: (pathId: string) => api.get(`/learning-paths/${pathId}`),
+
+    getNextContent: (pathId: string) => api.get(`/learning-paths/${pathId}/next`),
+
+    markContentComplete: (pathId: string, contentIndex: number) =>
+      api.post(`/learning-paths/${pathId}/complete/${contentIndex}`),
+
+    updateProgress: (pathId: string, data: any) =>
+      api.patch(`/learning-paths/${pathId}/progress`, data),
+
+    deletePath: (pathId: string) => api.delete(`/learning-paths/${pathId}`),
+  },
+
+  // Challenges APIs
+  challenges: {
+    createChallenge: (data: { title: string; topic: string; subject: string; duration?: number }) =>
+      api.post('/challenges', data),
+
+    getUserChallenges: () => api.get('/challenges'),
+
+    getChallengeById: (challengeId: string) => api.get(`/challenges/${challengeId}`),
+
+    getTodaySchedule: (challengeId: string) => api.get(`/challenges/${challengeId}/today`),
+
+    completeQuiz: (challengeId: string, dayNumber: number, quizIndex: number, data: { score: number; timeSpent?: number }) =>
+      api.post(`/challenges/${challengeId}/complete/${dayNumber}/${quizIndex}`, data),
+
+    deleteChallenge: (challengeId: string) => api.delete(`/challenges/${challengeId}`),
+  },
+
+  // Social APIs
+  social: {
+    searchUsers: (query: string) => api.get(`/social/users/search?query=${query}`),
+
+    sendFriendRequest: (friendId: string) => api.post('/social/friends/request', { friendId }),
+
+    acceptFriendRequest: (friendId: string) => api.post(`/social/friends/accept/${friendId}`),
+
+    getFriends: () => api.get('/social/friends'),
+
+    getFriendRequests: () => api.get('/social/friends/requests'),
+
+    getFriendsLeaderboard: () => api.get('/social/friends/leaderboard'),
+
+    createDirectChat: (friendId: string) => api.post('/social/chats/direct', { friendId }),
+
+    createGroupChat: (data: { name: string; participants: string[] }) =>
+      api.post('/social/chats/group', data),
+
+    getChats: () => api.get('/social/chats'),
+
+    sendMessage: (data: { chatId: string; text: string }) => api.post('/social/messages', data),
+
+    getMessages: (chatId: string, limit?: number, skip?: number) =>
+      api.get(`/social/messages/${chatId}?limit=${limit || 50}&skip=${skip || 0}`),
+  },
+
+  // Revision APIs (7-Level System)
+  revisions: {
+    startRevision: (data: { subject: string; chapter: string; topic: string }) =>
+      api.post('/revisions/start', data),
+
+    completeRevision: (revisionId: string, data: { score: number; timeSpent?: number; confidence?: string }) =>
+      api.post(`/revisions/${revisionId}/complete`, data),
+
+    getDueRevisions: () => api.get('/revisions/due'),
+
+    getRevisions: (filters?: any) => api.get('/revisions', { params: filters }),
+
+    getAnalytics: () => api.get('/revisions/analytics'),
+
+    setExamDates: (data: { preExamDate: string; finalBoostDate: string }) =>
+      api.post('/revisions/exam-dates', data),
+  },
+
+  // Test Series APIs
+  tests: {
+    getTests: (filters?: any) => api.get('/tests', { params: filters }),
+
+    getTestById: (testId: string) => api.get(`/tests/${testId}`),
+
+    startTest: (testId: string) => api.post(`/tests/${testId}/start`),
+
+    saveAnswer: (attemptId: string, data: { questionId: string; selectedOption: string; timeSpent: number; isMarkedForReview: boolean }) =>
+      api.post(`/tests/attempts/${attemptId}/answer`, data),
+
+    submitTest: (attemptId: string) => api.post(`/tests/attempts/${attemptId}/submit`),
+
+    getAttempt: (attemptId: string) => api.get(`/tests/attempts/${attemptId}`),
+
+    getUserAttempts: (status?: string) => api.get('/tests/my-attempts', { params: { status } }),
+
+    createCustomTest: (data: any) => api.post('/tests/custom', data),
   },
 };
 
