@@ -5,58 +5,61 @@
  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
  
  @layer base {
-   :root {
-     /* NEETFORGE Dark Theme - Single dark mode */
-     --background: 230 25% 5%;
-     --foreground: 210 40% 98%;
- 
-     --card: 230 20% 8%;
-     --card-foreground: 210 40% 98%;
-     --card-elevated: 230 20% 11%;
- 
-     --popover: 230 20% 10%;
-     --popover-foreground: 210 40% 98%;
- 
-     /* Electric Cyan Primary */
-     --primary: 185 95% 55%;
-     --primary-foreground: 230 25% 5%;
-     --primary-glow: 185 95% 55%;
- 
-     /* Warm Orange Secondary */
-     --secondary: 25 95% 55%;
-     --secondary-foreground: 230 25% 5%;
- 
-     --muted: 230 15% 15%;
-     --muted-foreground: 220 10% 55%;
- 
-     --accent: 270 70% 60%;
-     --accent-foreground: 210 40% 98%;
- 
-     --success: 145 70% 50%;
-     --success-foreground: 230 25% 5%;
- 
-     --destructive: 0 85% 60%;
-     --destructive-foreground: 210 40% 98%;
- 
-     --border: 230 15% 18%;
-     --input: 230 15% 12%;
-     --ring: 185 95% 55%;
- 
-     --radius: 1.25rem;
-     --radius-sm: 0.75rem;
-     --radius-lg: 1.5rem;
- 
-     /* Gradients */
-     --gradient-primary: linear-gradient(135deg, hsl(185 95% 55%) 0%, hsl(200 90% 50%) 100%);
-     --gradient-secondary: linear-gradient(135deg, hsl(25 95% 55%) 0%, hsl(35 90% 60%) 100%);
-     --gradient-card: linear-gradient(180deg, hsl(230 20% 10%) 0%, hsl(230 20% 8%) 100%);
-     --gradient-glass: linear-gradient(135deg, hsla(230, 20%, 15%, 0.6) 0%, hsla(230, 20%, 10%, 0.4) 100%);
-     
-     /* Shadows */
-     --shadow-card: 0 4px 24px -4px hsla(185, 95%, 55%, 0.1), 0 2px 8px -2px hsla(0, 0%, 0%, 0.3);
-     --shadow-glow: 0 0 30px -5px hsla(185, 95%, 55%, 0.3);
-     --shadow-elevated: 0 8px 32px -8px hsla(0, 0%, 0%, 0.5);
-   }
+  :root {
+    /* NEETFORGE Student-Friendly Dark Theme */
+    /* Lighter background for eye comfort during 10PM-2AM study sessions */
+    --background: 240 39% 11%;
+    --foreground: 240 33% 97%;
+
+    /* Lighter cards for subtle elevation */
+    --card: 240 27% 18%;
+    --card-foreground: 240 33% 97%;
+    --card-elevated: 240 26% 20%;
+
+    --popover: 240 26% 16%;
+    --popover-foreground: 240 33% 97%;
+
+    /* Coral Red Primary - Reels Shield */
+    --primary: 0 100% 71%;
+    --primary-foreground: 240 39% 11%;
+    --primary-glow: 0 100% 71%;
+
+    /* Teal Green Secondary - Streak */
+    --secondary: 174 63% 55%;
+    --secondary-foreground: 240 39% 11%;
+
+    --muted: 240 26% 16%;
+    --muted-foreground: 240 18% 76%;
+
+    /* Success Accent */
+    --accent: 162 100% 42%;
+    --accent-foreground: 240 39% 11%;
+
+    --success: 162 100% 42%;
+    --success-foreground: 240 39% 11%;
+
+    --destructive: 0 100% 71%;
+    --destructive-foreground: 240 33% 97%;
+
+    --border: 240 21% 23%;
+    --input: 240 26% 16%;
+    --ring: 0 100% 71%;
+
+    --radius: 1.25rem;
+    --radius-sm: 0.75rem;
+    --radius-lg: 1.5rem;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(0 100% 71%) 0%, hsl(10 100% 65%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(174 63% 55%) 0%, hsl(162 100% 42%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(240 27% 18%) 0%, hsl(240 26% 16%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsla(240, 26%, 20%, 0.8) 0%, hsla(240, 27%, 18%, 0.6) 100%);
+    
+    /* Shadows */
+    --shadow-card: 0 4px 24px -4px hsla(0, 100%, 71%, 0.1), 0 2px 8px -2px hsla(0, 0%, 0%, 0.3);
+    --shadow-glow: 0 0 30px -5px hsla(0, 100%, 71%, 0.3);
+    --shadow-elevated: 0 8px 32px -8px hsla(0, 0%, 0%, 0.5);
+  }
  
    * {
      @apply border-border;
@@ -116,31 +119,38 @@
      padding-right: env(safe-area-inset-right, 16px);
    }
  
-   .nf-glow-text {
-     text-shadow: 0 0 20px hsla(185, 95%, 55%, 0.5);
-   }
- 
-   .nf-gradient-text {
-     background: var(--gradient-primary);
-     -webkit-background-clip: text;
-     -webkit-text-fill-color: transparent;
-     background-clip: text;
-   }
+  .nf-glow-text {
+    text-shadow: 0 0 20px hsla(0, 100%, 71%, 0.5);
+  }
+
+  .nf-gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .nf-gradient-text-secondary {
+    background: var(--gradient-secondary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
  }
  
  @layer utilities {
-   .animate-pulse-glow {
-     animation: pulse-glow 2s ease-in-out infinite;
-   }
- 
-   @keyframes pulse-glow {
-     0%, 100% {
-       box-shadow: 0 0 20px -5px hsla(185, 95%, 55%, 0.4);
-     }
-     50% {
-       box-shadow: 0 0 40px -5px hsla(185, 95%, 55%, 0.6);
-     }
-   }
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px -5px hsla(0, 100%, 71%, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 40px -5px hsla(0, 100%, 71%, 0.6);
+    }
+  }
  
    .animate-shake {
      animation: shake 0.5s ease-in-out;
