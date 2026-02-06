@@ -3,6 +3,8 @@
  import { TooltipProvider } from "@/components/ui/tooltip";
  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
  import { BrowserRouter, Routes, Route } from "react-router-dom";
+ import { Provider } from 'react-redux';
+ import { store } from '@/store';
  import { LanguageProvider } from "@/contexts/LanguageContext";
  import { RevisionProvider } from "@/contexts/RevisionContext";
  import Splash from "./pages/Splash";
@@ -18,10 +20,11 @@
  const queryClient = new QueryClient();
  
  const App = () => (
-   <QueryClientProvider client={queryClient}>
-     <LanguageProvider>
-       <RevisionProvider>
-         <TooltipProvider>
+   <Provider store={store}>
+     <QueryClientProvider client={queryClient}>
+       <LanguageProvider>
+         <RevisionProvider>
+           <TooltipProvider>
            <Toaster />
            <Sonner />
            <BrowserRouter>
@@ -37,10 +40,11 @@
                <Route path="*" element={<NotFound />} />
              </Routes>
            </BrowserRouter>
-         </TooltipProvider>
-       </RevisionProvider>
-     </LanguageProvider>
-   </QueryClientProvider>
+           </TooltipProvider>
+         </RevisionProvider>
+       </LanguageProvider>
+     </QueryClientProvider>
+   </Provider>
  );
  
  export default App;

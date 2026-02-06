@@ -1,7 +1,10 @@
  import { Flame, Star, Upload, BookOpen, Brain } from 'lucide-react';
  import { useNavigate } from 'react-router-dom';
  import { motion } from 'framer-motion';
+ import { useEffect } from 'react';
  import { useLanguage } from '@/contexts/LanguageContext';
+ import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { loadDueLines, getMasteryProgress } from '@/store/slices/neuronzSlice';
  import ShieldCard from '@/components/ShieldCard';
  import QuizCard from '@/components/QuizCard';
  import BottomNav from '@/components/BottomNav';
@@ -11,7 +14,14 @@
    const { t } = useLanguage();
    const navigate = useNavigate();
    const { getStats } = useRevision();
-   const revisionStats = getStats();
+   const dispatch = useAppDispatch();
+   const { dueLines, masteryProgress } = useAppSelector((state) => state.neuronz);
+   const neuronzDueCount = dueLines?.total || 0;
+
+   useEffect(() => {
+     dispatch(loadDueLines());
+     dispatch(getMasteryProgress());
+   }, [dispatch]);
  
    return (
      <div className="min-h-screen bg-background pb-24">
@@ -86,8 +96,8 @@
                <Brain className="w-5 h-5 text-accent" />
              </div>
              <span className="font-semibold text-foreground text-sm">Revise</span>
-             {revisionStats.dueToday > 0 && (
-               <span className="text-[10px] text-accent mt-1">{revisionStats.dueToday} due</span>
+             {neuronzDueCount > 0 && (
+               <span className="text-[10px] text-accent mt-1">{neuronzDueCount} due</span>
              )}
            </motion.button>
  
