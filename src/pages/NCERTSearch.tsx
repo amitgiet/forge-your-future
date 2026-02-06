@@ -1,104 +1,60 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ArrowLeft, Search, BookOpen, Clock, StickyNote, Bell, ChevronRight, CheckCircle, Lock } from 'lucide-react';
+import { ArrowLeft, Search, BookOpen, Clock, StickyNote, Bell, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
-import { apiService } from '@/lib/apiService';
 
-// Types
-interface Chapter {
-  _id: string;
-  chapterId: string;
-  name: string;
-  ncert: {
-    class: number;
-    subject: string;
-    chapterNumber: number;
-  };
-}
-
-interface NCERTLine {
-  _id: string;
-  lineId: string;
-  ncertText: string;
-  pageNumber: number;
-  lineNumber: number;
-  userProgress?: {
-    level: number;
-    isMastered: boolean;
-    nextRevision: string;
-  } | null;
-}
+const mockResults = [
+  {
+    id: 1,
+    title: 'Mitosis and Meiosis',
+    book: 'Biology Class 11',
+    chapter: 'Chapter 10: Cell Cycle',
+    page: 162,
+    line: 'Line 14-18',
+    excerpt: '...Mitosis is the type of cell division by which a single cell divides in such a way as to produce two genetically identical "daughter cells"...',
+    highlight: 'Mitosis is the type of cell division',
+  },
+  {
+    id: 2,
+    title: 'Phases of Mitosis',
+    book: 'Biology Class 11',
+    chapter: 'Chapter 10: Cell Cycle',
+    page: 164,
+    line: 'Line 5-12',
+    excerpt: '...Prophase, metaphase, anaphase and telophase are the four stages of mitosis. During prophase, the chromatin condenses into discrete chromosomes...',
+    highlight: 'Prophase, metaphase, anaphase and telophase',
+  },
+  {
+    id: 3,
+    title: 'Cytokinesis',
+    book: 'Biology Class 11',
+    chapter: 'Chapter 10: Cell Cycle',
+    page: 168,
+    line: 'Line 22-25',
+    excerpt: '...Cytokinesis is the physical process of cell division, which divides the cytoplasm of a parental cell into two daughter cells...',
+    highlight: 'Cytokinesis is the physical process',
+  },
+];
 
 const NCERTSearch = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('biology');
-  const [selectedClass, setSelectedClass] = useState<number>(11);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  // Data state
-  const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
-  const [lines, setLines] = useState<NCERTLine[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // Initial load of chapters
-  useEffect(() => {
-    fetchChapters();
-  }, [selectedSubject, selectedClass]);
-
-  const fetchChapters = async () => {
-    try {
-      setLoading(true);
-      // In a real app we might filter by query too
-      const response = await apiService.chapters.getChapters(selectedSubject);
-      // Client-side filter for class if API doesn't support it strictly or for safety
-      const filtered = response.data.data.filter((c: any) => c.ncert.class === selectedClass);
-      setChapters(filtered);
-    } catch (error) {
-      console.error('Failed to load chapters:', error);
-    } finally {
-      setLoading(false);
+  const handleSearch = () => {
+    if (query.trim()) {
+      setHasSearched(true);
     }
-  };
-
-  const handleChapterSelect = async (chapter: Chapter) => {
-    setSelectedChapter(chapter);
-    try {
-      setLoading(true);
-      // Using our new API
-      const response = await apiService.neuronz.getLinesByChapter(chapter.chapterId);
-      setLines(response.data.data);
-    } catch (error) {
-      console.error('Failed to load lines:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBack = () => {
-    if (selectedChapter) {
-      setSelectedChapter(null);
-      setLines([]);
-    } else {
-      navigate('/dashboard');
-    }
-  };
-
-  const handleLineClick = (line: NCERTLine) => {
-    // Start session for this line
-    // Pass the line object or ID via state/params
-    navigate('/quiz', { state: { lineId: line.lineId, mode: 'new' } });
   };
 
   const highlightText = (text: string, highlight: string) => {
-    if (!highlight.trim()) return text;
     const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
     return parts.map((part, i) =>
       part.toLowerCase() === highlight.toLowerCase() ? (
-        <span key={i} className="bg-primary/30 text-primary font-medium px-0.5 rounded">
+        <span key={i} className="bg-warning/30 text-foreground font-bold px-1 rounded">
           {part}
         </span>
       ) : (
@@ -107,138 +63,152 @@ const NCERTSearch = () => {
     );
   };
 
-  // Filter lines if search query exists
-  const filteredLines = query
-    ? lines.filter(l => l.ncertText.toLowerCase().includes(query.toLowerCase()))
-    : lines;
-
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="nf-safe-area p-4 max-w-md mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={handleBack}
-            className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center"
-          >
-            <ArrowLeft className="w-5 h-5 text-foreground" />
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 mb-6"
+        >
+          <button onClick={() => navigate('/dashboard')} className="nf-btn-icon !w-10 !h-10">
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-foreground">
-              {selectedChapter ? `Ch ${selectedChapter.ncert.chapterNumber}: ${selectedChapter.name}` : t('ncert.title')}
-            </h1>
-            {selectedChapter && <p className="text-xs text-muted-foreground">{lines.length} lines available</p>}
+          <div>
+            <h1 className="nf-heading text-xl text-foreground">{t('ncert.title')}</h1>
+            <p className="text-xs text-muted-foreground">Find exact references instantly</p>
           </div>
-        </div>
-
-        {!selectedChapter && (
-          <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
-            {['biology', 'physics', 'chemistry'].map(sub => (
-              <button
-                key={sub}
-                onClick={() => setSelectedSubject(sub)}
-                className={`px-4 py-2 rounded-full text-sm font-medium capitalize whitespace-nowrap transition-colors ${selectedSubject === sub
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                  }`}
-              >
-                {sub}
-              </button>
-            ))}
-          </div>
-        )}
+        </motion.div>
 
         {/* Search Input */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative mb-6"
+          className="relative"
         >
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={selectedChapter ? "Search in this chapter..." : "Search chapters..."}
-            className="w-full h-14 pl-12 pr-4 rounded-2xl bg-muted border-2 border-transparent focus:border-primary focus:outline-none text-foreground placeholder:text-muted-foreground transition-colors"
-          />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <div className="nf-card !p-2">
+            <div className="relative flex items-center">
+              <Search className="absolute left-3 w-5 h-5 text-muted-foreground" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                placeholder={t('ncert.placeholder')}
+                className="w-full h-12 pl-10 pr-24 rounded-xl bg-muted border-2 border-transparent focus:border-primary focus:outline-none text-foreground placeholder:text-muted-foreground transition-colors font-medium"
+              />
+              <button
+                onClick={handleSearch}
+                className="absolute right-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-glow-primary"
+              >
+                Search
+              </button>
+            </div>
+          </div>
         </motion.div>
 
-        {/* Content Area */}
-        <div className="space-y-4">
-          {loading && <div className="text-center py-10 text-muted-foreground">Loading...</div>}
+        {/* Results */}
+        <AnimatePresence>
+          {hasSearched && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-6 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground font-medium">
+                  {mockResults.length} results found
+                </p>
+                <span className="nf-badge nf-badge-success">
+                  <Sparkles className="w-3 h-3" />
+                  AI Powered
+                </span>
+              </div>
 
-          {/* Chapter List */}
-          {!selectedChapter && !loading && (
-            <div className="space-y-3">
-              {chapters
-                .filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
-                .map((chapter, index) => (
-                  <motion.button
-                    key={chapter._id}
-                    onClick={() => handleChapterSelect(chapter)}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="w-full nf-card text-left flex items-center justify-between group hover:border-primary/50 transition-colors"
-                  >
-                    <div>
-                      <p className="text-xs text-primary font-semibold mb-1">Chapter {chapter.ncert.chapterNumber}</p>
-                      <h3 className="font-semibold text-foreground">{chapter.name}</h3>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </motion.button>
-                ))}
-            </div>
-          )}
-
-          {/* Lines List */}
-          {selectedChapter && !loading && (
-            <div className="space-y-4">
-              {filteredLines.map((line, index) => (
+              {mockResults.map((result, index) => (
                 <motion.div
-                  key={line._id}
+                  key={result.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="nf-card cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => handleLineClick(line)}
+                  transition={{ delay: index * 0.1 }}
+                  className="nf-card"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono bg-muted px-2 py-1 rounded text-muted-foreground">
-                        pg.{line.pageNumber}
-                      </span>
-                      {line.userProgress ? (
-                        <span className={`text-xs px-2 py-1 rounded font-medium flex items-center gap-1 ${line.userProgress.isMastered
-                            ? 'bg-success/10 text-success'
-                            : 'bg-primary/10 text-primary'
-                          }`}>
-                          {line.userProgress.isMastered ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                          {line.userProgress.isMastered ? 'Mastered' : `L${line.userProgress.level}`}
-                        </span>
-                      ) : (
-                        <span className="text-xs px-2 py-1 rounded font-medium bg-muted text-muted-foreground flex items-center gap-1">
-                          <Lock className="w-3 h-3" /> New
-                        </span>
-                      )}
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="nf-heading text-foreground">{result.title}</h3>
+                      <p className="text-xs text-muted-foreground mt-1 font-medium">
+                        {result.book} • {result.chapter}
+                      </p>
                     </div>
+                    <span className="nf-badge nf-badge-primary">
+                      <BookOpen className="w-3 h-3" />
+                      p.{result.page}
+                    </span>
                   </div>
 
-                  <p className="text-sm text-foreground/90 leading-relaxed pl-2 border-l-2 border-muted/50">
-                    {highlightText(line.ncertText, query)}
+                  <span className="nf-badge nf-badge-outline text-xs mb-3">
+                    {result.line}
+                  </span>
+
+                  <p className="text-sm text-muted-foreground leading-relaxed border-l-4 border-primary/50 pl-3 bg-muted/30 py-2 pr-2 rounded-r-lg">
+                    {highlightText(result.excerpt, result.highlight)}
                   </p>
+
+                  {/* Actions */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button className="nf-badge nf-badge-primary cursor-pointer hover:opacity-80 transition-opacity">
+                      <Clock className="w-3.5 h-3.5" />
+                      {t('ncert.spacedQuizzes')}
+                    </button>
+                    <button className="nf-badge nf-badge-outline cursor-pointer hover:border-primary hover:text-primary transition-all">
+                      <StickyNote className="w-3.5 h-3.5" />
+                      {t('ncert.notes')}
+                    </button>
+                    <button className="nf-badge nf-badge-secondary cursor-pointer hover:opacity-80 transition-opacity">
+                      <Bell className="w-3.5 h-3.5" />
+                      {t('ncert.tomorrow')}
+                    </button>
+                  </div>
                 </motion.div>
               ))}
-
-              {filteredLines.length === 0 && (
-                <div className="text-center py-10 text-muted-foreground">
-                  No lines found matching your search.
-                </div>
-              )}
-            </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
+
+        {/* Empty state */}
+        {!hasSearched && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mt-16 text-center"
+          >
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-primary/10 border-2 border-primary/30 flex items-center justify-center mb-4">
+              <BookOpen className="w-10 h-10 text-primary" />
+            </div>
+            <h3 className="nf-heading text-lg text-foreground mb-2">Search NCERT</h3>
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+              Find exact line references from your NCERT textbooks instantly
+            </p>
+            
+            {/* Quick suggestions */}
+            <div className="flex flex-wrap gap-2 justify-center mt-6">
+              {['Mitosis', 'Photosynthesis', 'DNA Replication', 'Krebs Cycle'].map((term) => (
+                <button
+                  key={term}
+                  onClick={() => {
+                    setQuery(term);
+                    setHasSearched(true);
+                  }}
+                  className="nf-badge nf-badge-outline cursor-pointer hover:border-primary hover:text-primary transition-all"
+                >
+                  {term}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
 
       <BottomNav />

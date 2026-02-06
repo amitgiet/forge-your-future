@@ -1,55 +1,58 @@
- import { Home, BookOpen, User, Brain } from 'lucide-react';
- import { NavLink } from 'react-router-dom';
- import { useLanguage } from '@/contexts/LanguageContext';
- import { motion } from 'framer-motion';
- 
- const BottomNav = () => {
-   const { t } = useLanguage();
- 
-   const navItems = [
-     { to: '/dashboard', icon: Home, label: t('nav.home') },
-     { to: '/revision', icon: Brain, label: t('nav.revision') },
-     { to: '/quiz', icon: BookOpen, label: t('nav.quiz') },
-     { to: '/profile', icon: User, label: t('nav.profile') },
-   ];
- 
-   return (
-     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-t border-border">
-       <div className="flex items-center justify-around h-16 max-w-md mx-auto pb-safe">
-         {navItems.map((item) => (
-           <NavLink
-             key={item.to}
-             to={item.to}
-             className={({ isActive }) =>
-               `flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all ${
-                 isActive ? 'text-primary' : 'text-muted-foreground'
-               }`
-             }
-           >
-             {({ isActive }) => (
-               <>
-                 <motion.div
-                   whileTap={{ scale: 0.9 }}
-                   className="relative"
-                 >
-                   <item.icon className="w-6 h-6" />
-                   {isActive && (
-                     <motion.div
-                       layoutId="activeTab"
-                       className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary"
-                       initial={false}
-                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                     />
-                   )}
-                 </motion.div>
-                 <span className="text-xs font-medium">{item.label}</span>
-               </>
-             )}
-           </NavLink>
-         ))}
-       </div>
-     </nav>
-   );
- };
- 
- export default BottomNav;
+import { Home, BookOpen, User, Brain, Trophy } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+
+const BottomNav = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const navItems = [
+    { icon: Home, path: '/dashboard', label: 'Home' },
+    { icon: Brain, path: '/revision', label: 'Revise' },
+    { icon: BookOpen, path: '/quiz', label: 'Quiz' },
+    { icon: Trophy, path: '/mock-analyzer', label: 'Mock' },
+    { icon: User, path: '/profile', label: 'Profile' },
+  ];
+
+  return (
+    <motion.nav
+      className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t-2 border-border z-50"
+      initial={{ y: 100 }}
+      animate={{ y: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}
+    >
+      <div className="max-w-md mx-auto flex justify-around items-center py-2 px-2">
+        {navItems.map(({ icon: Icon, path, label }) => {
+          const isActive = location.pathname === path;
+          return (
+            <motion.button
+              key={path}
+              onClick={() => navigate(path)}
+              className={`relative flex flex-col items-center justify-center py-2 px-4 rounded-xl transition-all ${
+                isActive 
+                  ? 'text-primary' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              whileTap={{ scale: 0.9 }}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="nav-indicator"
+                  className="absolute inset-0 bg-primary/10 border-2 border-primary/30 rounded-xl"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+              <Icon className={`w-5 h-5 relative z-10 ${isActive ? 'stroke-[2.5]' : ''}`} />
+              <span className={`text-[10px] mt-1 relative z-10 font-semibold ${isActive ? 'text-primary' : ''}`}>
+                {label}
+              </span>
+            </motion.button>
+          );
+        })}
+      </div>
+    </motion.nav>
+  );
+};
+
+export default BottomNav;

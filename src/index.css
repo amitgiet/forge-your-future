@@ -1,184 +1,396 @@
- @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
- 
- @tailwind base;
- @tailwind components;
- @tailwind utilities;
- 
- @layer base {
-   :root {
-     /* NEETFORGE Dark Theme - Single dark mode */
-     --background: 230 25% 5%;
-     --foreground: 210 40% 98%;
- 
-     --card: 230 20% 8%;
-     --card-foreground: 210 40% 98%;
-     --card-elevated: 230 20% 11%;
- 
-     --popover: 230 20% 10%;
-     --popover-foreground: 210 40% 98%;
- 
-     /* Electric Cyan Primary */
-     --primary: 185 95% 55%;
-     --primary-foreground: 230 25% 5%;
-     --primary-glow: 185 95% 55%;
- 
-     /* Warm Orange Secondary */
-     --secondary: 25 95% 55%;
-     --secondary-foreground: 230 25% 5%;
- 
-     --muted: 230 15% 15%;
-     --muted-foreground: 220 10% 55%;
- 
-     --accent: 270 70% 60%;
-     --accent-foreground: 210 40% 98%;
- 
-     --success: 145 70% 50%;
-     --success-foreground: 230 25% 5%;
- 
-     --destructive: 0 85% 60%;
-     --destructive-foreground: 210 40% 98%;
- 
-     --border: 230 15% 18%;
-     --input: 230 15% 12%;
-     --ring: 185 95% 55%;
- 
-     --radius: 1.25rem;
-     --radius-sm: 0.75rem;
-     --radius-lg: 1.5rem;
- 
-     /* Gradients */
-     --gradient-primary: linear-gradient(135deg, hsl(185 95% 55%) 0%, hsl(200 90% 50%) 100%);
-     --gradient-secondary: linear-gradient(135deg, hsl(25 95% 55%) 0%, hsl(35 90% 60%) 100%);
-     --gradient-card: linear-gradient(180deg, hsl(230 20% 10%) 0%, hsl(230 20% 8%) 100%);
-     --gradient-glass: linear-gradient(135deg, hsla(230, 20%, 15%, 0.6) 0%, hsla(230, 20%, 10%, 0.4) 100%);
-     
-     /* Shadows */
-     --shadow-card: 0 4px 24px -4px hsla(185, 95%, 55%, 0.1), 0 2px 8px -2px hsla(0, 0%, 0%, 0.3);
-     --shadow-glow: 0 0 30px -5px hsla(185, 95%, 55%, 0.3);
-     --shadow-elevated: 0 8px 32px -8px hsla(0, 0%, 0%, 0.5);
-   }
- 
-   * {
-     @apply border-border;
-   }
- 
-   html {
-     font-family: 'Inter', system-ui, sans-serif;
-   }
- 
-   body {
-     @apply bg-background text-foreground antialiased;
-     -webkit-font-smoothing: antialiased;
-     -moz-osx-font-smoothing: grayscale;
-   }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+@layer base {
+ :root {
+   /* NEETFORGE Gamified Light Theme */
+   /* Fresh, playful, achievement-focused */
+   
+   --background: 220 30% 97%;
+   --foreground: 220 30% 15%;
+
+   /* Card surfaces - clean white with subtle warmth */
+   --card: 0 0% 100%;
+   --card-foreground: 220 30% 15%;
+   --card-elevated: 220 20% 98%;
+
+   --popover: 0 0% 100%;
+   --popover-foreground: 220 30% 15%;
+
+   /* Primary - Vibrant Coral/Orange for energy */
+   --primary: 15 90% 58%;
+   --primary-foreground: 0 0% 100%;
+   --primary-glow: 15 100% 65%;
+
+   /* Secondary - Playful Purple for achievements */
+   --secondary: 265 85% 60%;
+   --secondary-foreground: 0 0% 100%;
+
+   /* Muted backgrounds */
+   --muted: 220 20% 94%;
+   --muted-foreground: 220 15% 45%;
+
+   /* Accent - Fresh Teal for success/progress */
+   --accent: 170 80% 45%;
+   --accent-foreground: 0 0% 100%;
+
+   --success: 145 70% 45%;
+   --success-foreground: 0 0% 100%;
+
+   /* Warning/Streak - Golden Yellow */
+   --warning: 45 95% 55%;
+   --warning-foreground: 30 50% 20%;
+
+   --destructive: 0 85% 60%;
+   --destructive-foreground: 0 0% 100%;
+
+   /* Borders - Clean, visible but subtle */
+   --border: 220 20% 88%;
+   --border-strong: 220 20% 75%;
+   --input: 220 20% 94%;
+   --ring: 15 90% 58%;
+
+   --radius: 1rem;
+   --radius-sm: 0.75rem;
+   --radius-lg: 1.25rem;
+   --radius-full: 9999px;
+
+   /* Gradients */
+   --gradient-primary: linear-gradient(135deg, hsl(15 90% 58%) 0%, hsl(35 95% 55%) 100%);
+   --gradient-secondary: linear-gradient(135deg, hsl(265 85% 60%) 0%, hsl(280 80% 65%) 100%);
+   --gradient-success: linear-gradient(135deg, hsl(170 80% 45%) 0%, hsl(145 70% 45%) 100%);
+   --gradient-warning: linear-gradient(135deg, hsl(45 95% 55%) 0%, hsl(35 90% 50%) 100%);
+   --gradient-fun: linear-gradient(135deg, hsl(330 85% 60%) 0%, hsl(265 85% 60%) 100%);
+   
+   /* Shadows - Soft and playful */
+   --shadow-sm: 0 2px 8px -2px hsla(220, 30%, 15%, 0.08);
+   --shadow-card: 0 4px 16px -4px hsla(220, 30%, 15%, 0.1);
+   --shadow-elevated: 0 8px 24px -6px hsla(220, 30%, 15%, 0.12);
+   --shadow-glow-primary: 0 4px 20px -4px hsla(15, 90%, 58%, 0.35);
+   --shadow-glow-secondary: 0 4px 20px -4px hsla(265, 85%, 60%, 0.35);
+   --shadow-glow-success: 0 4px 20px -4px hsla(170, 80%, 45%, 0.35);
  }
- 
- @layer components {
-   .nf-card {
-     @apply rounded-[20px] bg-card p-5;
-     box-shadow: var(--shadow-card);
-     background: var(--gradient-card);
-   }
- 
-   .nf-card-glass {
-     @apply rounded-[20px] p-5 backdrop-blur-xl;
-     background: var(--gradient-glass);
-     border: 1px solid hsla(230, 15%, 25%, 0.5);
-     box-shadow: var(--shadow-card);
-   }
- 
-   .nf-btn {
-     @apply w-full min-h-[56px] rounded-[15px] font-semibold text-base transition-all duration-200;
-     @apply active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
-   }
- 
-   .nf-btn-primary {
-     @apply nf-btn bg-primary text-primary-foreground;
-     box-shadow: var(--shadow-glow);
-   }
- 
-   .nf-btn-primary:hover {
-     filter: brightness(1.1);
-   }
- 
-   .nf-btn-secondary {
-     @apply nf-btn bg-secondary text-secondary-foreground;
-   }
- 
-   .nf-btn-outline {
-     @apply nf-btn border-2 border-primary text-primary bg-transparent;
-   }
- 
-   .nf-safe-area {
-     padding-top: env(safe-area-inset-top, 16px);
-     padding-bottom: env(safe-area-inset-bottom, 16px);
-     padding-left: env(safe-area-inset-left, 16px);
-     padding-right: env(safe-area-inset-right, 16px);
-   }
- 
-   .nf-glow-text {
-     text-shadow: 0 0 20px hsla(185, 95%, 55%, 0.5);
-   }
- 
-   .nf-gradient-text {
-     background: var(--gradient-primary);
-     -webkit-background-clip: text;
-     -webkit-text-fill-color: transparent;
-     background-clip: text;
-   }
- }
- 
- @layer utilities {
-   .animate-pulse-glow {
-     animation: pulse-glow 2s ease-in-out infinite;
-   }
- 
-   @keyframes pulse-glow {
-     0%, 100% {
-       box-shadow: 0 0 20px -5px hsla(185, 95%, 55%, 0.4);
-     }
-     50% {
-       box-shadow: 0 0 40px -5px hsla(185, 95%, 55%, 0.6);
-     }
-   }
- 
-   .animate-shake {
-     animation: shake 0.5s ease-in-out;
-   }
- 
-   @keyframes shake {
-     0%, 100% { transform: translateX(0); }
-     20% { transform: translateX(-4px); }
-     40% { transform: translateX(4px); }
-     60% { transform: translateX(-4px); }
-     80% { transform: translateX(4px); }
-   }
- 
-   .animate-bounce-in {
-     animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-   }
- 
-   @keyframes bounce-in {
-     0% { transform: scale(0); opacity: 0; }
-     100% { transform: scale(1); opacity: 1; }
-   }
- 
-   .animate-slide-up {
-     animation: slide-up 0.4s ease-out;
-   }
- 
-   @keyframes slide-up {
-     0% { transform: translateY(20px); opacity: 0; }
-     100% { transform: translateY(0); opacity: 1; }
-   }
- 
-   .animate-count {
-     animation: count-pulse 0.3s ease-out;
-   }
- 
-   @keyframes count-pulse {
-     0% { transform: scale(1); }
-     50% { transform: scale(1.2); }
-     100% { transform: scale(1); }
-   }
- }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Nunito', system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* ===== GAMIFIED CARD SYSTEM ===== */
+  
+  /* Base outlined card */
+  .nf-card {
+    @apply rounded-2xl bg-card p-5 border-2 border-border;
+    box-shadow: var(--shadow-card);
+    transition: all 0.2s ease;
+  }
+
+  .nf-card:hover {
+    border-color: hsl(var(--border-strong));
+    box-shadow: var(--shadow-elevated);
+  }
+
+  /* Achievement card with gradient border */
+  .nf-card-achievement {
+    @apply rounded-2xl bg-card p-5 relative;
+    background: linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+                var(--gradient-fun) border-box;
+    border: 2px solid transparent;
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Stats card with icon badge */
+  .nf-card-stat {
+    @apply rounded-xl bg-card px-4 py-3 border-2 border-border flex items-center gap-3;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ===== BADGE SYSTEM ===== */
+  
+  .nf-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold;
+    @apply border-2 transition-all duration-200;
+  }
+
+  .nf-badge-primary {
+    @apply bg-primary/10 text-primary border-primary/30;
+  }
+
+  .nf-badge-secondary {
+    @apply bg-secondary/10 text-secondary border-secondary/30;
+  }
+
+  .nf-badge-success {
+    @apply bg-success/10 text-success border-success/30;
+  }
+
+  .nf-badge-warning {
+    @apply bg-warning/10 text-warning-foreground border-warning/30;
+  }
+
+  .nf-badge-outline {
+    @apply bg-transparent text-foreground border-border-strong;
+  }
+
+  /* Level badges */
+  .nf-level-badge {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-black;
+    @apply border-2 shadow-sm;
+  }
+
+  /* ===== BUTTON SYSTEM ===== */
+  
+  .nf-btn {
+    @apply w-full min-h-[52px] rounded-xl font-bold text-base transition-all duration-200;
+    @apply active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+    @apply flex items-center justify-center gap-2;
+  }
+
+  .nf-btn-primary {
+    @apply nf-btn text-primary-foreground border-2 border-transparent;
+    background: var(--gradient-primary);
+    box-shadow: var(--shadow-glow-primary);
+  }
+
+  .nf-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px -4px hsla(15, 90%, 58%, 0.45);
+  }
+
+  .nf-btn-secondary {
+    @apply nf-btn text-secondary-foreground border-2 border-transparent;
+    background: var(--gradient-secondary);
+    box-shadow: var(--shadow-glow-secondary);
+  }
+
+  .nf-btn-outline {
+    @apply nf-btn bg-card text-foreground border-2 border-border-strong;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .nf-btn-outline:hover {
+    @apply border-primary text-primary;
+    box-shadow: var(--shadow-glow-primary);
+  }
+
+  .nf-btn-ghost {
+    @apply nf-btn bg-transparent text-muted-foreground border-2 border-transparent;
+  }
+
+  .nf-btn-ghost:hover {
+    @apply bg-muted text-foreground;
+  }
+
+  /* Icon buttons */
+  .nf-btn-icon {
+    @apply w-12 h-12 min-h-0 rounded-xl flex items-center justify-center;
+    @apply border-2 border-border bg-card transition-all duration-200;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .nf-btn-icon:hover {
+    @apply border-primary;
+    box-shadow: var(--shadow-glow-primary);
+  }
+
+  /* ===== PROGRESS ELEMENTS ===== */
+  
+  .nf-progress-ring {
+    @apply relative inline-flex items-center justify-center;
+  }
+
+  .nf-progress-bar {
+    @apply h-3 rounded-full bg-muted overflow-hidden;
+  }
+
+  .nf-progress-fill {
+    @apply h-full rounded-full transition-all duration-500 ease-out;
+    background: var(--gradient-primary);
+  }
+
+  /* ===== STREAK/STATS DISPLAY ===== */
+  
+  .nf-stat-icon {
+    @apply w-11 h-11 rounded-xl flex items-center justify-center;
+    @apply border-2 transition-all duration-200;
+  }
+
+  .nf-stat-icon-primary {
+    @apply bg-primary/10 border-primary/30 text-primary;
+  }
+
+  .nf-stat-icon-secondary {
+    @apply bg-secondary/10 border-secondary/30 text-secondary;
+  }
+
+  .nf-stat-icon-warning {
+    @apply bg-warning/20 border-warning/40 text-warning-foreground;
+  }
+
+  .nf-stat-icon-success {
+    @apply bg-success/10 border-success/30 text-success;
+  }
+
+  /* ===== SAFE AREA ===== */
+  
+  .nf-safe-area {
+    padding-top: env(safe-area-inset-top, 16px);
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+    padding-left: env(safe-area-inset-left, 16px);
+    padding-right: env(safe-area-inset-right, 16px);
+  }
+
+  /* ===== TEXT STYLES ===== */
+  
+  .nf-heading {
+    font-family: 'Space Grotesk', sans-serif;
+    @apply font-bold tracking-tight;
+  }
+
+  .nf-gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .nf-gradient-text-secondary {
+    background: var(--gradient-secondary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .nf-gradient-text-success {
+    background: var(--gradient-success);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ===== SPECIAL ELEMENTS ===== */
+  
+  /* XP/Points counter */
+  .nf-xp-counter {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full;
+    @apply bg-warning/20 text-warning-foreground font-bold text-sm;
+    @apply border-2 border-warning/40;
+  }
+
+  /* Streak flame */
+  .nf-streak {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full;
+    @apply bg-gradient-to-r from-orange-100 to-red-100 text-primary font-bold;
+    @apply border-2 border-primary/30;
+  }
+
+  /* Quiz option card */
+  .nf-option {
+    @apply rounded-xl p-4 border-2 border-border bg-card cursor-pointer;
+    @apply transition-all duration-200 flex items-center gap-3;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .nf-option:hover {
+    @apply border-primary/50 bg-primary/5;
+  }
+
+  .nf-option-selected {
+    @apply border-primary bg-primary/10;
+    box-shadow: var(--shadow-glow-primary);
+  }
+
+  .nf-option-correct {
+    @apply border-success bg-success/10;
+    box-shadow: var(--shadow-glow-success);
+  }
+
+  .nf-option-incorrect {
+    @apply border-destructive bg-destructive/10;
+  }
+}
+
+@layer utilities {
+  /* Animations */
+  .animate-bounce-in {
+    animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  @keyframes bounce-in {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.4s ease-out;
+  }
+
+  @keyframes slide-up {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  .animate-pop {
+    animation: pop 0.3s ease-out;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  /* Confetti burst for achievements */
+  .animate-confetti {
+    animation: confetti 0.6s ease-out forwards;
+  }
+
+  @keyframes confetti {
+    0% { transform: scale(0) rotate(0deg); opacity: 1; }
+    100% { transform: scale(1.5) rotate(180deg); opacity: 0; }
+  }
+}
