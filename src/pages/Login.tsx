@@ -117,7 +117,7 @@ const Login = () => {
               type="button"
               onClick={() => {
                 localStorage.setItem('token', 'demo-token-12345');
-                navigate('/dashboard');
+                window.location.href = '/dashboard';
               }}
               className="w-full py-3 rounded-xl border-2 border-dashed border-primary/50 text-primary font-semibold hover:bg-primary/10 transition-colors"
             >
