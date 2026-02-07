@@ -111,6 +111,20 @@ const Login = () => {
             </button>
           </form>
 
+          {/* Demo Login */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem('token', 'demo-token-12345');
+                navigate('/dashboard');
+              }}
+              className="w-full py-3 rounded-xl border-2 border-dashed border-primary/50 text-primary font-semibold hover:bg-primary/10 transition-colors"
+            >
+              🎮 Try Demo Mode
+            </button>
+          </div>
+
           {/* Signup Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
