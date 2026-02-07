@@ -36,16 +36,13 @@ const StartPractice = () => {
 
     setLoading(true);
     try {
-      // Create challenge for this topic
-      const response = await apiService.challenges.createChallenge({
-        title: `Master ${topic}`,
-        topic,
-        subject: selectedSubject,
-        duration: 30
-      });
+      // Track this subject+topic in NeuronZ system
+      // This will create UserLine entries for all NCERT lines matching the topic
+      const response = await apiService.neuronz.trackBySubjectAndTopic(selectedSubject, topic);
 
       if (response.data.success) {
-        navigate(`/practice-session/${response.data.data._id}`);
+        // Navigate to Revision page where user will see 100 MCQs in Level 1
+        navigate('/revision');
       }
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to start practice');
@@ -188,10 +185,10 @@ const StartPractice = () => {
             className="nf-btn-primary w-full flex items-center justify-center gap-2"
           >
             {loading ? (
-              <>Starting...</>
+              <>Starting NeuronZ Practice...</>
             ) : (
               <>
-                Start 30-Day Challenge
+                Enter Level 1 with 100 MCQs
                 <ArrowRight className="w-5 h-5" />
               </>
             )}

@@ -33,12 +33,12 @@
  import QuizResults from "./pages/QuizResults";
  import RevisionDashboard from "./pages/RevisionDashboard";
  import TrackTopic from "./pages/TrackTopic";
-
- import TestSeries from "./pages/TestSeries";
- import TestSession from "./pages/TestSession";
- import TestReport from "./pages/TestReport";
- import CustomTestCreate from "./pages/CustomTestCreate";
- import NotFound from "./pages/NotFound";
+import QuizGenerator from "./pages/QuizGenerator";
+import TestSeries from "./pages/TestSeries";
+import TestSession from "./pages/TestSession";
+import TestReport from "./pages/TestReport";
+import CustomTestCreate from "./pages/CustomTestCreate";
+import NotFound from "./pages/NotFound";
  
  const queryClient = new QueryClient();
  
@@ -78,6 +78,7 @@
                  <Route path="/quiz-results" element={<ProtectedRoute><QuizResults /></ProtectedRoute>} />
                  <Route path="/revision-dashboard" element={<ProtectedRoute><RevisionDashboard /></ProtectedRoute>} />
                  <Route path="/revision/track" element={<ProtectedRoute><TrackTopic /></ProtectedRoute>} />
+                 <Route path="/quiz-generator" element={<ProtectedRoute><QuizGenerator /></ProtectedRoute>} />
 
                  <Route path="/tests" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
                  <Route path="/test/custom/create" element={<ProtectedRoute><CustomTestCreate /></ProtectedRoute>} />

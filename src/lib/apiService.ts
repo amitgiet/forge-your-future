@@ -42,6 +42,18 @@ export const apiService = {
 
     trackChapter: (chapterId: string) =>
       api.post('/neuronz/track-chapter', { chapterId }),
+
+    trackBySubjectAndTopic: (subject: string, topic: string) =>
+      api.post('/neuronz/track-topic', { subject, topic }),
+
+    adjustLineLevel: (lineId: string, data: { newLevel: number; reason?: string }) =>
+      api.put(`/neuronz/${lineId}/level`, data),
+
+    customizeLineSchedule: (lineId: string, data: { priority?: string; customSchedule?: any; autoSkipL7?: boolean }) =>
+      api.put(`/neuronz/${lineId}/customize`, data),
+
+    getLineAnalytics: (lineId: string) =>
+      api.get(`/neuronz/${lineId}/analytics`),
   },
 
   // Questions APIs
@@ -189,6 +201,24 @@ export const apiService = {
     getUserAttempts: (status?: string) => api.get('/tests/my-attempts', { params: { status } }),
 
     createCustomTest: (data: any) => api.post('/tests/custom', data),
+  },
+
+  // Quiz Generator APIs (AI-powered)
+  quizGenerator: {
+    generateQuiz: (data: { topic: string; level: number; numberOfQuestions: number; quizType?: string }) =>
+      api.post('/quiz-generator/generate', data),
+
+    getQuiz: (quizId: string) => api.get(`/quiz-generator/${quizId}`),
+
+    getUserQuizzes: (page?: number, limit?: number) =>
+      api.get('/quiz-generator/quizzes/list', { params: { page: page || 1, limit: limit || 10 } }),
+
+    submitQuizAttempt: (quizId: string, data: { answers: (number | number[] | null)[]; timeTaken: number }) =>
+      api.post(`/quiz-generator/${quizId}/submit`, data),
+
+    getQuizStats: (quizId: string) => api.get(`/quiz-generator/${quizId}/stats`),
+
+    deleteQuiz: (quizId: string) => api.delete(`/quiz-generator/${quizId}`),
   },
 };
 

@@ -2,37 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, AlertCircle, ArrowRight, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import api from '../lib/api';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { loadDueLines, getMasteryProgress } from '@/store/slices/neuronzSlice';
 
 const LEVEL_ICONS = ['📚', '🧠', '📝', '🔄', '✅', '📖', '🚀'];
 
 export default function RevisionWidget() {
-  const [dueRevisions, setDueRevisions] = useState([]);
-  const [analytics, setAnalytics] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { dueLines, masteryProgress, isLoading } = useAppSelector((state) => state.neuronz);
 
   useEffect(() => {
-    loadRevisions();
-  }, []);
+    dispatch(loadDueLines());
+    dispatch(getMasteryProgress());
+  }, [dispatch]);
 
-  const loadRevisions = async () => {
-    try {
-      const [dueRes, analyticsRes] = await Promise.all([
-        api.get('/revisions/due'),
-        api.get('/revisions/analytics')
-      ]);
-      setDueRevisions(dueRes.data.data.slice(0, 3)); // Show top 3
-      setAnalytics(analyticsRes.data.data);
-    } catch (error) {
-      console.error('Failed to load revisions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) return null;
-  if (!analytics || analytics.dueToday === 0) return null;
+  if (isLoading) return null;
+  if (!dueLines || dueLines.total === 0) return null;
 
   return (
     <motion.div
@@ -57,52 +43,45 @@ export default function RevisionWidget() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="bg-white/5 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-white">{analytics.dueToday}</div>
+          <div className="text-2xl font-bold text-white">{dueLines.total}</div>
           <div className="text-xs text-gray-400">Due Today</div>
         </div>
         <div className="bg-white/5 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-red-400">{analytics.overdue}</div>
+          <div className="text-2xl font-bold text-red-400">0</div>
           <div className="text-xs text-gray-400">Overdue</div>
         </div>
         <div className="bg-white/5 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-green-400">{analytics.avgRetention}%</div>
-          <div className="text-xs text-gray-400">Retention</div>
+          <div className="text-2xl font-bold text-green-400">{masteryProgress?.masteryPercentage || 0}%</div>
+          <div className="text-xs text-gray-400">Mastered</div>
         </div>
       </div>
 
       {/* Due Topics */}
       <div className="space-y-2">
-        {dueRevisions.map((revision) => (
+        {dueLines.lines.slice(0, 3).map((line: any) => (
           <motion.div
-            key={revision._id}
+            key={line._id}
             whileHover={{ scale: 1.02 }}
-            onClick={() => navigate(`/revision?revisionId=${revision._id}`)}
+            onClick={() => navigate(`/revision?revisionId=${line._id}`)}
             className="bg-white/5 rounded-lg p-3 border border-white/10 hover:border-purple-500/50 cursor-pointer transition-all"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg flex-shrink-0">{LEVEL_ICONS[revision.currentLevel - 1]}</span>
-                  <span className="text-white font-semibold text-sm break-words line-clamp-2">{revision.topic}</span>
+                  <span className="text-lg flex-shrink-0">{LEVEL_ICONS[line.level - 1]}</span>
+                  <span className="text-white font-semibold text-sm break-words line-clamp-2">
+                    {line.lineId?.ncertText || 'NCERT Line'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-400 flex-wrap">
-                  <span>{revision.subject}</span>
+                  <span>{line.lineId?.subject}</span>
                   <span>•</span>
-                  <span>Level {revision.currentLevel}</span>
-                  {revision.isOverdue && (
-                    <>
-                      <span>•</span>
-                      <span className="text-red-400 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        Overdue
-                      </span>
-                    </>
-                  )}
+                  <span>Level {line.level}</span>
                 </div>
               </div>
               <div className="flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
                 <TrendingUp className="w-3 h-3" />
-                {revision.retentionScore}%
+                {Math.round(line.overallAccuracy || 0)}%
               </div>
             </div>
           </motion.div>
@@ -113,10 +92,10 @@ export default function RevisionWidget() {
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={() => navigate('/revision-dashboard')}
+        onClick={() => navigate('/revision')}
         className="w-full mt-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white font-semibold"
       >
-        Start Revising ({analytics.dueToday} topics)
+        Start Revising ({dueLines.total} topics)
       </motion.button>
     </motion.div>
   );

@@ -1,4 +1,4 @@
-import { Flame, Star, Upload, BookOpen, Brain, Trophy, Zap, Target, Sparkles, FileText } from 'lucide-react';
+import { Flame, Star, Upload, BookOpen, Brain, Trophy, Zap, Target, Sparkles, FileText, Wand2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -189,6 +189,22 @@ const Dashboard = () => {
               </div>
               <span className="font-bold text-foreground text-sm">Tests</span>
               <span className="text-[10px] text-muted-foreground mt-1">Series</span>
+            </motion.button>
+
+            <motion.button
+              onClick={() => navigate('/quiz-generator')}
+              className="nf-card flex flex-col items-center justify-center py-4 group"
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.36 }}
+            >
+              <div className="nf-stat-icon nf-stat-icon-primary mb-2 group-hover:scale-110 transition-transform">
+                <Wand2 className="w-5 h-5" />
+              </div>
+              <span className="font-bold text-foreground text-sm">AI Quiz</span>
+              <span className="text-[10px] text-muted-foreground mt-1">Generate</span>
             </motion.button>
           </div>
         </div>
