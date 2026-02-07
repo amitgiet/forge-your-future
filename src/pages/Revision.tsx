@@ -361,13 +361,24 @@ const Revision = () => {
                     className="flex-1 text-left"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-xs px-3 py-1 rounded-lg border ${LEVEL_COLORS[line.level]}`}>
-                        L{line.level} • {LEVEL_LABELS[line.level]}
+                      <span className={`text-xs px-2 py-1 rounded-full border font-bold ${LEVEL_COLORS[line.level]}`}>
+                        L{line.level}
                       </span>
-                      <span className="text-xs text-muted-foreground">{line.lineId?.subject}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {typeof line.lineId === 'object' && line.lineId?.subject ? line.lineId.subject : 'Topic'}
+                      </span>
                     </div>
-                    <p className="text-sm font-medium text-foreground line-clamp-2">
-                      {line.lineId?.ncertText}
+                    <p className="text-sm font-semibold text-foreground line-clamp-3 mb-1">
+                      {typeof line.lineId === 'object' && line.lineId?.ncertText 
+                        ? line.lineId.ncertText 
+                        : typeof line.lineId === 'string' 
+                          ? (line.lineId.charAt(0).toUpperCase() + line.lineId.slice(1)).replace(/-/g, ' ')
+                          : 'NCERT Line'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {typeof line.lineId === 'object' && (line.lineId?.chapter || line.lineId?.book)
+                        ? `${line.lineId?.chapter || 'Chapter'} • ${line.lineId?.book || 'Book'}`
+                        : 'Revision Item'}
                     </p>
                   </motion.button>
 

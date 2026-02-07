@@ -220,6 +220,32 @@ export const apiService = {
 
     deleteQuiz: (quizId: string) => api.delete(`/quiz-generator/${quizId}`),
   },
+
+  // Daily Challenge APIs
+  dailyChallenge: {
+    getTodaysChallenge: () => api.get('/daily-challenge'),
+
+    submitChallenge: (data: { answers: number[]; challengeId: string }) =>
+      api.post('/daily-challenge/submit', data),
+
+    hasCompletedToday: () => api.get('/daily-challenge/completed'),
+  },
+
+  // Leaderboard APIs
+  leaderboard: {
+    getLeaderboard: (limit?: number) =>
+      api.get('/daily-challenge/leaderboard', { params: { limit: limit || 10 } }),
+
+    getUserStats: () => api.get('/daily-challenge/leaderboard/user-stats'),
+
+    getDailyLeaderboard: (limit?: number) =>
+      api.get('/daily-challenge/leaderboard/daily', { params: { limit: limit || 10 } }),
+
+    getWeeklyLeaderboard: (limit?: number) =>
+      api.get('/daily-challenge/leaderboard/weekly', { params: { limit: limit || 10 } }),
+
+    getUserRank: () => api.get('/daily-challenge/leaderboard/user-rank'),
+  },
 };
 
 export default apiService;

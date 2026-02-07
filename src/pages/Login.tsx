@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, Zap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, demoLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +25,10 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDemoLogin = () => {
+    demoLogin();
   };
 
   return (
@@ -112,16 +116,15 @@ const Login = () => {
           </form>
 
           {/* Demo Login */}
-          <div className="mt-4">
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-xs text-muted-foreground text-center mb-3">🎮 Try demo with sample data</p>
             <button
               type="button"
-              onClick={() => {
-                localStorage.setItem('token', 'demo-token-12345');
-                window.location.href = '/dashboard';
-              }}
-              className="w-full py-3 rounded-xl border-2 border-dashed border-primary/50 text-primary font-semibold hover:bg-primary/10 transition-colors"
+              onClick={handleDemoLogin}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-secondary/20 to-primary/20 border-2 border-secondary/50 text-secondary font-semibold hover:from-secondary/30 hover:to-primary/30 transition-all flex items-center justify-center gap-2"
             >
-              🎮 Try Demo Mode
+              <Zap className="w-5 h-5" />
+              Enter Demo Mode
             </button>
           </div>
 

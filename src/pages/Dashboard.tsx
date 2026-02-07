@@ -2,6 +2,8 @@ import { Flame, Star, Upload, BookOpen, Brain, Trophy, Zap, Target, Sparkles, Fi
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useEffect, useState } from 'react';
+import apiService from '@/lib/apiService';
 import ShieldCard from '@/components/ShieldCard';
 import QuizCard from '@/components/QuizCard';
 import BottomNav from '@/components/BottomNav';
@@ -16,6 +18,27 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { getStats } = useRevision();
   const revisionStats = getStats();
+  
+  const [userRank, setUserRank] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUserRank();
+  }, []);
+
+  const fetchUserRank = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.leaderboard.getUserRank();
+      if (response.data?.success) {
+        setUserRank(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching user rank:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -56,7 +79,9 @@ const Dashboard = () => {
                 <Flame className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xl font-black text-foreground">7</p>
+                <p className="text-xl font-black text-foreground">
+                  {userRank?.streak || 0}
+                </p>
                 <p className="text-xs text-muted-foreground font-medium">{t('dashboard.streak')}</p>
               </div>
             </motion.div>
@@ -70,12 +95,14 @@ const Dashboard = () => {
                 <Star className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xl font-black text-foreground">2,450</p>
+                <p className="text-xl font-black text-foreground">
+                  {userRank?.totalXP || 0}
+                </p>
                 <p className="text-xs text-muted-foreground font-medium">{t('dashboard.score')}</p>
               </div>
             </motion.div>
 
-            {/* Level */}
+            {/* Rank */}
             <motion.div
               className="nf-card-stat"
               whileHover={{ scale: 1.02 }}
@@ -84,8 +111,10 @@ const Dashboard = () => {
                 <Trophy className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xl font-black text-foreground">12</p>
-                <p className="text-xs text-muted-foreground font-medium">Level</p>
+                <p className="text-xl font-black text-foreground">
+                  #{userRank?.rank || '—'}
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">Rank</p>
               </div>
             </motion.div>
           </div>
@@ -97,16 +126,6 @@ const Dashboard = () => {
         {/* Daily Challenge */}
         <div className="mt-4">
           <DailyChallengeCard />
-        </div>
-
-        {/* Current Topic Quiz Card */}
-        <div className="mt-4">
-          <QuizCard
-            topic="Cell Division - Mitosis vs Meiosis"
-            duration={25}
-            questionsCount={15}
-            difficulty="medium"
-          />
         </div>
 
         {/* Quick Actions - Gamified Style */}

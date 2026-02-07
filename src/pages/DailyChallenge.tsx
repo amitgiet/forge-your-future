@@ -1,105 +1,51 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Clock, BookOpen, Play, CheckCircle, XCircle, Trophy, Zap, Target } from 'lucide-react';
+import { ArrowLeft, Clock, BookOpen, Play, CheckCircle, XCircle, Trophy, Zap, Target, Loader2 } from 'lucide-react';
+import apiService from '@/lib/apiService';
 
-// Mock challenge data
-const getTodaysChallenge = () => {
-  const challenges = [
-    {
-      id: 'dc-001',
-      topic: 'Cell Division - Mitosis',
-      subject: 'Biology',
-      difficulty: 'Medium',
-      xpReward: 150,
-      timeLimit: 10,
-      icon: '🧬',
-      content: `
-## Mitosis: The Process of Cell Division
-
-Mitosis is a type of cell division that results in two daughter cells, each having the same number and kind of chromosomes as the parent nucleus.
-
-### The 4 Phases of Mitosis:
-
-**1. Prophase**
-- Chromatin condenses into visible chromosomes
-- Nuclear membrane begins to break down
-- Centrioles move to opposite poles
-
-**2. Metaphase**
-- Chromosomes align at the cell's equator (metaphase plate)
-- Spindle fibers attach to centromeres
-
-**3. Anaphase**
-- Sister chromatids separate and move to opposite poles
-- Cell begins to elongate
-
-**4. Telophase**
-- Nuclear membranes reform around each set of chromosomes
-- Chromosomes begin to decondense
-- Cytokinesis begins
-
-### Key Points to Remember:
-- Mitosis produces **2 identical diploid cells**
-- It's used for **growth and repair**
-- The cell cycle includes Interphase + Mitosis
-      `,
-      questions: [
-        {
-          id: 1,
-          question: 'During which phase do chromosomes align at the metaphase plate?',
-          options: ['Prophase', 'Metaphase', 'Anaphase', 'Telophase'],
-          correct: 1
-        },
-        {
-          id: 2,
-          question: 'How many daughter cells are produced at the end of mitosis?',
-          options: ['1', '2', '4', '8'],
-          correct: 1
-        },
-        {
-          id: 3,
-          question: 'What happens during Anaphase?',
-          options: [
-            'Chromosomes condense',
-            'Nuclear membrane forms',
-            'Sister chromatids separate',
-            'DNA replication occurs'
-          ],
-          correct: 2
-        },
-        {
-          id: 4,
-          question: 'Mitosis results in cells that are:',
-          options: ['Haploid', 'Diploid', 'Triploid', 'Polyploid'],
-          correct: 1
-        },
-        {
-          id: 5,
-          question: 'Which structure helps pull chromosomes apart?',
-          options: ['Ribosomes', 'Mitochondria', 'Spindle fibers', 'Golgi body'],
-          correct: 2
-        }
-      ]
-    }
-  ];
-  
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-  return challenges[dayOfYear % challenges.length];
-};
-
-type Phase = 'intro' | 'reading' | 'quiz' | 'results';
+type Phase = 'intro' | 'reading' | 'quiz' | 'results' | 'already-completed';
 
 const DailyChallenge = () => {
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>('intro');
-  const [challenge] = useState(getTodaysChallenge());
+  const [challenge, setChallenge] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(challenge.timeLimit * 60);
+  const [timeLeft, setTimeLeft] = useState(600);
   const [quizStarted, setQuizStarted] = useState(false);
+
+  // Fetch challenge on mount
+  useEffect(() => {
+    fetchChallenge();
+  }, []);
+
+  const fetchChallenge = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.dailyChallenge.getTodaysChallenge();
+      if (response.data?.success) {
+        const challengeData = response.data.data;
+        setChallenge(challengeData);
+        
+        // Check if user already completed
+        if (challengeData.completed) {
+          setPhase('already-completed');
+          setLoading(false);
+          return;
+        }
+
+        setTimeLeft(challengeData.timeLimit * 60);
+      }
+    } catch (error) {
+      console.error('Error fetching challenge:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Timer for quiz
   useEffect(() => {
@@ -131,29 +77,31 @@ const DailyChallenge = () => {
     setSelectedAnswer(index);
   };
 
-  const handleSubmitAnswer = () => {
+  const handleSubmitAnswer = async () => {
     if (selectedAnswer === null) return;
     
     setShowFeedback(true);
     const newAnswers = [...answers, selectedAnswer];
     setAnswers(newAnswers);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       if (currentQuestion < challenge.questions.length - 1) {
         setCurrentQuestion(prev => prev + 1);
         setSelectedAnswer(null);
         setShowFeedback(false);
       } else {
-        // Calculate score and save
-        const score = calculateScore(newAnswers);
-        localStorage.setItem('dailyChallengeCompleted', JSON.stringify({
-          date: new Date().toDateString(),
-          score,
-          challengeId: challenge.id
-        }));
-        
-        // Update leaderboard
-        updateLeaderboard(score);
+        // Submit all answers to API
+        try {
+          const response = await apiService.dailyChallenge.submitChallenge({
+            answers: newAnswers,
+            challengeId: challenge.id
+          });
+          if (response.data?.success) {
+            console.log('Challenge submitted successfully');
+          }
+        } catch (error) {
+          console.error('Error submitting challenge:', error);
+        }
         
         setPhase('results');
       }
@@ -161,6 +109,7 @@ const DailyChallenge = () => {
   };
 
   const calculateScore = (userAnswers: number[]) => {
+    if (!challenge?.questions || challenge.questions.length === 0) return 0;
     let correct = 0;
     challenge.questions.forEach((q, i) => {
       if (userAnswers[i] === q.correct) correct++;
@@ -197,8 +146,136 @@ const DailyChallenge = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const score = calculateScore(answers);
-  const correctCount = answers.filter((a, i) => a === challenge.questions[i].correct).length;
+  const score = challenge ? calculateScore(answers) : 0;
+  const correctCount = challenge ? answers.filter((a, i) => a === challenge?.questions?.[i]?.correct).length : 0;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (phase === 'already-completed') {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="nf-safe-area p-4 max-w-md mx-auto">
+          <motion.button
+            onClick={() => navigate(-1)}
+            className="nf-btn-icon mb-6"
+            whileTap={{ scale: 0.95 }}
+          >
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </motion.button>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mt-12"
+          >
+            <div className="w-20 h-20 rounded-full bg-success/20 border-2 border-success flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-10 h-10 text-success" />
+            </div>
+
+            <h2 className="text-2xl font-bold text-foreground mb-2">Already Completed!</h2>
+            <p className="text-muted-foreground mb-6">
+              You've already completed today's challenge. Here are your details:
+            </p>
+
+            <div className="nf-card bg-success/10 border-success/30 mb-6">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-2">Your Score</p>
+                <p className="text-4xl font-black text-success">{challenge?.userScore || 0}/100</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  +{challenge?.userXpEarned || 0} XP
+                </p>
+              </div>
+            </div>
+
+            {/* Topic Content */}
+            <div className="nf-card mb-6 text-left">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-2xl">{challenge.icon}</span>
+                <h2 className="text-xl font-bold text-foreground">{challenge.topic}</h2>
+              </div>
+              <div className="prose prose-sm max-w-none text-foreground">
+                {(challenge.content || '').split('\n').map((line, i) => {
+                  if (line.startsWith('## ')) {
+                    return <h2 key={i} className="text-lg font-bold mt-4 mb-2 text-foreground">{line.replace('## ', '')}</h2>;
+                  }
+                  if (line.startsWith('### ')) {
+                    return <h3 key={i} className="text-base font-bold mt-3 mb-2 text-foreground">{line.replace('### ', '')}</h3>;
+                  }
+                  if (line.startsWith('**') && line.endsWith('**')) {
+                    return <p key={i} className="font-bold text-primary mt-3">{line.replace(/\*\*/g, '')}</p>;
+                  }
+                  if (line.startsWith('- ')) {
+                    return <li key={i} className="ml-4 text-muted-foreground">{line.replace('- ', '')}</li>;
+                  }
+                  if (line.trim()) {
+                    return <p key={i} className="text-muted-foreground my-1">{line}</p>;
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+
+            {/* Answer Review */}
+            <div className="nf-card mb-6">
+              <h3 className="text-lg font-bold mb-4 text-foreground">Your Answers & Correct Answers</h3>
+              {challenge.questions && challenge.userAnswers && challenge.questions.map((q, i) => (
+                <div key={i} className="mb-3 p-3 rounded-lg border border-border bg-muted/20">
+                  <div className="font-bold text-foreground mb-2">Q{i + 1}: {q.question}</div>
+                  <div className="flex flex-col gap-1">
+                    {q.options && q.options.map((opt: string, idx: number) => {
+                      const isCorrect = idx === q.correctAnswer;
+                      const isUserSelected = idx === challenge.userAnswers[i];
+                      
+                      return (
+                        <div
+                          key={idx}
+                          className={`px-3 py-2 rounded text-sm transition-all ${
+                            isCorrect 
+                              ? 'bg-success/20 text-success font-bold border border-success/50' 
+                              : isUserSelected 
+                                ? 'bg-primary/10 text-primary border border-primary/50' 
+                                : 'text-muted-foreground'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{String.fromCharCode(65 + idx)}. {opt}</span>
+                            <div className="flex gap-1 text-xs">
+                              {isCorrect && <span className="font-bold">✓ Correct</span>}
+                              {isUserSelected && !isCorrect && <span className="text-primary">← Your Answer</span>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {q.explanation && (
+                    <div className="mt-2 p-2 rounded bg-muted/30 border-l-2 border-primary">
+                      <p className="text-xs text-muted-foreground"><span className="font-bold">Explanation:</span> {q.explanation}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <motion.button
+              onClick={() => navigate('/dashboard')}
+              className="nf-btn-primary w-full"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Back to Dashboard
+            </motion.button>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -304,7 +381,7 @@ const DailyChallenge = () => {
                 </div>
                 
                 <div className="prose prose-sm max-w-none text-foreground">
-                  {challenge.content.split('\n').map((line, i) => {
+                  {(challenge.content || '').split('\n').map((line, i) => {
                     if (line.startsWith('## ')) {
                       return <h2 key={i} className="text-lg font-bold mt-4 mb-2 text-foreground">{line.replace('## ', '')}</h2>;
                     }
@@ -378,7 +455,7 @@ const DailyChallenge = () => {
                     let optionClass = 'nf-option';
                     if (showFeedback) {
                       if (isCorrect) optionClass = 'nf-option nf-option-correct';
-                      else if (isSelected) optionClass = 'nf-option nf-option-incorrect';
+                      else if (isSelected && !isCorrect) optionClass = 'nf-option nf-option-incorrect';
                     } else if (isSelected) {
                       optionClass = 'nf-option nf-option-selected';
                     }

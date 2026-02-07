@@ -1,72 +1,54 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Target, Clock, Users, ChevronRight, Zap, Trophy } from 'lucide-react';
-
-// Mock daily challenge data (would come from backend)
-const getTodaysChallenge = () => {
-  const today = new Date().toDateString();
-  const challenges = [
-    {
-      id: 'dc-001',
-      date: today,
-      topic: 'Cell Division - Mitosis',
-      subject: 'Biology',
-      difficulty: 'Medium',
-      xpReward: 150,
-      timeLimit: 10, // minutes
-      description: 'Master the phases of mitosis and their significance in cell reproduction.',
-      participants: 1247,
-      icon: '🧬'
-    },
-    {
-      id: 'dc-002',
-      date: today,
-      topic: 'Chemical Bonding',
-      subject: 'Chemistry',
-      difficulty: 'Hard',
-      xpReward: 200,
-      timeLimit: 12,
-      description: 'Explore ionic, covalent, and metallic bonds with their properties.',
-      participants: 982,
-      icon: '⚗️'
-    },
-    {
-      id: 'dc-003',
-      date: today,
-      topic: 'Laws of Motion',
-      subject: 'Physics',
-      difficulty: 'Easy',
-      xpReward: 100,
-      timeLimit: 8,
-      description: "Newton's three laws and their real-world applications.",
-      participants: 1543,
-      icon: '🚀'
-    }
-  ];
-  
-  // Rotate based on day of year
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-  return challenges[dayOfYear % challenges.length];
-};
+import { Target, Clock, Users, ChevronRight, Zap, Trophy, Loader2 } from 'lucide-react';
+import apiService from '@/lib/apiService';
 
 const DailyChallengeCard = () => {
   const navigate = useNavigate();
-  const [challenge] = useState(getTodaysChallenge());
+  const [challenge, setChallenge] = useState<any>(null);
   const [hasCompleted, setHasCompleted] = useState(false);
   const [userScore, setUserScore] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user already completed today's challenge
-    const completedData = localStorage.getItem('dailyChallengeCompleted');
-    if (completedData) {
-      const parsed = JSON.parse(completedData);
-      if (parsed.date === new Date().toDateString()) {
-        setHasCompleted(true);
-        setUserScore(parsed.score);
-      }
-    }
+    fetchTodaysChallenge();
   }, []);
+
+  const fetchTodaysChallenge = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.dailyChallenge.getTodaysChallenge();
+      if (response.data?.success) {
+        const challengeData = response.data.data;
+        setChallenge(challengeData);
+        
+        // Check if user already completed from response
+        if (challengeData.completed) {
+          setHasCompleted(true);
+          setUserScore(challengeData.userScore);
+        }
+      }
+    } catch (err: any) {
+      console.error('Error fetching daily challenge:', err);
+      setError(err.response?.data?.error || 'Failed to load daily challenge');
+      // Fallback to mock data if API fails
+      setChallenge({
+        id: 'fallback',
+        topic: 'Cell Division - Mitosis',
+        subject: 'Biology',
+        difficulty: 'Medium',
+        xpReward: 150,
+        timeLimit: 10,
+        icon: '🧬',
+        completed: false
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -76,6 +58,22 @@ const DailyChallengeCard = () => {
       default: return 'text-muted-foreground border-border bg-muted';
     }
   };
+
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="nf-card flex items-center justify-center py-6"
+      >
+        <Loader2 className="w-6 h-6 text-primary animate-spin" />
+      </motion.div>
+    );
+  }
+
+  if (!challenge) {
+    return null;
+  }
 
   return (
     <motion.div
@@ -121,9 +119,6 @@ const DailyChallengeCard = () => {
             <h4 className="font-bold text-foreground text-base leading-tight mb-1">
               {challenge.topic}
             </h4>
-            <p className="text-xs text-muted-foreground line-clamp-2">
-              {challenge.description}
-            </p>
           </div>
         </div>
       </div>
@@ -134,10 +129,6 @@ const DailyChallengeCard = () => {
           <Clock className="w-3.5 h-3.5" />
           <span>{challenge.timeLimit} min</span>
         </div>
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <Users className="w-3.5 h-3.5" />
-          <span>{challenge.participants.toLocaleString()} playing</span>
-        </div>
         <div className="flex items-center gap-1 text-warning-foreground font-bold">
           <Zap className="w-3.5 h-3.5" />
           <span>+{challenge.xpReward} XP</span>
@@ -145,8 +136,18 @@ const DailyChallengeCard = () => {
       </div>
 
       {/* Action Button */}
-      {hasCompleted ? (
-        <div className="flex items-center justify-between p-3 rounded-xl bg-success/10 border-2 border-success/30">
+      <motion.button
+        onClick={() => navigate('/daily-challenge')}
+        className="nf-btn-primary w-full"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        <Target className="w-5 h-5" />
+        {hasCompleted ? 'View Details' : 'Start Challenge'}
+        <ChevronRight className="w-5 h-5" />
+      </motion.button>
+      {hasCompleted && (
+        <div className="flex items-center justify-between p-3 rounded-xl bg-success/10 border-2 border-success/30 mt-2">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-success flex items-center justify-center">
               <span className="text-white text-xs">✓</span>
@@ -155,17 +156,6 @@ const DailyChallengeCard = () => {
           </div>
           <span className="text-sm font-black text-success">{userScore}/100</span>
         </div>
-      ) : (
-        <motion.button
-          onClick={() => navigate('/daily-challenge')}
-          className="nf-btn-primary w-full"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Target className="w-5 h-5" />
-          Start Challenge
-          <ChevronRight className="w-5 h-5" />
-        </motion.button>
       )}
     </motion.div>
   );

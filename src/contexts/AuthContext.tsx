@@ -17,6 +17,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  demoLogin: () => void;
   isAuthenticated: boolean;
 }
 
@@ -95,6 +96,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     navigate('/login');
   };
 
+  const demoLogin = () => {
+    localStorage.setItem('token', 'demo-token-12345');
+    const demoUser: User = {
+      _id: 'demo-user',
+      name: 'Demo User',
+      email: 'demo@neetforge.com',
+      subscription: { plan: 'free' }
+    };
+    setUser(demoUser);
+    navigate('/dashboard');
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -103,6 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         signup,
         logout,
+        demoLogin,
         isAuthenticated: !!user,
       }}
     >

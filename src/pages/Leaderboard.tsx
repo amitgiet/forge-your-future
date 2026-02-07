@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Trophy, Medal, Flame, Zap, Crown, Target, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Trophy, Medal, Flame, Zap, Crown, Target, TrendingUp, Loader2 } from 'lucide-react';
+import apiService from '@/lib/apiService';
 import BottomNav from '@/components/BottomNav';
 
 interface LeaderboardEntry {
@@ -14,55 +15,58 @@ interface LeaderboardEntry {
   completedToday: boolean;
 }
 
-// Mock leaderboard data
-const getLeaderboardData = (): LeaderboardEntry[] => {
-  const stored = localStorage.getItem('leaderboard');
-  const userEntry = stored ? JSON.parse(stored) : [];
-  
-  const mockData: LeaderboardEntry[] = [
-    { rank: 1, name: 'Priya S.', avatar: 'P', score: 98, totalXP: 15420, streak: 45, completedToday: true },
-    { rank: 2, name: 'Rahul M.', avatar: 'R', score: 95, totalXP: 14850, streak: 38, completedToday: true },
-    { rank: 3, name: 'Ananya K.', avatar: 'A', score: 92, totalXP: 13200, streak: 32, completedToday: true },
-    { rank: 4, name: 'Vikram T.', avatar: 'V', score: 88, totalXP: 12100, streak: 28, completedToday: true },
-    { rank: 5, name: 'Sneha R.', avatar: 'S', score: 85, totalXP: 11500, streak: 25, completedToday: false },
-    { rank: 6, name: 'Arjun P.', avatar: 'A', score: 82, totalXP: 10800, streak: 22, completedToday: true },
-    { rank: 7, name: 'Kavya N.', avatar: 'K', score: 80, totalXP: 10200, streak: 20, completedToday: false },
-    { rank: 8, name: 'Rohan D.', avatar: 'R', score: 78, totalXP: 9500, streak: 18, completedToday: true },
-    { rank: 9, name: 'Meera J.', avatar: 'M', score: 75, totalXP: 8900, streak: 15, completedToday: true },
-    { rank: 10, name: 'Aditya B.', avatar: 'A', score: 72, totalXP: 8200, streak: 12, completedToday: false },
-  ];
-
-  // Merge user data if exists
-  const currentUser = userEntry.find((e: any) => e.name === 'Demo User');
-  if (currentUser) {
-    // Find position based on score
-    let inserted = false;
-    const merged = mockData.map((entry, i) => {
-      if (!inserted && currentUser.totalXP > entry.totalXP) {
-        inserted = true;
-        return { ...currentUser, rank: i + 1, avatar: 'Y' };
-      }
-      return { ...entry, rank: inserted ? entry.rank + 1 : entry.rank };
-    });
-    
-    if (!inserted) {
-      merged.push({ ...currentUser, rank: 11, avatar: 'Y' });
-    }
-    
-    return merged.slice(0, 10);
-  }
-
-  return mockData;
-};
-
 const Leaderboard = () => {
   const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [tab, setTab] = useState<'daily' | 'weekly' | 'allTime'>('daily');
+  const [loading, setLoading] = useState(true);
+  const [userCompletedToday, setUserCompletedToday] = useState(false);
 
   useEffect(() => {
-    setLeaderboard(getLeaderboardData());
-  }, []);
+    fetchLeaderboard();
+  }, [tab]);
+
+  const fetchLeaderboard = async () => {
+    try {
+      setLoading(true);
+      let response;
+      
+      if (tab === 'daily') {
+        response = await apiService.leaderboard.getDailyLeaderboard(10);
+      } else if (tab === 'weekly') {
+        response = await apiService.leaderboard.getWeeklyLeaderboard(10);
+      } else {
+        response = await apiService.leaderboard.getLeaderboard(10);
+      }
+
+      if (response.data?.success) {
+        const data = response.data.data || [];
+        // Map API data to UI format
+        const mapped = data.map((entry: any) => ({
+          rank: entry.rank,
+          name: entry.name,
+          avatar: entry.avatar || entry.name.charAt(0).toUpperCase(),
+          score: entry.score || 0,
+          totalXP: entry.totalXP || 0,
+          streak: entry.streak || 0,
+          completedToday: entry.completedToday || false
+        }));
+        setLeaderboard(mapped);
+        
+        // Get user's completion status from API response
+        // Assumes API returns user data or current user flag
+        const userEntry = response.data.currentUserEntry || response.data.userRank;
+        if (userEntry?.completedToday) {
+          setUserCompletedToday(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+      setLeaderboard([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -82,7 +86,16 @@ const Leaderboard = () => {
     }
   };
 
-  const currentUserRank = leaderboard.findIndex(e => e.name === 'Demo User') + 1;
+  // User completion status from API response
+  const currentUserRank = userCompletedToday ? 1 : 0;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center pb-24">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -212,9 +225,7 @@ const Leaderboard = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 * index }}
-              className={`flex items-center gap-3 p-3 rounded-xl border-2 ${getRankStyle(entry.rank)} ${
-                entry.name === 'Demo User' ? 'ring-2 ring-primary' : ''
-              }`}
+              className={`flex items-center gap-3 p-3 rounded-xl border-2 ${getRankStyle(entry.rank)}`}
             >
               <div className="w-8 flex items-center justify-center">
                 {getRankIcon(entry.rank)}
@@ -225,7 +236,6 @@ const Leaderboard = () => {
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-foreground truncate">
                   {entry.name}
-                  {entry.name === 'Demo User' && <span className="text-xs text-primary ml-1">(You)</span>}
                 </p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
@@ -249,7 +259,7 @@ const Leaderboard = () => {
         </div>
 
         {/* CTA */}
-        {!leaderboard.find(e => e.name === 'Demo User')?.completedToday && (
+        {!userCompletedToday && (
           <motion.button
             onClick={() => navigate('/daily-challenge')}
             className="nf-btn-primary w-full mt-6"
