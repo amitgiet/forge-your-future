@@ -9,6 +9,7 @@ import ActiveChallenges from '@/components/ActiveChallenges';
 import RevisionWidget from '@/components/RevisionWidget';
 import { useRevision } from '@/contexts/RevisionContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import DailyChallengeCard from '@/components/DailyChallengeCard';
 
 const Dashboard = () => {
   const { t } = useLanguage();
@@ -92,6 +93,11 @@ const Dashboard = () => {
 
         {/* Shield Card */}
         <ShieldCard initialMinutes={25} />
+
+        {/* Daily Challenge */}
+        <div className="mt-4">
+          <DailyChallengeCard />
+        </div>
 
         {/* Current Topic Quiz Card */}
         <div className="mt-4">

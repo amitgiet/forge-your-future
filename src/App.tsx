@@ -39,6 +39,8 @@ import TestSeries from "./pages/TestSeries";
 import TestSession from "./pages/TestSession";
 import TestReport from "./pages/TestReport";
 import CustomTestCreate from "./pages/CustomTestCreate";
+import DailyChallenge from "./pages/DailyChallenge";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
  
  const queryClient = new QueryClient();
@@ -81,10 +83,12 @@ const App = () => (
                     <Route path="/revision-dashboard" element={<ProtectedRoute><RevisionDashboard /></ProtectedRoute>} />
                     <Route path="/revision/track" element={<ProtectedRoute><TrackTopic /></ProtectedRoute>} />
                     <Route path="/quiz-generator" element={<ProtectedRoute><QuizGenerator /></ProtectedRoute>} />
-                    <Route path="/tests" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
+                <Route path="/tests" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
                     <Route path="/test/custom/create" element={<ProtectedRoute><CustomTestCreate /></ProtectedRoute>} />
                     <Route path="/test/session/:attemptId" element={<ProtectedRoute><TestSession /></ProtectedRoute>} />
                     <Route path="/test/report/:attemptId" element={<ProtectedRoute><TestReport /></ProtectedRoute>} />
+                    <Route path="/daily-challenge" element={<ProtectedRoute><DailyChallenge /></ProtectedRoute>} />
+                    <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </TooltipProvider>
