@@ -1,0 +1,150 @@
+import api from './api';
+
+export const apiService = {
+  auth: {
+    login: (credentials: { email: string; password: string }) =>
+      api.post('/auth/login', credentials),
+    register: (userData: { name: string; email: string; password: string }) =>
+      api.post('/auth/register', userData),
+    logout: () => api.post('/auth/logout'),
+    getProfile: () => api.get('/auth/me'),
+    updateProfile: (data: any) => api.put('/auth/profile', data),
+    updateOnboarding: (data: { step: number; completed?: boolean; data?: any }) =>
+      api.put('/auth/onboarding', data),
+  },
+  neuronz: {
+    getDueLines: () => api.get('/neuronz/due'),
+    processLineSession: (data: { lineId: string; correctAnswers: number; totalQuizzes?: number; timeSpent?: number }) =>
+      api.post('/neuronz/session', data),
+    generateMicroQuizzes: (lineId: string) => api.get(`/neuronz/quizzes/${lineId}`),
+    getMasteryProgress: () => api.get('/neuronz/mastery'),
+    checkDailyLimit: () => api.get('/neuronz/limit'),
+    resetLineLevel: (lineId: string) => api.put(`/neuronz/reset/${lineId}`),
+    getLinesByLevel: (level: number, limit = 20) =>
+      api.get(`/neuronz/level/${level}?limit=${limit}`),
+    getLinesByChapter: (chapterId: string, subject?: string, ncertClass?: number) =>
+      api.get('/neuronz/chapter', { params: { chapterId, subject, class: ncertClass } }),
+    trackChapter: (chapterId: string) => api.post('/neuronz/track-chapter', { chapterId }),
+    trackBySubjectAndTopic: (subject: string, topic: string) =>
+      api.post('/neuronz/track-topic', { subject, topic }),
+    adjustLineLevel: (lineId: string, data: { newLevel: number; reason?: string }) =>
+      api.put(`/neuronz/${lineId}/level`, data),
+    customizeLineSchedule: (lineId: string, data: { priority?: string; customSchedule?: any; autoSkipL7?: boolean }) =>
+      api.put(`/neuronz/${lineId}/customize`, data),
+    getLineAnalytics: (lineId: string) => api.get(`/neuronz/${lineId}/analytics`),
+  },
+  questions: {
+    getQuestions: (filters?: any) => api.get('/questions', { params: filters }),
+    getRandomQuestions: (filters: any) => api.post('/questions/random', filters),
+    getPYQs: (filters: any) => api.get('/questions/pyq', { params: filters }),
+  },
+  chapters: {
+    getChapters: (subject?: string) => api.get('/chapters', { params: { subject } }),
+    getChapterById: (chapterId: string) => api.get(`/chapters/${chapterId}`),
+  },
+  mocks: {
+    getMockTests: () => api.get('/mocks'),
+    createMockTest: (data: any) => api.post('/mocks', data),
+    submitMockTest: (mockId: string, answers: any) =>
+      api.post(`/mocks/${mockId}/submit`, { answers }),
+  },
+  studyPlan: {
+    getStudyPlan: () => api.get('/study-plan'),
+    createStudyPlan: (data: any) => api.post('/study-plan', data),
+    updateProgress: (data: any) => api.put('/study-plan/progress', data),
+  },
+  sessions: {
+    createSession: (data: any) => api.post('/sessions', data),
+    getSessions: () => api.get('/sessions'),
+    updateSession: (sessionId: string, data: any) =>
+      api.put(`/sessions/${sessionId}`, data),
+  },
+  learningPaths: {
+    createPath: (data: { title: string; description?: string; goals: any[]; dailyGoal?: number }) =>
+      api.post('/learning-paths', data),
+    getUserPaths: () => api.get('/learning-paths'),
+    getPathById: (pathId: string) => api.get(`/learning-paths/${pathId}`),
+    getNextContent: (pathId: string) => api.get(`/learning-paths/${pathId}/next`),
+    markContentComplete: (pathId: string, contentIndex: number) =>
+      api.post(`/learning-paths/${pathId}/complete/${contentIndex}`),
+    updateProgress: (pathId: string, data: any) =>
+      api.patch(`/learning-paths/${pathId}/progress`, data),
+    deletePath: (pathId: string) => api.delete(`/learning-paths/${pathId}`),
+  },
+  challenges: {
+    createChallenge: (data: { title: string; topic: string; subject: string; duration?: number }) =>
+      api.post('/challenges', data),
+    getUserChallenges: () => api.get('/challenges'),
+    getChallengeById: (challengeId: string) => api.get(`/challenges/${challengeId}`),
+    getTodaySchedule: (challengeId: string) => api.get(`/challenges/${challengeId}/today`),
+    completeQuiz: (challengeId: string, dayNumber: number, quizIndex: number, data: { score: number; timeSpent?: number }) =>
+      api.post(`/challenges/${challengeId}/complete/${dayNumber}/${quizIndex}`, data),
+    deleteChallenge: (challengeId: string) => api.delete(`/challenges/${challengeId}`),
+  },
+  social: {
+    searchUsers: (query: string) => api.get(`/social/users/search?query=${query}`),
+    sendFriendRequest: (friendId: string) => api.post('/social/friends/request', { friendId }),
+    acceptFriendRequest: (friendId: string) => api.post(`/social/friends/accept/${friendId}`),
+    getFriends: () => api.get('/social/friends'),
+    getFriendRequests: () => api.get('/social/friends/requests'),
+    getFriendsLeaderboard: () => api.get('/social/friends/leaderboard'),
+    createDirectChat: (friendId: string) => api.post('/social/chats/direct', { friendId }),
+    createGroupChat: (data: { name: string; participants: string[] }) =>
+      api.post('/social/chats/group', data),
+    getChats: () => api.get('/social/chats'),
+    sendMessage: (data: { chatId: string; text: string }) => api.post('/social/messages', data),
+    getMessages: (chatId: string, limit?: number, skip?: number) =>
+      api.get(`/social/messages/${chatId}?limit=${limit || 50}&skip=${skip || 0}`),
+  },
+  revisions: {
+    startRevision: (data: { subject: string; chapter: string; topic: string }) =>
+      api.post('/revisions/start', data),
+    completeRevision: (revisionId: string, data: { score: number; timeSpent?: number; confidence?: string }) =>
+      api.post(`/revisions/${revisionId}/complete`, data),
+    getDueRevisions: () => api.get('/revisions/due'),
+    getRevisions: (filters?: any) => api.get('/revisions', { params: filters }),
+    getAnalytics: () => api.get('/revisions/analytics'),
+    setExamDates: (data: { preExamDate: string; finalBoostDate: string }) =>
+      api.post('/revisions/exam-dates', data),
+  },
+  tests: {
+    getTests: (filters?: any) => api.get('/tests', { params: filters }),
+    getTestById: (testId: string) => api.get(`/tests/${testId}`),
+    startTest: (testId: string) => api.post(`/tests/${testId}/start`),
+    saveAnswer: (attemptId: string, data: { questionId: string; selectedOption: string; timeSpent: number; isMarkedForReview: boolean }) =>
+      api.post(`/tests/attempts/${attemptId}/answer`, data),
+    submitTest: (attemptId: string) => api.post(`/tests/attempts/${attemptId}/submit`),
+    getAttempt: (attemptId: string) => api.get(`/tests/attempts/${attemptId}`),
+    getUserAttempts: (status?: string) => api.get('/tests/my-attempts', { params: { status } }),
+    createCustomTest: (data: any) => api.post('/tests/custom', data),
+  },
+  quizGenerator: {
+    generateQuiz: (data: { topic: string; level: number; numberOfQuestions: number; quizType?: string }) =>
+      api.post('/quiz-generator/generate', data),
+    getQuiz: (quizId: string) => api.get(`/quiz-generator/${quizId}`),
+    getUserQuizzes: (page?: number, limit?: number) =>
+      api.get('/quiz-generator/quizzes/list', { params: { page: page || 1, limit: limit || 10 } }),
+    submitQuizAttempt: (quizId: string, data: { answers: (number | number[] | null)[]; timeTaken: number }) =>
+      api.post(`/quiz-generator/${quizId}/submit`, data),
+    getQuizStats: (quizId: string) => api.get(`/quiz-generator/${quizId}/stats`),
+    deleteQuiz: (quizId: string) => api.delete(`/quiz-generator/${quizId}`),
+  },
+  dailyChallenge: {
+    getTodaysChallenge: () => api.get('/daily-challenge'),
+    submitChallenge: (data: { answers: number[]; challengeId: string }) =>
+      api.post('/daily-challenge/submit', data),
+    hasCompletedToday: () => api.get('/daily-challenge/completed'),
+  },
+  leaderboard: {
+    getLeaderboard: (limit?: number) =>
+      api.get('/daily-challenge/leaderboard', { params: { limit: limit || 10 } }),
+    getUserStats: () => api.get('/daily-challenge/leaderboard/user-stats'),
+    getDailyLeaderboard: (limit?: number) =>
+      api.get('/daily-challenge/leaderboard/daily', { params: { limit: limit || 10 } }),
+    getWeeklyLeaderboard: (limit?: number) =>
+      api.get('/daily-challenge/leaderboard/weekly', { params: { limit: limit || 10 } }),
+    getUserRank: () => api.get('/daily-challenge/leaderboard/user-rank'),
+  },
+};
+
+export default apiService;
