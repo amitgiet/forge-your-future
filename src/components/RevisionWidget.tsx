@@ -43,7 +43,7 @@ export default function RevisionWidget() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="bg-white/5 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-white">{dueLines.total}</div>
+          <div className="text-2xl font-bold text-black">{dueLines.total}</div>
           <div className="text-xs text-gray-400">Due Today</div>
         </div>
         <div className="bg-white/5 rounded-lg p-3 text-center">
@@ -69,7 +69,7 @@ export default function RevisionWidget() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-lg flex-shrink-0">{LEVEL_ICONS[line.level - 1]}</span>
-                  <span className="text-white font-semibold text-sm break-words line-clamp-2">
+                  <span className=" font-semibold text-sm break-words line-clamp-2">
                     {line.lineId?.ncertText || 'NCERT Line'}
                   </span>
                 </div>
