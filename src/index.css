@@ -75,6 +75,63 @@
    --shadow-glow-success: 0 4px 20px -4px hsla(170, 80%, 45%, 0.35);
  }
 
+ /* NEETFORGE Dark Theme */
+ .dark {
+   --background: 220 25% 10%;
+   --foreground: 220 20% 95%;
+
+   /* Card surfaces - dark with depth */
+   --card: 220 25% 14%;
+   --card-foreground: 220 20% 95%;
+   --card-elevated: 220 25% 16%;
+
+   --popover: 220 25% 14%;
+   --popover-foreground: 220 20% 95%;
+
+   /* Primary - Vibrant Coral/Orange (slightly brighter for dark) */
+   --primary: 15 90% 60%;
+   --primary-foreground: 0 0% 100%;
+   --primary-glow: 15 100% 65%;
+
+   /* Secondary - Playful Purple */
+   --secondary: 265 85% 65%;
+   --secondary-foreground: 0 0% 100%;
+
+   /* Muted backgrounds */
+   --muted: 220 20% 18%;
+   --muted-foreground: 220 15% 60%;
+
+   /* Accent - Fresh Teal */
+   --accent: 170 80% 50%;
+   --accent-foreground: 0 0% 100%;
+
+   --success: 145 70% 50%;
+   --success-foreground: 0 0% 100%;
+
+   /* Warning/Streak - Golden Yellow */
+   --warning: 45 95% 55%;
+   --warning-foreground: 45 100% 95%;
+
+   --destructive: 0 85% 60%;
+   --destructive-foreground: 0 0% 100%;
+
+   /* Borders */
+   --border: 220 20% 22%;
+   --border-strong: 220 20% 32%;
+   --input: 220 20% 18%;
+   --ring: 15 90% 60%;
+
+   /* Dark mode gradients */
+   --gradient-bg: linear-gradient(135deg, hsl(220, 25%, 10%) 0%, hsl(230, 25%, 12%) 50%, hsl(240, 20%, 11%) 100%);
+   
+   /* Shadows - Glowing in dark */
+   --shadow-sm: 0 2px 8px -2px hsla(0, 0%, 0%, 0.3);
+   --shadow-card: 0 4px 16px -4px hsla(0, 0%, 0%, 0.4);
+   --shadow-elevated: 0 8px 24px -6px hsla(0, 0%, 0%, 0.5);
+   --shadow-glow-primary: 0 4px 24px -4px hsla(15, 90%, 58%, 0.45);
+   --shadow-glow-secondary: 0 4px 24px -4px hsla(265, 85%, 60%, 0.45);
+   --shadow-glow-success: 0 4px 24px -4px hsla(170, 80%, 45%, 0.45);
+ }
   * {
     @apply border-border;
   }
@@ -301,7 +358,7 @@
   /* Streak flame */
   .nf-streak {
     @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full;
-    @apply bg-gradient-to-r from-orange-100 to-red-100 text-primary font-bold;
+    @apply bg-primary/15 text-primary font-bold;
     @apply border-2 border-primary/30;
   }
 

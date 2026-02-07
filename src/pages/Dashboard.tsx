@@ -8,6 +8,7 @@ import BottomNav from '@/components/BottomNav';
 import ActiveChallenges from '@/components/ActiveChallenges';
 import RevisionWidget from '@/components/RevisionWidget';
 import { useRevision } from '@/contexts/RevisionContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const Dashboard = () => {
   const { t } = useLanguage();
@@ -30,14 +31,17 @@ const Dashboard = () => {
               <h1 className="nf-heading text-2xl nf-gradient-text">NEETFORGE</h1>
               <p className="text-sm text-muted-foreground">Let's crush today's goals! 💪</p>
             </div>
-            <motion.button
-              onClick={() => navigate('/profile')}
-              className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-primary flex items-center justify-center text-white font-bold text-sm border-2 border-white shadow-card"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              A
-            </motion.button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <motion.button
+                onClick={() => navigate('/profile')}
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-primary flex items-center justify-center text-white font-bold text-sm border-2 border-white shadow-card"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                A
+              </motion.button>
+            </div>
           </div>
           
           {/* Stats Row */}
