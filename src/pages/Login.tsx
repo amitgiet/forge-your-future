@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, LogIn, Zap } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, Zap, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
@@ -17,7 +17,6 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       await login(email, password);
     } catch (err: any) {
@@ -32,110 +31,110 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background glows */}
+      <div className="glow-orb glow-orb-primary w-[500px] h-[500px] -top-64 -right-32 animate-glow-pulse" />
+      <div className="glow-orb glow-orb-secondary w-[400px] h-[400px] -bottom-48 -left-32 animate-glow-pulse" style={{ animationDelay: '1.5s' }} />
+
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
+        transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="w-full max-w-md relative z-10"
       >
         {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-black nf-gradient-text mb-2">NEETFORGE</h1>
-          <p className="text-muted-foreground">Welcome back! Let's continue learning</p>
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-extrabold nf-gradient-text tracking-tighter mb-2">NEETFORGE</h1>
+          <p className="text-muted-foreground text-sm">Welcome back — let's continue learning</p>
         </div>
 
         {/* Login Form */}
-        <div className="nf-card">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Login</h2>
+        <div className="glass-card">
+          <h2 className="text-xl font-bold text-foreground mb-6">Sign in</h2>
 
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-destructive/20 border border-destructive/30">
+            <div className="mb-4 p-3 rounded-2xl" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
               <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
 
           <form onSubmit={handleLogin} className="space-y-4">
-            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Email
-              </label>
+              <label className="block text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   required
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-11 pr-4 py-3.5 rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Password
-              </label>
+              <label className="block text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full pl-10 pr-12 py-3 rounded-xl bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-11 pr-12 py-3.5 rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="nf-btn-primary w-full flex items-center justify-center gap-2"
+              className="nf-btn-primary w-full mt-2"
             >
-              {loading ? (
-                <>Logging in...</>
-              ) : (
+              {loading ? 'Signing in...' : (
                 <>
-                  <LogIn className="w-5 h-5" />
-                  Login
+                  <LogIn className="w-4 h-4" />
+                  Sign in
                 </>
               )}
             </button>
           </form>
 
-          {/* Demo Login */}
-          <div className="mt-4 pt-4 border-t border-border">
-            <p className="text-xs text-muted-foreground text-center mb-3">🎮 Try demo with sample data</p>
+          {/* Demo */}
+          <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <button
               type="button"
               onClick={handleDemoLogin}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-secondary/20 to-primary/20 border-2 border-secondary/50 text-secondary font-semibold hover:from-secondary/30 hover:to-primary/30 transition-all flex items-center justify-center gap-2"
+              className="nf-btn-outline w-full"
             >
-              <Zap className="w-5 h-5" />
+              <Zap className="w-4 h-4" />
               Enter Demo Mode
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Signup Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <button
-                onClick={() => navigate('/signup')}
-                className="text-primary font-semibold hover:underline"
-              >
+              <button onClick={() => navigate('/signup')} className="text-primary font-semibold hover:underline">
                 Sign up
               </button>
             </p>
