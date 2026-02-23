@@ -66,12 +66,12 @@ export default {
         md: "var(--radius-sm)",
         sm: "calc(var(--radius-sm) - 4px)",
         xl: "var(--radius-lg)",
-        "2xl": "1rem",
-        "3xl": "1.25rem",
+        "2xl": "1.5rem",
+        "3xl": "2rem",
         full: "var(--radius-full)",
       },
       fontFamily: {
-        sans: ["Nunito", "system-ui", "sans-serif"],
+        sans: ["Inter", "-apple-system", "system-ui", "sans-serif"],
         display: ["Space Grotesk", "system-ui", "sans-serif"],
       },
       boxShadow: {
