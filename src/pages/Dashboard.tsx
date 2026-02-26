@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEffect, useState } from 'react';
 import apiService from '@/lib/apiService';
-import ShieldCard from '@/components/ShieldCard';
 import BottomNav from '@/components/BottomNav';
 import ActiveChallenges from '@/components/ActiveChallenges';
 import RevisionWidget from '@/components/RevisionWidget';
@@ -121,8 +120,32 @@ const Dashboard = () => {
           </motion.div>
         </motion.div>
 
-        {/* Shield Card */}
-        <ShieldCard initialMinutes={25} />
+        {/* Study Stats Overview */}
+        <motion.div
+          className="glass-card mt-1"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h3 className="nf-heading text-foreground text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+            <Zap className="w-4 h-4 text-warning" />
+            Today's Progress
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { value: '1h 20m', label: 'Study Time', color: 'primary' },
+              { value: '48', label: 'Questions', color: 'success' },
+              { value: '82%', label: 'Accuracy', color: 'warning' },
+            ].map((s, i) => (
+              <div key={i} className="text-center">
+                <p className={`text-xl font-extrabold ${
+                  s.color === 'primary' ? 'text-primary' : s.color === 'success' ? 'text-success' : 'text-warning'
+                }`}>{s.value}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
 
         {/* Daily Challenge */}
         <div className="mt-4">
