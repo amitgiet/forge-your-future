@@ -2,14 +2,23 @@ import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trophy, TrendingUp, Target, Home, RotateCcw, BookOpen } from 'lucide-react';
+import { trackQuizAttempt } from '@/lib/quizTracking';
 
 const QuizResults = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { mode, answers, totalQuestions, subject, topic } = location.state || {};
+  const { mode, answers = [], totalQuestions, subject = 'General', topic = 'General' } = location.state || {};
+
+  const safeTotalQuestions =
+    typeof totalQuestions === 'number' && totalQuestions > 0
+      ? totalQuestions
+      : Array.isArray(answers)
+        ? answers.length
+        : 0;
 
   const correctCount = answers?.filter((a: any) => a.correct).length || 0;
-  const percentage = Math.round((correctCount / totalQuestions) * 100);
+  const percentage =
+    safeTotalQuestions > 0 ? Math.round((correctCount / safeTotalQuestions) * 100) : 0;
   
   // Mock analytics
   const rank = Math.floor(Math.random() * 500000) + 1;
@@ -42,9 +51,43 @@ const QuizResults = () => {
   };
 
   useEffect(() => {
-    // Send analytics to backend
-    // apiService.quiz.submitAttempt({ mode, answers, subject, topic });
-  }, []);
+    const trackAttempt = async () => {
+      await trackQuizAttempt({
+        quizType: mode === 'test' ? 'normal_test' : 'normal_practice',
+        totalQuestions: safeTotalQuestions,
+        correctAnswers: correctCount,
+        timeTaken: answers?.reduce((sum: number, a: any) => sum + (a?.timeTaken || 0), 0) || 0,
+        subject,
+        topic,
+        metadata: {
+          mode,
+        },
+      });
+    };
+
+    if (safeTotalQuestions > 0) {
+      trackAttempt();
+    }
+  }, [mode, safeTotalQuestions, correctCount, answers, subject, topic]);
+
+  if (!safeTotalQuestions) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="nf-card max-w-md text-center">
+          <h2 className="text-2xl font-bold text-foreground mb-2">No quiz session found</h2>
+          <p className="text-sm text-muted-foreground mb-5">
+            Start a new quiz to see your results here.
+          </p>
+          <button
+            onClick={() => navigate('/quiz-start')}
+            className="nf-btn-primary w-full"
+          >
+            Start Quiz
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -57,7 +100,7 @@ const QuizResults = () => {
         >
           <div className="text-6xl mb-4">{getMedal()}</div>
           <h1 className="text-3xl font-black text-foreground mb-2">
-            {correctCount}/{totalQuestions}
+            {correctCount}/{safeTotalQuestions}
           </h1>
           <p className="text-xl font-bold text-primary mb-1">{percentage}% Score</p>
           <p className="text-sm text-muted-foreground">{subject} • {topic}</p>
@@ -79,7 +122,7 @@ const QuizResults = () => {
             </div>
             <div>
               <div className="w-12 h-12 rounded-xl bg-destructive/10 border-2 border-destructive/30 flex items-center justify-center mx-auto mb-2">
-                <span className="text-xl font-bold text-destructive">{totalQuestions - correctCount}</span>
+                <span className="text-xl font-bold text-destructive">{safeTotalQuestions - correctCount}</span>
               </div>
               <p className="text-xs text-muted-foreground">Wrong</p>
             </div>

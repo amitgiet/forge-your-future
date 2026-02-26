@@ -6,7 +6,7 @@ import { ArrowLeft, Target, BookOpen, Clock, Zap, Trophy } from 'lucide-react';
 const QuizStart = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { topic, subject, weakness } = location.state || {};
+  const { topic = 'General Quiz', subject = 'General', weakness } = location.state || {};
 
   const [mode, setMode] = useState<'practice' | 'test'>('practice');
   const [questionCount, setQuestionCount] = useState(25);

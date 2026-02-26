@@ -8,9 +8,10 @@ import ShieldCard from '@/components/ShieldCard';
 import BottomNav from '@/components/BottomNav';
 import ActiveChallenges from '@/components/ActiveChallenges';
 import RevisionWidget from '@/components/RevisionWidget';
-import { useRevision } from '@/contexts/RevisionContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import DailyChallengeCard from '@/components/DailyChallengeCard';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { loadDueLines } from '@/store/slices/neuronzSlice';
 
 const stagger = {
   hidden: {},
@@ -24,15 +25,18 @@ const fadeUp = {
 const Dashboard = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { getStats } = useRevision();
-  const revisionStats = getStats();
+  const dispatch = useAppDispatch();
+  const { dueLines } = useAppSelector((state) => state.neuronz);
+  const dueCount = dueLines?.total || 0;
+  const l2Count = dueLines?.byLevel?.L2?.length || 0;
 
   const [userRank, setUserRank] = useState<any>(null);
   const [_loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchUserRank();
-  }, []);
+    dispatch(loadDueLines());
+  }, [dispatch]);
 
   const fetchUserRank = async () => {
     try {
@@ -49,7 +53,13 @@ const Dashboard = () => {
   };
 
   const quickActions = [
-    { icon: Brain, label: 'Revise', sub: revisionStats.dueToday > 0 ? `${revisionStats.dueToday} due` : 'Spaced', path: '/revision', color: 'success' },
+    {
+      icon: Brain,
+      label: 'Revise',
+      sub: dueCount > 0 ? `${dueCount} due (L2: ${l2Count})` : 'Spaced',
+      path: '/revision',
+      color: 'success'
+    },
     { icon: Sparkles, label: 'Learn', sub: 'AI Path', path: '/my-learning-paths', color: 'warning' },
     { icon: Upload, label: 'Mock', sub: 'Analyze', path: '/mock-analyzer', color: 'secondary' },
     { icon: BookOpen, label: 'NCERT', sub: 'Search', path: '/ncert-search', color: 'primary' },

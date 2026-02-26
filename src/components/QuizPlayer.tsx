@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
@@ -6,7 +6,6 @@ import {
   Grid3x3,
   Flag,
   Clock,
-  AlertCircle,
   CheckCircle,
   XCircle,
   Lightbulb,
@@ -73,7 +72,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   const [markedForReview, setMarkedForReview] = useState<Set<number>>(new Set());
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [sessionStartTime] = useState(Date.now());
-  const [showResults, setShowResults] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
 
   const { showExplanations = false, showDifficulty = true, showMarks = false } = config;
@@ -96,7 +95,6 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   }, [showTimer, timeRemaining]);
 
   const currentQuestion = questions[currentQuestionIndex];
-  const isAnswered = answers[currentQuestionIndex] !== null;
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   // Get question status for palette
@@ -170,8 +168,9 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     const timeTaken = Math.floor((Date.now() - sessionStartTime) / 1000);
-    setShowResults(true);
+    setIsSubmitting(true);
 
     // Preprocess answers for submission
     const processedAnswers = answers.map((ans, idx) => {
@@ -185,10 +184,16 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
       }
     });
 
-    onSubmit({
-      answers: processedAnswers,
-      timeTaken,
-    });
+    try {
+      await Promise.resolve(
+        onSubmit({
+          answers: processedAnswers,
+          timeTaken,
+        })
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const formatTime = (seconds: number): string => {
@@ -230,7 +235,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
       <div className="nf-safe-area p-4 max-w-2xl mx-auto">
         {/* Quiz Instruction Screen */}
         <AnimatePresence mode="wait">
-          {!quizStarted && !showResults && (
+          {!quizStarted && (
             <QuizInstructionScreen
               title={title}
               totalQuestions={questions.length}
@@ -245,7 +250,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
           )}
 
           {/* Quiz Content */}
-          {quizStarted && !showResults && (
+          {quizStarted && (
             <motion.div
               key="quiz"
               initial={{ opacity: 0, y: 20 }}
@@ -481,12 +486,12 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
           {currentQuestionIndex === questions.length - 1 ? (
             <motion.button
               onClick={handleSubmit}
-              disabled={readOnly}
+              disabled={readOnly || isSubmitting}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="flex-1 py-3 bg-gradient-to-r from-primary to-accent rounded-lg text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Submit Quiz
+              {isSubmitting ? 'Submitting...' : 'Submit Quiz'}
             </motion.button>
           ) : (
             <motion.button

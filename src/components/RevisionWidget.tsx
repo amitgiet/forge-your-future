@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, AlertCircle, ArrowRight, TrendingUp } from 'lucide-react';
+import { Calendar, ArrowRight, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loadDueLines, getMasteryProgress } from '@/store/slices/neuronzSlice';
 
-const LEVEL_ICONS = ['📚', '🧠', '📝', '🔄', '✅', '📖', '🚀'];
+const LEVEL_ICONS = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7'];
 
 export default function RevisionWidget() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { dueLines, masteryProgress, isLoading } = useAppSelector((state) => state.neuronz);
+  const { dueLines, isLoading } = useAppSelector((state) => state.neuronz);
 
   useEffect(() => {
     dispatch(loadDueLines());
@@ -19,6 +19,15 @@ export default function RevisionWidget() {
 
   if (isLoading) return null;
   if (!dueLines || dueLines.total === 0) return null;
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const overdueCount = dueLines.lines.filter((line: any) => {
+    if (!line?.nextRevision) return false;
+    const nextRevisionDate = new Date(line.nextRevision);
+    return !Number.isNaN(nextRevisionDate.getTime()) && nextRevisionDate < startOfToday;
+  }).length;
+  const l2Count = dueLines.byLevel?.L2?.length || 0;
 
   return (
     <motion.div
@@ -32,7 +41,7 @@ export default function RevisionWidget() {
           <h3 className="nf-heading text-foreground">7-Level Revision</h3>
         </div>
         <button
-          onClick={() => navigate('/revision-dashboard')}
+          onClick={() => navigate('/revision')}
           className="text-sm text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1"
         >
           View All
@@ -40,23 +49,37 @@ export default function RevisionWidget() {
         </button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="bg-white/5 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-black">{dueLines.total}</div>
+          <div className="text-2xl font-bold text-foreground">{dueLines.total}</div>
           <div className="text-xs text-gray-400">Due Today</div>
         </div>
         <div className="bg-white/5 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-red-400">0</div>
+          <div className="text-2xl font-bold text-red-400">{overdueCount}</div>
           <div className="text-xs text-gray-400">Overdue</div>
         </div>
         <div className="bg-white/5 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-green-400">{masteryProgress?.masteryPercentage || 0}%</div>
-          <div className="text-xs text-gray-400">Mastered</div>
+          <div className="text-2xl font-bold text-orange-400">{l2Count}</div>
+          <div className="text-xs text-gray-400">L2 Due</div>
         </div>
       </div>
 
-      {/* Due Topics */}
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto">
+        {LEVEL_ICONS.map((label, index) => {
+          const level = index + 1;
+          const count =
+            dueLines.byLevel?.[`L${level}` as keyof typeof dueLines.byLevel]?.length || 0;
+          return (
+            <div
+              key={label}
+              className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-xs whitespace-nowrap"
+            >
+              {label}: <span className="font-bold text-foreground">{count}</span>
+            </div>
+          );
+        })}
+      </div>
+
       <div className="space-y-2">
         {dueLines.lines.slice(0, 3).map((line: any) => (
           <motion.div
@@ -68,8 +91,10 @@ export default function RevisionWidget() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg flex-shrink-0">{LEVEL_ICONS[line.level - 1]}</span>
-                  <span className=" font-semibold text-sm break-words line-clamp-2">
+                  <span className="text-xs px-2 py-0.5 rounded bg-white/10 border border-white/20">
+                    L{line.level}
+                  </span>
+                  <span className="font-semibold text-sm break-words line-clamp-2">
                     {line.lineId?.ncertText || 'NCERT Line'}
                   </span>
                 </div>
@@ -88,7 +113,6 @@ export default function RevisionWidget() {
         ))}
       </div>
 
-      {/* CTA */}
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
@@ -100,3 +124,4 @@ export default function RevisionWidget() {
     </motion.div>
   );
 }
+

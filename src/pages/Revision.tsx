@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { loadDueLines, generateMicroQuizzes, processLineSession, getMasteryProgress } from '@/store/slices/neuronzSlice';
@@ -19,6 +19,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
 import QuizPlayer, { QuizQuestion } from '@/components/QuizPlayer';
 import { apiService } from '@/lib/apiService';
+import { trackQuizAttempt } from '@/lib/quizTracking';
 
 const LEVEL_COLORS = [
   '',
@@ -32,6 +33,16 @@ const LEVEL_COLORS = [
 ];
 
 const LEVEL_LABELS = ['', 'New', 'Learning', 'Reviewing', 'Familiar', 'Strong', 'Expert', 'Mastered'];
+
+const getLineContentId = (line: any): string => {
+  const value = line?.lineId;
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object') {
+    if (typeof value._id === 'string') return value._id;
+    if (typeof value.id === 'string') return value.id;
+  }
+  return '';
+};
 
 const Revision = () => {
   const navigate = useNavigate();
@@ -48,6 +59,7 @@ const Revision = () => {
   const [customizingLine, setCustomizingLine] = useState<{ lineId: string; line: any } | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
+  const hasAutoStarted = useRef(false);
 
   useEffect(() => {
     dispatch(loadDueLines());
@@ -57,23 +69,39 @@ const Revision = () => {
   // Auto-start quiz if revisionId is in URL
   useEffect(() => {
     const revisionId = searchParams.get('revisionId');
-    if (revisionId && dueLines && dueLines.lines && dueLines.lines.length > 0) {
+    const autoStart = searchParams.get('autoStart') === '1';
+    if (!dueLines?.lines?.length || selectedLine || hasAutoStarted.current) return;
+
+    if (revisionId) {
       const lineToStart = dueLines.lines.find((line: any) => line._id === revisionId);
-      if (lineToStart && !selectedLine) {
+      if (lineToStart) {
+        hasAutoStarted.current = true;
         startLineSession(lineToStart);
+        return;
       }
+    }
+
+    if (autoStart) {
+      hasAutoStarted.current = true;
+      startLineSession(dueLines.lines[0]);
     }
   }, [dueLines, searchParams, selectedLine]);
 
   const startLineSession = async (line: any) => {
+    const lineContentId = getLineContentId(line);
+    if (!lineContentId) {
+      alert('Unable to start revision for this line. Missing line ID.');
+      return;
+    }
+
     console.log('Starting line session for:', line);
     setSelectedLine(line);
     setSessionStartTime(Date.now());
     setGeneratingQuizzes(true);
     
     try {
-      console.log('Generating quizzes for lineId:', line.lineId);
-      const result = await dispatch(generateMicroQuizzes(line.lineId)).unwrap();
+      console.log('Generating quizzes for lineId:', lineContentId);
+      const result = await dispatch(generateMicroQuizzes(lineContentId)).unwrap();
       console.log('Quizzes result:', result);
       // Transform result to QuizQuestion format
       const transformedQuizzes = result.map((quiz: any) => ({
@@ -101,20 +129,39 @@ const Revision = () => {
 
     try {
       console.log('Submitting quiz session:', {
-        lineId: selectedLine.lineId,
+        lineId: getLineContentId(selectedLine),
         correctAnswers: correctCount,
         totalQuizzes: quizzes.length,
         timeSpent: data.timeTaken
       });
 
       const result = await dispatch(processLineSession({
-        lineId: selectedLine.lineId,
+        lineId: getLineContentId(selectedLine),
         correctAnswers: correctCount,
         totalQuizzes: quizzes.length,
         timeSpent: data.timeTaken
       })).unwrap();
 
       console.log('Quiz submission result:', result);
+
+      void trackQuizAttempt({
+        quizType: 'neuronz',
+        totalQuestions: quizzes.length,
+        correctAnswers: correctCount,
+        timeTaken: data.timeTaken,
+        subject:
+          typeof selectedLine?.lineId === 'object' && selectedLine?.lineId?.subject
+            ? selectedLine.lineId.subject
+            : 'General',
+        topic:
+          typeof selectedLine?.lineId === 'object' && selectedLine?.lineId?.chapter
+            ? selectedLine.lineId.chapter
+            : 'NCERT Line',
+        lineId: getLineContentId(selectedLine),
+        metadata: {
+          level: selectedLine?.level,
+        },
+      });
       
       // Reload due lines and mastery progress
       await dispatch(loadDueLines());
@@ -402,7 +449,7 @@ const Revision = () => {
                         >
                           <button
                             onClick={() => {
-                              setAdjustingLevel({ lineId: line.lineId, line });
+                              setAdjustingLevel({ lineId: getLineContentId(line), line });
                             }}
                             className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2 border-b border-border"
                           >
@@ -412,7 +459,7 @@ const Revision = () => {
                           
                           <button
                             onClick={() => {
-                              setCustomizingLine({ lineId: line.lineId, line });
+                              setCustomizingLine({ lineId: getLineContentId(line), line });
                             }}
                             className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2 border-b border-border"
                           >

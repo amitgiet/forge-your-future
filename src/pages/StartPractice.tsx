@@ -41,8 +41,8 @@ const StartPractice = () => {
       const response = await apiService.neuronz.trackBySubjectAndTopic(selectedSubject, topic);
 
       if (response.data.success) {
-        // Navigate to Revision page where user will see 100 MCQs in Level 1
-        navigate('/revision');
+        // Auto-start first due revision line after tracking
+        navigate('/revision?autoStart=1');
       }
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to start practice');

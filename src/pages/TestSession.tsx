@@ -31,9 +31,13 @@ export default function TestSession() {
       const answerArray = new Array(attemptData.testId.questions.length).fill(null);
       attemptData.answers.forEach((a: any) => {
         const qIndex = attemptData.testId.questions.findIndex((q: any) => q._id === (a.questionId._id || a.questionId));
-        if (qIndex !== -1 && a.selectedOption) {
-          // Convert option letter to index (A=0, B=1, etc.)
-          answerArray[qIndex] = a.selectedOption.charCodeAt(0) - 65;
+        if (qIndex !== -1 && a.selectedOption !== null && a.selectedOption !== undefined) {
+          if (typeof a.selectedOption === 'string' && a.selectedOption.length > 0) {
+            // Convert option letter to index (A=0, B=1, etc.)
+            answerArray[qIndex] = a.selectedOption.toUpperCase().charCodeAt(0) - 65;
+          } else if (typeof a.selectedOption === 'number') {
+            answerArray[qIndex] = a.selectedOption;
+          }
         }
       });
       setInitialAnswers(answerArray);
@@ -48,11 +52,29 @@ export default function TestSession() {
 
   const handleSubmit = async (data: { answers: (number | number[] | null)[]; timeTaken: number }) => {
     try {
-      const res = await apiService.tests.submitTest(attemptId!);
+      await apiService.tests.submitTest(attemptId!);
       navigate(`/test/report/${attemptId}`);
     } catch (error) {
       console.error('Failed to submit test:', error);
       setError('Failed to submit test');
+    }
+  };
+
+  const handleAnswerChange = async (questionIndex: number, answer: number | number[] | null) => {
+    if (!attemptId) return;
+    if (typeof answer !== 'number') return;
+    const question = questions[questionIndex];
+    if (!question?._id) return;
+
+    try {
+      await apiService.tests.saveAnswer(attemptId, {
+        questionId: question._id,
+        selectedOption: String.fromCharCode(65 + answer),
+        timeSpent: 0,
+        isMarkedForReview: false,
+      });
+    } catch (error) {
+      console.error('Failed to save answer:', error);
     }
   };
 
@@ -108,6 +130,7 @@ export default function TestSession() {
         title={test?.title || 'Test'}
         initialAnswers={initialAnswers}
         onSubmit={handleSubmit}
+        onAnswerChange={handleAnswerChange}
         showPalette={true}
         showTimer={test?.config?.duration ? true : false}
         duration={test?.config?.duration ? test.config.duration * 60 : 0}

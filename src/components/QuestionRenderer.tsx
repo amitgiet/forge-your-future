@@ -2,30 +2,67 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, X } from 'lucide-react';
 
+type QuestionType = 'mcq' | 'fill-blank' | 'match' | 'diagram-label' | 'numeric' | 'numerical';
+
+interface OptionItem {
+  key?: string;
+  text?: string | { en?: string };
+  isCorrect?: boolean;
+}
+
+interface DiagramLabel {
+  id: string;
+  x: number;
+  y: number;
+}
+
+interface QuestionData {
+  questionType?: QuestionType;
+  type?: QuestionType;
+  options?: OptionItem[] | string[];
+  typeData?: {
+    template?: string;
+    correctAnswer?: string;
+    leftItems?: string[];
+    rightItems?: string[];
+    correctPairs?: [number, number][];
+    imageUrl?: string;
+    labels?: DiagramLabel[];
+    correctValue?: number;
+    unit?: string;
+    tolerance?: number;
+  };
+}
+
 interface QuestionRendererProps {
-  question: any;
-  onAnswer: (answer: any) => void;
+  question: QuestionData;
+  onAnswer: (answer: unknown) => void;
   showResult?: boolean;
   disabled?: boolean;
 }
 
 const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = false }: QuestionRendererProps) => {
-  const [selectedAnswer, setSelectedAnswer] = useState<any>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<unknown>(null);
+  const [matches, setMatches] = useState<Array<[number, number]>>([]);
+  const [selectedLeftIndex, setSelectedLeftIndex] = useState<number | null>(null);
+  const questionType = question.questionType || question.type;
 
-  const handleAnswer = (answer: any) => {
+  const handleAnswer = (answer: unknown) => {
     if (disabled) return;
     setSelectedAnswer(answer);
     onAnswer(answer);
   };
 
-  // MCQ Type
-  if (question.questionType === 'mcq') {
+  if (questionType === 'mcq') {
     return (
       <div className="space-y-3 w-full">
-        {question.options?.map((option: any, index: number) => {
+        {question.options?.map((option: OptionItem | string, index: number) => {
           const isSelected = selectedAnswer === index;
-          const isCorrect = showResult && option.isCorrect;
-          const isWrong = showResult && isSelected && !option.isCorrect;
+          const optionObj: OptionItem = typeof option === 'string' ? { text: option } : option;
+          const isCorrect = showResult && Boolean(optionObj.isCorrect);
+          const isWrong = showResult && isSelected && !optionObj.isCorrect;
+          const optionText =
+            typeof optionObj.text === 'string' ? optionObj.text : optionObj.text?.en || '';
 
           return (
             <motion.button
@@ -33,18 +70,21 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
               onClick={() => handleAnswer(index)}
               disabled={disabled}
               className={`w-full p-4 rounded-xl border-2 text-left transition-all block ${
-                isCorrect ? 'bg-success/20 border-success' :
-                isWrong ? 'bg-destructive/20 border-destructive animate-shake' :
-                isSelected ? 'bg-primary/20 border-primary' :
-                'bg-card border-border hover:border-primary/50'
+                isCorrect
+                  ? 'bg-success/20 border-success'
+                  : isWrong
+                    ? 'bg-destructive/20 border-destructive animate-shake'
+                    : isSelected
+                      ? 'bg-primary/20 border-primary'
+                      : 'bg-card border-border hover:border-primary/50'
               }`}
               whileTap={!disabled ? { scale: 0.98 } : {}}
             >
               <div className="flex items-center gap-3 w-full">
                 <span className="w-8 h-8 rounded-lg bg-background/50 flex items-center justify-center text-sm font-medium flex-shrink-0">
-                  {option.key || String.fromCharCode(65 + index)}
+                  {optionObj.key || String.fromCharCode(65 + index)}
                 </span>
-                <span className="font-medium text-foreground flex-1">{option.text?.en || option.text}</span>
+                <span className="font-medium text-foreground flex-1">{optionText}</span>
                 {showResult && isCorrect && <Check className="w-5 h-5 text-success flex-shrink-0" />}
                 {showResult && isWrong && <X className="w-5 h-5 text-destructive flex-shrink-0" />}
               </div>
@@ -55,8 +95,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
     );
   }
 
-  // Fill-in-the-Blank Type
-  if (question.questionType === 'fill-blank') {
+  if (questionType === 'fill-blank') {
     const { template, correctAnswer } = question.typeData || {};
     return (
       <div className="space-y-4">
@@ -69,11 +108,13 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
           className="w-full px-4 py-3 rounded-xl bg-background border-2 border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         />
         {showResult && (
-          <div className={`p-3 rounded-xl ${
-            selectedAnswer?.toLowerCase() === correctAnswer?.toLowerCase()
-              ? 'bg-success/20 border border-success/30'
-              : 'bg-destructive/20 border border-destructive/30'
-          }`}>
+          <div
+            className={`p-3 rounded-xl ${
+              String(selectedAnswer || '').toLowerCase() === String(correctAnswer || '').toLowerCase()
+                ? 'bg-success/20 border border-success/30'
+                : 'bg-destructive/20 border border-destructive/30'
+            }`}
+          >
             <p className="text-sm font-medium">
               Correct Answer: <span className="font-bold">{correctAnswer}</span>
             </p>
@@ -83,14 +124,12 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
     );
   }
 
-  // Match Type
-  if (question.questionType === 'match') {
-    const { leftItems, rightItems, correctPairs } = question.typeData || {};
-    const [matches, setMatches] = useState<any[]>([]);
+  if (questionType === 'match') {
+    const { leftItems, rightItems } = question.typeData || {};
 
     const handleMatch = (leftIndex: number, rightIndex: number) => {
       const newMatches = [...matches];
-      const existingIndex = newMatches.findIndex(m => m[0] === leftIndex);
+      const existingIndex = newMatches.findIndex((m) => m[0] === leftIndex);
       if (existingIndex >= 0) {
         newMatches[existingIndex] = [leftIndex, rightIndex];
       } else {
@@ -98,6 +137,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
       }
       setMatches(newMatches);
       handleAnswer(newMatches);
+      setSelectedLeftIndex(null);
     };
 
     return (
@@ -106,16 +146,28 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             {leftItems?.map((item: string, index: number) => (
-              <div key={index} className="p-3 rounded-xl bg-primary/10 border border-primary/30 text-sm font-medium text-foreground">
+              <button
+                key={index}
+                onClick={() => setSelectedLeftIndex(index)}
+                className={`w-full p-3 rounded-xl border text-sm font-medium text-left ${
+                  selectedLeftIndex === index
+                    ? 'bg-primary/20 border-primary'
+                    : 'bg-primary/10 border-primary/30 text-foreground'
+                }`}
+              >
                 {item}
-              </div>
+              </button>
             ))}
           </div>
           <div className="space-y-2">
             {rightItems?.map((item: string, index: number) => (
               <button
                 key={index}
-                onClick={() => handleMatch(0, index)}
+                onClick={() => {
+                  if (selectedLeftIndex !== null) {
+                    handleMatch(selectedLeftIndex, index);
+                  }
+                }}
                 className="w-full p-3 rounded-xl bg-card border-2 border-border hover:border-primary/50 text-sm font-medium text-foreground text-left"
               >
                 {item}
@@ -127,22 +179,19 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
     );
   }
 
-  // Diagram Label Type
-  if (question.questionType === 'diagram-label') {
+  if (questionType === 'diagram-label') {
     const { imageUrl, labels } = question.typeData || {};
     return (
       <div className="space-y-4">
         <div className="relative">
           <img src={imageUrl} alt="Diagram" className="w-full rounded-xl" />
-          {labels?.map((label: any, index: number) => (
-            <div
-              key={index}
-              className="absolute"
-              style={{ left: `${label.x}%`, top: `${label.y}%` }}
-            >
+          {labels?.map((label: DiagramLabel, index: number) => (
+            <div key={index} className="absolute" style={{ left: `${label.x}%`, top: `${label.y}%` }}>
               <input
                 type="text"
-                onChange={(e) => handleAnswer({ ...selectedAnswer, [label.id]: e.target.value })}
+                onChange={(e) =>
+                  handleAnswer({ ...(typeof selectedAnswer === 'object' && selectedAnswer ? selectedAnswer as Record<string, string> : {}), [label.id]: e.target.value })
+                }
                 placeholder={`Label ${index + 1}`}
                 className="w-24 px-2 py-1 text-xs rounded bg-background border border-border"
               />
@@ -153,8 +202,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
     );
   }
 
-  // Numeric Type
-  if (question.questionType === 'numeric') {
+  if (questionType === 'numeric' || questionType === 'numerical') {
     const { correctValue, unit, tolerance } = question.typeData || {};
     return (
       <div className="space-y-4">
@@ -169,11 +217,13 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
           {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
         </div>
         {showResult && (
-          <div className={`p-3 rounded-xl ${
-            Math.abs(selectedAnswer - correctValue) <= (tolerance || 0)
-              ? 'bg-success/20 border border-success/30'
-              : 'bg-destructive/20 border border-destructive/30'
-          }`}>
+          <div
+            className={`p-3 rounded-xl ${
+              Math.abs(Number(selectedAnswer) - Number(correctValue)) <= (tolerance || 0)
+                ? 'bg-success/20 border border-success/30'
+                : 'bg-destructive/20 border border-destructive/30'
+            }`}
+          >
             <p className="text-sm font-medium">
               Correct Answer: <span className="font-bold">{correctValue} {unit}</span>
             </p>
