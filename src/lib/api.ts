@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// const baseURL = "https://backend-forge-neet.onrender.com";
-const baseURL = "http://localhost:5002";
+const baseURL = "https://backend-forge-neet.onrender.com";
+// const baseURL = "http://localhost:5002";
 const api = axios.create({
   baseURL: `${baseURL}/api/v1`,
   timeout: 120000, // 2 minutes timeout for all API calls
