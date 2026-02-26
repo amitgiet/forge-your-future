@@ -26,10 +26,10 @@ const BottomNav = () => {
       <div
         className="absolute inset-0"
         style={{
-          background: 'rgba(10, 10, 10, 0.75)',
+          background: 'rgba(10, 10, 14, 0.92)',
           backdropFilter: 'blur(40px)',
           WebkitBackdropFilter: 'blur(40px)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
         }}
       />
       <div className="max-w-md mx-auto flex justify-around items-center py-2.5 px-2 relative z-10">
@@ -42,7 +42,7 @@ const BottomNav = () => {
               className={`relative flex flex-col items-center justify-center py-2 px-4 rounded-2xl transition-all ${
                 isActive
                   ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+                  : 'text-zinc-400 hover:text-foreground'
               }`}
               whileTap={{ scale: 0.9 }}
             >
