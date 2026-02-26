@@ -21,6 +21,28 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } },
 };
 
+interface TodayProgressStats {
+  studyTimeMinutes: number;
+  questionsAttempted: number;
+  accuracy: number;
+  formattedStudyTime?: string;
+}
+
+interface TodayQuestStats {
+  hasQuest: boolean;
+  challengeId?: string;
+  title: string;
+  xpReward: number;
+  completedQuizzes: number;
+  targetQuizzes: number;
+  progressPercentage: number;
+  stats: {
+    minutesStudied: number;
+    questions: number;
+    accuracy: number;
+  };
+}
+
 const Dashboard = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -30,10 +52,31 @@ const Dashboard = () => {
   const l2Count = dueLines?.byLevel?.L2?.length || 0;
 
   const [userRank, setUserRank] = useState<any>(null);
+  const [todayProgress, setTodayProgress] = useState<TodayProgressStats>({
+    studyTimeMinutes: 0,
+    questionsAttempted: 0,
+    accuracy: 0,
+    formattedStudyTime: '0m',
+  });
+  const [todayQuest, setTodayQuest] = useState<TodayQuestStats>({
+    hasQuest: false,
+    title: "Today's Quest",
+    xpReward: 0,
+    completedQuizzes: 0,
+    targetQuizzes: 0,
+    progressPercentage: 0,
+    stats: {
+      minutesStudied: 0,
+      questions: 0,
+      accuracy: 0,
+    },
+  });
   const [_loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchUserRank();
+    fetchTodayProgress();
+    fetchTodayQuest();
     dispatch(loadDueLines());
   }, [dispatch]);
 
@@ -48,6 +91,28 @@ const Dashboard = () => {
       console.error('Error fetching user rank:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTodayProgress = async () => {
+    try {
+      const response = await apiService.auth.getTodayProgress();
+      if (response.data?.success && response.data?.data) {
+        setTodayProgress(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching today progress:', error);
+    }
+  };
+
+  const fetchTodayQuest = async () => {
+    try {
+      const response = await apiService.auth.getTodayQuest();
+      if (response.data?.success && response.data?.data) {
+        setTodayQuest(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching today quest:', error);
     }
   };
 
@@ -133,9 +198,9 @@ const Dashboard = () => {
           </h3>
           <div className="grid grid-cols-3 gap-3">
             {[
-              { value: '1h 20m', label: 'Study Time', color: 'primary' },
-              { value: '48', label: 'Questions', color: 'success' },
-              { value: '82%', label: 'Accuracy', color: 'warning' },
+              { value: todayProgress?.formattedStudyTime || `${todayProgress.studyTimeMinutes}m`, label: 'Study Time', color: 'primary' },
+              { value: String(todayProgress.questionsAttempted || 0), label: 'Questions', color: 'success' },
+              { value: `${todayProgress.accuracy || 0}%`, label: 'Accuracy', color: 'warning' },
             ].map((s, i) => (
               <div key={i} className="text-center">
                 <p className={`text-xl font-extrabold ${
@@ -193,30 +258,32 @@ const Dashboard = () => {
           <div className="flex items-center justify-between mb-4">
             <h3 className="nf-heading text-foreground flex items-center gap-2">
               <Target className="w-5 h-5 text-primary" />
-              Today's Quest
+              {todayQuest.title || "Today's Quest"}
             </h3>
-            <span className="nf-badge nf-badge-primary">+150 XP</span>
+            <span className="nf-badge nf-badge-primary">+{todayQuest.xpReward || 0} XP</span>
           </div>
 
           <div className="nf-progress-bar mb-3">
             <motion.div
               className="nf-progress-fill"
               initial={{ width: 0 }}
-              animate={{ width: '65%' }}
+              animate={{ width: `${todayQuest.progressPercentage || 0}%` }}
               transition={{ duration: 1.2, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
             />
           </div>
 
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">3/5 quizzes completed</span>
-            <span className="font-bold nf-gradient-text">65%</span>
+            <span className="text-muted-foreground">
+              {todayQuest.completedQuizzes || 0}/{todayQuest.targetQuizzes || 0} quizzes completed
+            </span>
+            <span className="font-bold nf-gradient-text">{todayQuest.progressPercentage || 0}%</span>
           </div>
 
           <div className="flex gap-2 mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             {[
-              { val: '45', label: 'mins studied' },
-              { val: '12', label: 'questions' },
-              { val: '85%', label: 'accuracy', highlight: true },
+              { val: String(todayQuest.stats?.minutesStudied || 0), label: 'mins studied' },
+              { val: String(todayQuest.stats?.questions || 0), label: 'questions' },
+              { val: `${todayQuest.stats?.accuracy || 0}%`, label: 'accuracy', highlight: true },
             ].map((item, i) => (
               <div key={i} className="flex-1 text-center">
                 <div className={`text-lg font-extrabold ${item.highlight ? 'text-success' : 'text-foreground'}`}>{item.val}</div>

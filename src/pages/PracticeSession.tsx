@@ -85,7 +85,11 @@ const PracticeSession = () => {
         challengeId!,
         todaySchedule.day,
         quizIndex,
-        { score }
+        {
+          score,
+          correctAnswers: correctCount,
+          totalQuizzes: quizzes.length
+        }
       );
       
       await loadTodaySchedule();

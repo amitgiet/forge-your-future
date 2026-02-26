@@ -118,7 +118,9 @@ const MyLearningPaths = () => {
                         <div
                           className="h-full bg-primary transition-all"
                           style={{
-                            width: `${(path.progress.completedItems / path.progress.totalItems) * 100}%`
+                            width: `${path.progress.totalItems > 0
+                              ? (path.progress.completedItems / path.progress.totalItems) * 100
+                              : 0}%`
                           }}
                         />
                       </div>

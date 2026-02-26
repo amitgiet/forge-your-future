@@ -49,6 +49,7 @@ const LearningPathFlow = () => {
     try {
       const response = await apiService.learningPaths.getNextContent(pathId!);
       const data = response.data.data;
+      setQuizzes([]);
 
       if (data.completed) {
         setCurrentContent(null);
@@ -101,6 +102,19 @@ const LearningPathFlow = () => {
 
   const completeContent = async () => {
     try {
+      if (currentContent?.lineId?._id && quizzes.length > 0) {
+        try {
+          await apiService.neuronz.processLineSession({
+            lineId: currentContent.lineId._id,
+            correctAnswers: correctCount,
+            totalQuizzes: quizzes.length,
+            timeSpent: 0
+          });
+        } catch (neuronzError) {
+          console.warn('NeuronZ sync failed, continuing path progression:', neuronzError);
+        }
+      }
+
       await apiService.learningPaths.markContentComplete(pathId!, progress.current - 1);
       await loadNextContent();
     } catch (error) {
@@ -188,7 +202,7 @@ const LearningPathFlow = () => {
         </motion.div>
 
         {/* Quiz View */}
-        {currentQuiz && (
+        {currentQuiz ? (
           <AnimatePresence mode="wait">
             <motion.div
               key={currentQuizIndex}
@@ -309,6 +323,23 @@ const LearningPathFlow = () => {
               )}
             </motion.div>
           </AnimatePresence>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="nf-card text-center"
+          >
+            <h3 className="text-lg font-bold text-foreground mb-2">No Quiz Available</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              This content item has no quiz right now. You can continue to the next item.
+            </p>
+            <button
+              onClick={completeContent}
+              className="nf-btn-primary !w-auto px-6 mx-auto"
+            >
+              Mark Complete & Continue
+            </button>
+          </motion.div>
         )}
       </div>
 

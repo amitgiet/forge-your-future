@@ -13,6 +13,10 @@ export const apiService = {
 
     getProfile: () => api.get('/auth/me'),
 
+    getTodayProgress: () => api.get('/auth/today-progress'),
+
+    getTodayQuest: () => api.get('/auth/today-quest'),
+
     updateProfile: (data: any) => api.put('/auth/profile', data),
 
     updateOnboarding: (data: { step: number; completed?: boolean; data?: any }) =>

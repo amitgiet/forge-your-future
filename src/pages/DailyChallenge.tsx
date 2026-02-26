@@ -108,11 +108,17 @@ const DailyChallenge = () => {
     }, 1500);
   };
 
+  const getCorrectAnswerIndex = (question: any) => {
+    if (typeof question?.correctAnswer === 'number') return question.correctAnswer;
+    if (typeof question?.correct === 'number') return question.correct;
+    return -1;
+  };
+
   const calculateScore = (userAnswers: number[]) => {
     if (!challenge?.questions || challenge.questions.length === 0) return 0;
     let correct = 0;
     challenge.questions.forEach((q, i) => {
-      if (userAnswers[i] === q.correct) correct++;
+      if (userAnswers[i] === getCorrectAnswerIndex(q)) correct++;
     });
     return Math.round((correct / challenge.questions.length) * 100);
   };
@@ -147,7 +153,9 @@ const DailyChallenge = () => {
   };
 
   const score = challenge ? calculateScore(answers) : 0;
-  const correctCount = challenge ? answers.filter((a, i) => a === challenge?.questions?.[i]?.correct).length : 0;
+  const correctCount = challenge
+    ? answers.filter((a, i) => a === getCorrectAnswerIndex(challenge?.questions?.[i])).length
+    : 0;
 
   if (loading) {
     return (
@@ -449,7 +457,7 @@ const DailyChallenge = () => {
 
                 <div className="space-y-3">
                   {challenge.questions[currentQuestion].options.map((option, index) => {
-                    const isCorrect = index === challenge.questions[currentQuestion].correct;
+                    const isCorrect = index === getCorrectAnswerIndex(challenge.questions[currentQuestion]);
                     const isSelected = selectedAnswer === index;
                     
                     let optionClass = 'nf-option';

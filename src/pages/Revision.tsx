@@ -122,6 +122,12 @@ const Revision = () => {
   };
 
   const handleQuizSubmit = async (data: { answers: (number | number[] | null)[]; timeTaken: number }) => {
+    const lineContentId = getLineContentId(selectedLine);
+    if (!lineContentId) {
+      alert('Unable to submit revision. Missing line ID.');
+      return;
+    }
+
     const correctCount = data.answers.filter((ans, idx) => {
       if (ans === null) return false;
       return ans === quizzes[idx].correctAnswer;
@@ -129,20 +135,29 @@ const Revision = () => {
 
     try {
       console.log('Submitting quiz session:', {
-        lineId: getLineContentId(selectedLine),
+        lineId: lineContentId,
         correctAnswers: correctCount,
         totalQuizzes: quizzes.length,
         timeSpent: data.timeTaken
       });
 
       const result = await dispatch(processLineSession({
-        lineId: getLineContentId(selectedLine),
+        lineId: lineContentId,
         correctAnswers: correctCount,
         totalQuizzes: quizzes.length,
         timeSpent: data.timeTaken
       })).unwrap();
 
       console.log('Quiz submission result:', result);
+
+      if (result?.limitReached) {
+        alert(result.message || 'Daily limit reached for today.');
+        await dispatch(loadDueLines());
+        await dispatch(getMasteryProgress());
+        setSelectedLine(null);
+        setQuizzes([]);
+        return;
+      }
 
       void trackQuizAttempt({
         quizType: 'neuronz',
@@ -157,7 +172,7 @@ const Revision = () => {
           typeof selectedLine?.lineId === 'object' && selectedLine?.lineId?.chapter
             ? selectedLine.lineId.chapter
             : 'NCERT Line',
-        lineId: getLineContentId(selectedLine),
+        lineId: lineContentId,
         metadata: {
           level: selectedLine?.level,
         },
