@@ -20,7 +20,7 @@ const BottomNav = () => {
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)' }}
     >
       {/* Glass background */}
       <div
