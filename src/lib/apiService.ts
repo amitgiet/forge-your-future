@@ -235,6 +235,29 @@ export const apiService = {
     hasCompletedToday: () => api.get('/daily-challenge/completed'),
   },
 
+  // NCERT Search + Topic Quiz APIs
+  ncertSearch: {
+    getSubjects: () => api.get('/ncert-search/subjects'),
+
+    getChapters: (subject?: string, lang?: 'en' | 'hi', ncertClass?: 11 | 12) =>
+      api.get('/ncert-search/chapters', { params: { subject, lang, class: ncertClass } }),
+
+    getTopics: (params?: { subject?: string; chapterId?: string; query?: string; limit?: number; lang?: 'en' | 'hi'; class?: 11 | 12 }) =>
+      api.get('/ncert-search/topics', { params }),
+
+    getTopicQuiz: (topicObjectId: string, limit?: number) =>
+      api.get(`/ncert-search/topics/${topicObjectId}/quiz`, { params: { limit: limit || 10 } }),
+
+    submitTopicQuiz: (
+      topicObjectId: string,
+      data: {
+        questionIds: string[];
+        answers: Array<{ questionId: string; selectedOption: string | null }>;
+        timeTaken?: number;
+      }
+    ) => api.post(`/ncert-search/topics/${topicObjectId}/quiz/submit`, data),
+  },
+
   // Leaderboard APIs
   leaderboard: {
     getLeaderboard: (limit?: number) =>

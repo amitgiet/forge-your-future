@@ -1,6 +1,7 @@
- import React, { createContext, useContext, useState, ReactNode } from 'react';
+ import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
  
- type Language = 'en' | 'hi';
+type Language = 'en' | 'hi';
+const LANGUAGE_STORAGE_KEY = 'preferredLanguage';
  
  interface Translations {
    [key: string]: {
@@ -224,8 +225,32 @@
  
  const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
  
- export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-   const [language, setLanguage] = useState<Language>('en');
+export const LanguageProvider = ({ children }: { children: ReactNode }) => {
+   const [language, setLanguageState] = useState<Language>(() => {
+     const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+     return stored === 'hi' ? 'hi' : 'en';
+   });
+
+   const setLanguage = (lang: Language) => {
+     setLanguageState(lang);
+     localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+     window.dispatchEvent(new Event('preferred-language-changed'));
+   };
+
+   useEffect(() => {
+     const syncFromStorage = () => {
+       const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+       if (stored === 'en' || stored === 'hi') {
+         setLanguageState(stored);
+       }
+     };
+     window.addEventListener('storage', syncFromStorage);
+     window.addEventListener('preferred-language-changed', syncFromStorage);
+     return () => {
+       window.removeEventListener('storage', syncFromStorage);
+       window.removeEventListener('preferred-language-changed', syncFromStorage);
+     };
+   }, []);
  
    const t = (key: string): string => {
      return translations[key]?.[language] || key;

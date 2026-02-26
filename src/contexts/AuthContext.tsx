@@ -6,6 +6,9 @@ interface User {
   _id: string;
   name: string;
   email: string;
+  profile?: {
+    preferredLanguage?: 'en' | 'hi';
+  };
   subscription?: {
     plan: string;
   };
@@ -27,6 +30,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const syncPreferredLanguage = (lang?: string) => {
+    if (lang === 'en' || lang === 'hi') {
+      localStorage.setItem('preferredLanguage', lang);
+      window.dispatchEvent(new Event('preferred-language-changed'));
+    }
+  };
 
   useEffect(() => {
     checkAuth();
@@ -46,8 +55,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         _id: 'demo-user',
         name: 'Demo User',
         email: 'demo@neetforge.com',
+        profile: { preferredLanguage: 'en' },
         subscription: { plan: 'free' }
       });
+      syncPreferredLanguage('en');
       setLoading(false);
       return;
     }
@@ -55,7 +66,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await apiService.auth.getProfile();
       if (response.data.success) {
-        setUser(response.data.data);
+        const profile = response.data.data;
+        setUser(profile);
+        syncPreferredLanguage(profile?.profile?.preferredLanguage);
       }
     } catch (error) {
       localStorage.removeItem('token');
@@ -70,6 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (response.data.success) {
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
+      syncPreferredLanguage(response.data.user?.profile?.preferredLanguage);
       
       // Check onboarding status
       if (response.data.user.onboardingCompleted === false) {
@@ -86,12 +100,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (response.data.success) {
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
+      syncPreferredLanguage(response.data.user?.profile?.preferredLanguage);
       navigate('/onboarding');
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('preferredLanguage');
     setUser(null);
     navigate('/login');
   };

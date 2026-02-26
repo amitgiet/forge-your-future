@@ -87,6 +87,22 @@ const Profile = () => {
       : [...array, item];
   };
 
+  const handleLanguageChange = async (lang: 'en' | 'hi') => {
+    setLanguage(lang);
+    try {
+      await apiService.auth.updateProfile({ preferredLanguage: lang });
+      setProfileData((prev: any) => ({
+        ...prev,
+        profile: {
+          ...(prev?.profile || {}),
+          preferredLanguage: lang
+        }
+      }));
+    } catch (error) {
+      console.error('Update preferred language error:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="nf-safe-area p-4 max-w-md mx-auto">
@@ -405,7 +421,7 @@ const Profile = () => {
             
             <div className="flex items-center gap-1 p-1 bg-muted rounded-xl border-2 border-border">
               <button
-                onClick={() => setLanguage('en')}
+                onClick={() => handleLanguageChange('en')}
                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                   language === 'en'
                     ? 'bg-primary text-primary-foreground shadow-sm'
@@ -415,7 +431,7 @@ const Profile = () => {
                 EN
               </button>
               <button
-                onClick={() => setLanguage('hi')}
+                onClick={() => handleLanguageChange('hi')}
                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                   language === 'hi'
                     ? 'bg-primary text-primary-foreground shadow-sm'

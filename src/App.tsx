@@ -18,6 +18,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
  import Quiz from "./pages/Quiz";
  import MockAnalyzer from "./pages/MockAnalyzer";
  import NCERTSearch from "./pages/NCERTSearch";
+ import NCERTReader from "./pages/NCERTReader";
  import Profile from "./pages/Profile";
  import Revision from "./pages/Revision";
  import CreateLearningPath from "./pages/CreateLearningPath";
@@ -65,6 +66,7 @@ const App = () => (
                     <Route path="/quiz" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
                     <Route path="/mock-analyzer" element={<ProtectedRoute><MockAnalyzer /></ProtectedRoute>} />
                     <Route path="/ncert-search" element={<ProtectedRoute><NCERTSearch /></ProtectedRoute>} />
+                    <Route path="/ncert-reader" element={<ProtectedRoute><NCERTReader /></ProtectedRoute>} />
                     <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                     <Route path="/revision" element={<ProtectedRoute><Revision /></ProtectedRoute>} />
                     <Route path="/create-learning-path" element={<ProtectedRoute><CreateLearningPath /></ProtectedRoute>} />
