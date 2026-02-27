@@ -191,6 +191,28 @@ const Revision = () => {
 
   useEffect(() => {
     const autoStart = searchParams.get('autoStart') === '1';
+    const revisionId = searchParams.get('revisionId');
+    
+    // Handle direct lineId from query parameter
+    if (revisionId && !hasAutoStarted.current) {
+      hasAutoStarted.current = true;
+      const mockLine: DueLine = {
+        _id: 'temp',
+        lineId: {
+          _id: revisionId,
+          ncertText: 'Loading...',
+          subject: '',
+          chapter: 0
+        },
+        level: 1,
+        nextRevision: '',
+        lastReviewed: '',
+        isMastered: false
+      };
+      void startLineSession(mockLine);
+      return;
+    }
+    
     if (!autoStart || hasAutoStarted.current || topicSummary.length === 0) return;
 
     const firstTopic = topicSummary.find((topic) => topic.dueNow > 0) || topicSummary[0];

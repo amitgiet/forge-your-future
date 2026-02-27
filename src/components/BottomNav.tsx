@@ -1,4 +1,4 @@
-import { Home, BookOpen, User, MessageCircle, FileText } from 'lucide-react';
+import { Home, User, MessageCircle, FileText, Sparkles } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -9,7 +9,7 @@ const BottomNav = () => {
   const navItems = [
     { icon: Home, path: '/dashboard', label: 'Home' },
     { icon: FileText, path: '/tests', label: 'Tests' },
-    { icon: BookOpen, path: '/quiz', label: 'Quiz' },
+    { icon: Sparkles, path: '/ai-assistant', label: 'AI' },
     { icon: MessageCircle, path: '/social', label: 'Social' },
     { icon: User, path: '/profile', label: 'Profile' },
   ];

@@ -70,7 +70,13 @@ const toOptionText = (option: unknown): string => {
 };
 
 const normalizeQuestion = (raw: any, index: number): SessionQuestion | null => {
-  const prompt = raw?.question || raw?.prompt || raw?.text;
+  const prompt =
+    raw?.question?.en ??
+    raw?.question ??
+    raw?.prompt?.en ??
+    raw?.prompt ??
+    raw?.text?.en ??
+    raw?.text;
   if (!prompt) return null;
 
   const rawOptions = raw?.options;
@@ -100,12 +106,12 @@ const normalizeQuestion = (raw: any, index: number): SessionQuestion | null => {
   const correct = explicitCorrect >= 0 ? explicitCorrect : derivedCorrectFromOptions;
 
   return {
-    id: String(raw?._id || raw?.id || `q_${index + 1}`),
+    id: String(raw?.questionId || raw?._id || raw?.id || `q_${index + 1}`),
     question: String(prompt),
     options,
     correct,
-    explanation: raw?.explanation || '',
-    chapter: raw?.chapter || raw?.topic || 'General',
+    explanation: String(raw?.explanation?.en ?? raw?.explanation ?? ''),
+    chapter: String(raw?.chapter || raw?.topic || raw?.chapterId || 'General'),
     difficulty: raw?.difficulty || 'medium',
   };
 };
@@ -118,6 +124,7 @@ const QuizSession = () => {
     questionCount: number;
     topic: string;
     subject: string;
+    questions: any[];
   }>;
 
   const mode: QuizMode = state.mode === 'test' ? 'test' : 'practice';
@@ -143,12 +150,15 @@ const QuizSession = () => {
     const loadQuestions = async () => {
       setLoading(true);
       try {
-        const response = await apiService.questions.getRandomQuestions({
-          subject,
-          topic,
-          limit: requestedQuestionCount,
-        });
-        const rawQuestions = response?.data?.data || [];
+        // If caller provided questions (e.g. AI Chat "Take Quiz"), use them directly.
+        const rawQuestions = Array.isArray(state.questions) && state.questions.length > 0
+          ? state.questions
+          : (await apiService.questions.getRandomQuestions({
+              subject,
+              topic,
+              limit: requestedQuestionCount,
+            })).data?.data || [];
+
         const normalized = Array.isArray(rawQuestions)
           ? rawQuestions
               .map((item: any, idx: number) => normalizeQuestion(item, idx))

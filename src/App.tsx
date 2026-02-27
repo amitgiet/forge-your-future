@@ -41,6 +41,8 @@ import TestReport from "./pages/TestReport";
 import CustomTestCreate from "./pages/CustomTestCreate";
 import DailyChallenge from "./pages/DailyChallenge";
 import Leaderboard from "./pages/Leaderboard";
+import AIAssistant from "./pages/AIAssistant";
+import AIQuizSession from "./pages/AIQuizSession";
 import NotFound from "./pages/NotFound";
  
  const queryClient = new QueryClient();
@@ -90,6 +92,8 @@ const App = () => (
                     <Route path="/test/report/:attemptId" element={<ProtectedRoute><TestReport /></ProtectedRoute>} />
                     <Route path="/daily-challenge" element={<ProtectedRoute><DailyChallenge /></ProtectedRoute>} />
                     <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+                    <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
+                    <Route path="/ai-quiz-session" element={<ProtectedRoute><AIQuizSession /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </TooltipProvider>

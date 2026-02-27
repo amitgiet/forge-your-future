@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-
-const SOCKET_URL = 'http://localhost:5002';
+import { API_BASE_URL } from '../lib/api';
 
 export const useSocket = (userId?: string) => {
   const socketRef = useRef<Socket | null>(null);
@@ -10,20 +9,31 @@ export const useSocket = (userId?: string) => {
   useEffect(() => {
     if (!userId) return;
 
+    // Get socket URL from API base URL
+    const socketURL = API_BASE_URL || 'http://localhost:5002';
+
     // Initialize socket connection
-    socketRef.current = io(SOCKET_URL, {
-      transports: ['websocket'],
+    socketRef.current = io(socketURL, {
+      transports: ['websocket', 'polling'],
       auth: {
         token: localStorage.getItem('token')
-      }
+      },
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5
     });
 
     const socket = socketRef.current;
 
     socket.on('connect', () => {
-      console.log('Socket connected');
+      console.log('Socket connected:', socket.id);
       setConnected(true);
       socket.emit('join', userId);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
     });
 
     socket.on('disconnect', () => {
@@ -44,6 +54,10 @@ export const useSocket = (userId?: string) => {
     socketRef.current?.emit('join_chat', chatId);
   };
 
+  const leaveChat = (chatId: string) => {
+    socketRef.current?.emit('leave_chat', chatId);
+  };
+
   const sendMessage = (chatId: string, text: string) => {
     socketRef.current?.emit('send_message', { chatId, text });
   };
@@ -54,6 +68,18 @@ export const useSocket = (userId?: string) => {
 
   const markAsRead = (chatId: string) => {
     socketRef.current?.emit('mark_read', { chatId });
+  };
+
+  const notifyFriendRequestSent = (toUserId: string, fromUser: any) => {
+    socketRef.current?.emit('friend_request_sent', { toUserId, fromUser });
+  };
+
+  const notifyFriendRequestAccepted = (toUserId: string, user: any) => {
+    socketRef.current?.emit('friend_request_accepted', { toUserId, user });
+  };
+
+  const notifyFriendsUpdated = (userId: string) => {
+    socketRef.current?.emit('friends_updated', { userId });
   };
 
   const onNewMessage = (callback: (message: any) => void) => {
@@ -70,14 +96,58 @@ export const useSocket = (userId?: string) => {
     };
   };
 
+  const onUserOnline = (callback: (data: { userId: string }) => void) => {
+    socketRef.current?.on('user_online', callback);
+    return () => {
+      socketRef.current?.off('user_online', callback);
+    };
+  };
+
+  const onFriendRequestReceived = (callback: (data: any) => void) => {
+    socketRef.current?.on('friend_request_received', callback);
+    return () => {
+      socketRef.current?.off('friend_request_received', callback);
+    };
+  };
+
+  const onFriendRequestAccepted = (callback: (data: any) => void) => {
+    socketRef.current?.on('friend_request_accepted', callback);
+    return () => {
+      socketRef.current?.off('friend_request_accepted', callback);
+    };
+  };
+
+  const onFriendsListUpdated = (callback: (data: any) => void) => {
+    socketRef.current?.on('friends_list_updated', callback);
+    return () => {
+      socketRef.current?.off('friends_list_updated', callback);
+    };
+  };
+
+  const onMessagesRead = (callback: (data: any) => void) => {
+    socketRef.current?.on('messages_read', callback);
+    return () => {
+      socketRef.current?.off('messages_read', callback);
+    };
+  };
+
   return {
     socket: socketRef.current,
     connected,
     joinChat,
+    leaveChat,
     sendMessage,
     sendTyping,
     markAsRead,
+    notifyFriendRequestSent,
+    notifyFriendRequestAccepted,
+    notifyFriendsUpdated,
     onNewMessage,
-    onUserTyping
+    onUserTyping,
+    onUserOnline,
+    onFriendRequestReceived,
+    onFriendRequestAccepted,
+    onFriendsListUpdated,
+    onMessagesRead
   };
 };

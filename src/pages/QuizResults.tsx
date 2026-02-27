@@ -1,24 +1,78 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, TrendingUp, Target, Home, RotateCcw, BookOpen } from 'lucide-react';
+import { Trophy, TrendingUp, Target, Home, RotateCcw, BookOpen, ArrowLeft } from 'lucide-react';
 import { trackQuizAttempt } from '@/lib/quizTracking';
+
+type SummaryState = {
+  score: number;
+  total: number;
+  percentage: number;
+  subject: string;
+  topic: string;
+  chapterLabel?: string;
+  attemptedAt?: string;
+};
 
 const QuizResults = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { mode, answers = [], totalQuestions, subject = 'General', topic = 'General' } = location.state || {};
+  const {
+    mode,
+    answers = [],
+    totalQuestions,
+    subject = 'General',
+    topic = 'General',
+    returnTo,
+    returnLabel,
+    prefillPrompt,
+    retryTo,
+    retryState,
+    summary
+  } = (location.state || {}) as any;
+
+  const formatChapterLabel = (raw: string) => {
+    const v = String(raw || '').trim();
+    if (!v) return 'General';
+    const m = v.match(/^([a-z]+)_ai_generated$/i);
+    if (m?.[1]) {
+      const subj = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();
+      return `AI Generated (${subj})`;
+    }
+    return v;
+  };
+
+  const summaryState: SummaryState | null =
+    summary && typeof summary === 'object'
+      ? {
+          score: Number(summary.score || 0),
+          total: Number(summary.total || 0),
+          percentage: Number(summary.percentage || 0),
+          subject: String(summary.subject || subject || 'General'),
+          topic: String(summary.topic || topic || 'General'),
+          chapterLabel: summary.chapterLabel ? String(summary.chapterLabel) : undefined,
+          attemptedAt: summary.attemptedAt ? String(summary.attemptedAt) : undefined,
+        }
+      : null;
 
   const safeTotalQuestions =
     typeof totalQuestions === 'number' && totalQuestions > 0
       ? totalQuestions
       : Array.isArray(answers)
         ? answers.length
-        : 0;
+        : summaryState?.total || 0;
 
-  const correctCount = answers?.filter((a: any) => a.correct).length || 0;
-  const percentage =
-    safeTotalQuestions > 0 ? Math.round((correctCount / safeTotalQuestions) * 100) : 0;
+  const hasAnswerDetails = Array.isArray(answers) && answers.length > 0;
+  const correctCount = hasAnswerDetails
+    ? answers?.filter((a: any) => a.correct).length || 0
+    : (summaryState?.score || 0);
+  const percentage = hasAnswerDetails
+    ? (safeTotalQuestions > 0 ? Math.round((correctCount / safeTotalQuestions) * 100) : 0)
+    : (summaryState?.percentage || 0);
+
+  const effectiveSubject = summaryState?.subject || subject;
+  const effectiveTopic = summaryState?.topic || topic;
+  const effectiveChapterLabel = summaryState?.chapterLabel ? formatChapterLabel(summaryState.chapterLabel) : undefined;
   
   // Mock analytics
   const rank = Math.floor(Math.random() * 500000) + 1;
@@ -26,18 +80,23 @@ const QuizResults = () => {
   const improvement = Math.floor(Math.random() * 50) - 10;
 
   // Calculate chapter-wise performance
-  const chapterStats = answers?.reduce((acc: any, answer: any) => {
-    if (!acc[answer.chapter]) {
-      acc[answer.chapter] = { correct: 0, total: 0 };
-    }
-    acc[answer.chapter].total++;
-    if (answer.correct) acc[answer.chapter].correct++;
-    return acc;
-  }, {});
+  const chapterStats = hasAnswerDetails
+    ? answers?.reduce((acc: any, answer: any) => {
+        const chapterKey = formatChapterLabel(answer.chapter);
+        if (!acc[chapterKey]) {
+          acc[chapterKey] = { correct: 0, total: 0 };
+        }
+        acc[chapterKey].total++;
+        if (answer.correct) acc[chapterKey].correct++;
+        return acc;
+      }, {})
+    : effectiveChapterLabel
+      ? { [effectiveChapterLabel]: { correct: correctCount, total: safeTotalQuestions } }
+      : {};
 
   const weakChapters = Object.entries(chapterStats || {})
     .map(([chapter, stats]: [string, any]) => ({
-      chapter,
+      chapter: formatChapterLabel(chapter),
       accuracy: Math.round((stats.correct / stats.total) * 100)
     }))
     .filter(c => c.accuracy < 60)
@@ -57,18 +116,19 @@ const QuizResults = () => {
         totalQuestions: safeTotalQuestions,
         correctAnswers: correctCount,
         timeTaken: answers?.reduce((sum: number, a: any) => sum + (a?.timeTaken || 0), 0) || 0,
-        subject,
-        topic,
+        subject: effectiveSubject,
+        topic: effectiveTopic,
         metadata: {
           mode,
         },
       });
     };
 
-    if (safeTotalQuestions > 0) {
+    // Only track when we actually have per-question answers from a fresh attempt.
+    if (hasAnswerDetails && safeTotalQuestions > 0) {
       trackAttempt();
     }
-  }, [mode, safeTotalQuestions, correctCount, answers, subject, topic]);
+  }, [mode, safeTotalQuestions, correctCount, answers, effectiveSubject, effectiveTopic, hasAnswerDetails]);
 
   if (!safeTotalQuestions) {
     return (
@@ -103,7 +163,12 @@ const QuizResults = () => {
             {correctCount}/{safeTotalQuestions}
           </h1>
           <p className="text-xl font-bold text-primary mb-1">{percentage}% Score</p>
-          <p className="text-sm text-muted-foreground">{subject} • {topic}</p>
+          <p className="text-sm text-muted-foreground">{effectiveSubject} • {effectiveTopic}</p>
+          {!hasAnswerDetails && summaryState?.attemptedAt && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Last attempt: {new Date(summaryState.attemptedAt).toLocaleString()}
+            </p>
+          )}
         </motion.div>
 
         {/* Score Card */}
@@ -223,7 +288,17 @@ const QuizResults = () => {
               ))}
             </div>
             <button
-              onClick={() => navigate('/start-practice', { state: { weakness: weakChapters[0] } })}
+              onClick={() => {
+                if (returnTo) {
+                  navigate(String(returnTo), {
+                    state: {
+                      prefillPrompt: String(prefillPrompt || `Give me another quiz on ${effectiveTopic} and focus on my mistakes.`)
+                    }
+                  });
+                  return;
+                }
+                navigate('/start-practice', { state: { weakness: weakChapters[0] } });
+              }}
               className="w-full mt-4 py-2 rounded-xl bg-destructive text-destructive-foreground font-semibold hover:opacity-90 transition-opacity"
             >
               Fix Weak Areas
@@ -232,9 +307,28 @@ const QuizResults = () => {
         )}
 
         {/* Actions */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className={`grid ${returnTo ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
+          {returnTo && (
+            <button
+              onClick={() =>
+                navigate(String(returnTo), {
+                  state: { prefillPrompt: String(prefillPrompt || '') }
+                })
+              }
+              className="nf-btn-outline flex items-center justify-center gap-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              {String(returnLabel || 'Back')}
+            </button>
+          )}
           <button
-            onClick={() => navigate('/quiz-start', { state: { subject, topic } })}
+            onClick={() => {
+              if (retryTo) {
+                navigate(String(retryTo), { state: retryState });
+                return;
+              }
+              navigate('/quiz-start', { state: { subject: effectiveSubject, topic: effectiveTopic } });
+            }}
             className="nf-btn-outline flex items-center justify-center gap-2"
           >
             <RotateCcw className="w-5 h-5" />

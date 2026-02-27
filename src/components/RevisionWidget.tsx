@@ -63,7 +63,7 @@ export default function RevisionWidget() {
           <div className="text-xs text-gray-400">L2 Due</div>
         </div>
       </div>
-
+{/* 
       <div className="flex items-center gap-2 mb-4 overflow-x-auto">
         {LEVEL_ICONS.map((label, index) => {
           const level = index + 1;
@@ -78,7 +78,10 @@ export default function RevisionWidget() {
             </div>
           );
         })}
-      </div>
+      </div> */}
+      <p className="text-xs text-gray-400 mb-3">
+        {dueLines.total} topics due for revision today
+      </p>
 
       <div className="space-y-2">
         {dueLines.lines.slice(0, 3).map((line: any) => (
