@@ -617,7 +617,7 @@ const Revision = () => {
                                   </button> */}
                                   <button
                                     onClick={() => void startLineSession(line)}
-                                    className="nf-btn-primary !w-auto h-8 px-3 text-xs"
+                                    className="nf-btn-primary !max-h-[20px] !h-[20px] !w-auto h- px-2 text-[12px]"
                                   >
                                     <Play className="w-3 h-3 mr-1" />
                                     Start
