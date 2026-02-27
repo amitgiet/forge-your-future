@@ -87,8 +87,7 @@ const PracticeSession = () => {
         quizIndex,
         {
           score,
-          correctAnswers: correctCount,
-          totalQuizzes: quizzes.length
+          timeSpent: 0
         }
       );
       

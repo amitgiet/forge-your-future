@@ -107,6 +107,13 @@ type TopicHistoryEntry = {
   levelAfter: number;
   timeSpent: number;
   isAdjustment: boolean;
+  review?: Array<{
+    question: string;
+    options: string[];
+    selectedAnswer: number | null;
+    correctAnswer: number;
+    explanation?: string;
+  }>;
 };
 
 const LEVEL_COLORS = [
@@ -785,33 +792,45 @@ const Revision = () => {
               </div>
             </div>
 
+            <h3 className="text-sm font-bold mb-3 text-foreground">Your Answers & Correct Answers</h3>
+
             {selectedTopicHistoryEntry.review && selectedTopicHistoryEntry.review.length > 0 ? (
               <div className="space-y-3">
                 {selectedTopicHistoryEntry.review.map((item, idx) => (
-                  <div key={`${idx}-${item.question}`} className="rounded-md border border-border bg-card p-3">
-                    <p className="text-sm font-semibold text-foreground">{idx + 1}. {item.question}</p>
-                    <div className="mt-2 space-y-1">
+                  <div key={`${idx}-${item.question}`} className="mb-3 p-3 rounded-lg border border-border bg-muted/20">
+                    <div className="font-bold text-foreground mb-2">Q{idx + 1}: {item.question}</div>
+                    <div className="flex flex-col gap-1">
                       {item.options.map((opt, optIdx) => {
-                        const isSelected = item.selectedAnswer === optIdx;
                         const isCorrect = item.correctAnswer === optIdx;
-                        const cls = isCorrect
-                          ? 'border-success/60 bg-success/10'
-                          : isSelected
-                            ? 'border-destructive/60 bg-destructive/10'
-                            : 'border-border bg-muted/20';
+                        const isUserSelected = item.selectedAnswer === optIdx;
+
                         return (
-                          <div key={`${idx}-${optIdx}`} className={`rounded border px-2 py-1 text-xs ${cls}`}>
-                            <span className="font-medium mr-1">{String.fromCharCode(65 + optIdx)}.</span>
-                            {opt}
-                            {isCorrect ? ' (Correct)' : ''}
-                            {!isCorrect && isSelected ? ' (Your Answer)' : ''}
+                          <div
+                            key={optIdx}
+                            className={`px-3 py-2 rounded text-sm transition-all ${
+                              isCorrect
+                                ? 'bg-success/20 text-success font-bold border border-success/50'
+                                : isUserSelected
+                                  ? 'bg-destructive/10 text-destructive border border-destructive/50'
+                                  : 'text-muted-foreground'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span>{String.fromCharCode(65 + optIdx)}. {opt}</span>
+                              <div className="flex gap-1 text-xs">
+                                {isCorrect && <span className="font-bold">✓ Correct</span>}
+                                {isUserSelected && !isCorrect && <span className="text-destructive">← Your Answer</span>}
+                              </div>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
-                    {item.explanation ? (
-                      <p className="text-xs text-muted-foreground mt-2">Explanation: {item.explanation}</p>
-                    ) : null}
+                    {item.explanation && (
+                      <div className="mt-2 p-2 rounded bg-muted/30 border-l-2 border-primary">
+                        <p className="text-xs text-muted-foreground"><span className="font-bold">Explanation:</span> {item.explanation}</p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -858,32 +877,44 @@ const Revision = () => {
               </div>
             </div>
 
+            <h3 className="text-sm font-bold mb-3 text-foreground">Your Answers & Correct Answers</h3>
+
             <div className="space-y-3">
               {lastSubmission.review.map((item, idx) => (
-                <div key={`${idx}-${item.question}`} className="rounded-md border border-border bg-card p-3">
-                  <p className="text-sm font-semibold text-foreground">{idx + 1}. {item.question}</p>
-                  <div className="mt-2 space-y-1">
+                <div key={`${idx}-${item.question}`} className="mb-3 p-3 rounded-lg border border-border bg-muted/20">
+                  <div className="font-bold text-foreground mb-2">Q{idx + 1}: {item.question}</div>
+                  <div className="flex flex-col gap-1">
                     {item.options.map((opt, optIdx) => {
-                      const isSelected = item.selectedAnswer === optIdx;
                       const isCorrect = item.correctAnswer === optIdx;
-                      const cls = isCorrect
-                        ? 'border-success/60 bg-success/10'
-                        : isSelected
-                          ? 'border-destructive/60 bg-destructive/10'
-                          : 'border-border bg-muted/20';
+                      const isUserSelected = item.selectedAnswer === optIdx;
+
                       return (
-                        <div key={`${idx}-${optIdx}`} className={`rounded border px-2 py-1 text-xs ${cls}`}>
-                          <span className="font-medium mr-1">{String.fromCharCode(65 + optIdx)}.</span>
-                          {opt}
-                          {isCorrect ? ' (Correct)' : ''}
-                          {!isCorrect && isSelected ? ' (Your Answer)' : ''}
+                        <div
+                          key={optIdx}
+                          className={`px-3 py-2 rounded text-sm transition-all ${
+                            isCorrect
+                              ? 'bg-success/20 text-success font-bold border border-success/50'
+                              : isUserSelected
+                                ? 'bg-destructive/10 text-destructive border border-destructive/50'
+                                : 'text-muted-foreground'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{String.fromCharCode(65 + optIdx)}. {opt}</span>
+                            <div className="flex gap-1 text-xs">
+                              {isCorrect && <span className="font-bold">✓ Correct</span>}
+                              {isUserSelected && !isCorrect && <span className="text-destructive">← Your Answer</span>}
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
                   </div>
-                  {item.explanation ? (
-                    <p className="text-xs text-muted-foreground mt-2">Explanation: {item.explanation}</p>
-                  ) : null}
+                  {item.explanation && (
+                    <div className="mt-2 p-2 rounded bg-muted/30 border-l-2 border-primary">
+                      <p className="text-xs text-muted-foreground"><span className="font-bold">Explanation:</span> {item.explanation}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
