@@ -170,7 +170,7 @@ export default function TestReport() {
                       <div className="text-sm text-gray-400">{area.subject} • {area.questionsWrong} wrong • {area.accuracy.toFixed(1)}% accuracy</div>
                     </div>
                     <button
-                      onClick={() => navigate(`/revision/track?subject=${area.subject}&chapter=${area.chapter}`)}
+                      onClick={() => navigate(`/start-practice?subject=${encodeURIComponent(String(area.subject || ''))}&topic=${encodeURIComponent(String(area.chapter || ''))}`)}
                       className="px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg text-white font-semibold flex items-center gap-2"
                     >
                       Fix This

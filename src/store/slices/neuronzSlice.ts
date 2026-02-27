@@ -62,8 +62,8 @@ export const loadDueLines = createAsyncThunk(
 
 export const processLineSession = createAsyncThunk(
   'neuronz/processLineSession',
-  async ({ lineId, correctAnswers, totalQuizzes = 4, timeSpent = 0 }: { lineId: string; correctAnswers: number; totalQuizzes?: number; timeSpent?: number }) => {
-    const response = await apiService.neuronz.processLineSession({ lineId, correctAnswers, totalQuizzes, timeSpent });
+  async ({ lineId, correctAnswers, totalQuizzes = 4, timeSpent = 0, review }: { lineId: string; correctAnswers: number; totalQuizzes?: number; timeSpent?: number; review?: any[] }) => {
+    const response = await apiService.neuronz.processLineSession({ lineId, correctAnswers, totalQuizzes, timeSpent, review });
     return response.data;
   }
 );

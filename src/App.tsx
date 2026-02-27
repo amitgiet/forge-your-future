@@ -34,7 +34,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
  import QuizSession from "./pages/QuizSession";
  import QuizResults from "./pages/QuizResults";
  import RevisionDashboard from "./pages/RevisionDashboard";
- import TrackTopic from "./pages/TrackTopic";
 import QuizGenerator from "./pages/QuizGenerator";
 import TestSeries from "./pages/TestSeries";
 import TestSession from "./pages/TestSession";
@@ -83,7 +82,7 @@ const App = () => (
                     <Route path="/quiz-session" element={<ProtectedRoute><QuizSession /></ProtectedRoute>} />
                     <Route path="/quiz-results" element={<ProtectedRoute><QuizResults /></ProtectedRoute>} />
                     <Route path="/revision-dashboard" element={<ProtectedRoute><RevisionDashboard /></ProtectedRoute>} />
-                    <Route path="/revision/track" element={<ProtectedRoute><TrackTopic /></ProtectedRoute>} />
+                    <Route path="/revision/track" element={<ProtectedRoute><StartPractice /></ProtectedRoute>} />
                     <Route path="/quiz-generator" element={<ProtectedRoute><QuizGenerator /></ProtectedRoute>} />
                 <Route path="/tests" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
                     <Route path="/test/custom/create" element={<ProtectedRoute><CustomTestCreate /></ProtectedRoute>} />

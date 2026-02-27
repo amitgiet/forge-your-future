@@ -27,7 +27,7 @@ export const apiService = {
   neuronz: {
     getDueLines: () => api.get('/neuronz/due'),
 
-    processLineSession: (data: { lineId: string; correctAnswers: number; totalQuizzes?: number; timeSpent?: number }) =>
+    processLineSession: (data: { lineId: string; correctAnswers: number; totalQuizzes?: number; timeSpent?: number; review?: any[] }) =>
       api.post('/neuronz/session', data),
 
     generateMicroQuizzes: (lineId: string) => api.get(`/neuronz/quizzes/${lineId}`),
@@ -58,6 +58,21 @@ export const apiService = {
 
     getLineAnalytics: (lineId: string) =>
       api.get(`/neuronz/${lineId}/analytics`),
+
+    getTopicSummary: () =>
+      api.get('/neuronz/topics/summary'),
+
+    getTopicDueLines: (topicId: string, sessionSize = 6) =>
+      api.get(`/neuronz/topics/${topicId}/due`, { params: { sessionSize } }),
+
+    getTopicSubmissionHistory: (topicId: string, limit = 20) =>
+      api.get(`/neuronz/topics/${topicId}/history`, { params: { limit } }),
+
+    startTopicBaseline: (topicId: string, baselineSize = 20) =>
+      api.post(`/neuronz/topics/${topicId}/baseline`, { baselineSize }),
+
+    getTopicAvailability: (subject: string, topic: string) =>
+      api.get('/neuronz/topics/availability', { params: { subject, topic } }),
   },
 
   // Questions APIs
@@ -97,12 +112,12 @@ export const apiService = {
 
   // Sessions APIs
   sessions: {
-    createSession: (data: any) => api.post('/sessions', data),
+    createSession: (data: any) => api.post('/sessions/start', data),
 
     getSessions: () => api.get('/sessions'),
 
     updateSession: (sessionId: string, data: any) =>
-      api.put(`/sessions/${sessionId}`, data),
+      api.put(`/sessions/${sessionId}/end`, data),
   },
 
   // Learning Paths APIs

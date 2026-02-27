@@ -61,7 +61,7 @@ export default function RevisionDashboard() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/revision/track')}
+            onClick={() => navigate('/start-practice')}
             className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white font-semibold"
           >
             + Track New Topic
@@ -210,4 +210,3 @@ export default function RevisionDashboard() {
     </div>
   );
 }
-

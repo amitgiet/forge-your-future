@@ -104,11 +104,24 @@ const LearningPathFlow = () => {
     try {
       if (currentContent?.lineId?._id && quizzes.length > 0) {
         try {
+          // Build review data from quiz answers
+          const review = quizzes.map((quiz, idx) => {
+            const isCorrect = idx < quizzes.length ? (quiz.correctAnswer === idx) : false;
+            return {
+              question: quiz.question,
+              options: Array.isArray(quiz.options) ? quiz.options.map((opt: any) => String(opt)) : [],
+              selectedAnswer: isCorrect ? idx : null,
+              correctAnswer: Number(quiz.correctAnswer),
+              explanation: quiz.explanation
+            };
+          });
+
           await apiService.neuronz.processLineSession({
             lineId: currentContent.lineId._id,
             correctAnswers: correctCount,
             totalQuizzes: quizzes.length,
-            timeSpent: 0
+            timeSpent: 0,
+            review
           });
         } catch (neuronzError) {
           console.warn('NeuronZ sync failed, continuing path progression:', neuronzError);

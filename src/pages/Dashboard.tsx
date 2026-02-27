@@ -43,13 +43,37 @@ interface TodayQuestStats {
   };
 }
 
+interface TopicSummary {
+  topicId: string;
+  topic: string;
+  subject: string;
+  totalTracked: number;
+  dueNow: number;
+  byLevel: {
+    L1: number;
+    L2: number;
+    L3: number;
+    L4: number;
+    L5: number;
+    L6: number;
+    L7: number;
+  };
+  masteryPercent: number;
+  lastActivityAt: string | null;
+}
+
 const Dashboard = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { dueLines } = useAppSelector((state) => state.neuronz);
-  const dueCount = dueLines?.total || 0;
-  const l2Count = dueLines?.byLevel?.L2?.length || 0;
+  const [topicSummary, setTopicSummary] = useState<TopicSummary[]>([]);
+  const dueCount = topicSummary.length > 0
+    ? topicSummary.reduce((sum, topic) => sum + topic.dueNow, 0)
+    : (dueLines?.total || 0);
+  const l2Count = topicSummary.length > 0
+    ? topicSummary.reduce((sum, topic) => sum + (topic.byLevel?.L2 || 0), 0)
+    : (dueLines?.byLevel?.L2?.length || 0);
 
   const [userRank, setUserRank] = useState<any>(null);
   const [todayProgress, setTodayProgress] = useState<TodayProgressStats>({
@@ -77,6 +101,7 @@ const Dashboard = () => {
     fetchUserRank();
     fetchTodayProgress();
     fetchTodayQuest();
+    fetchTopicSummary();
     dispatch(loadDueLines());
   }, [dispatch]);
 
@@ -113,6 +138,17 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching today quest:', error);
+    }
+  };
+
+  const fetchTopicSummary = async () => {
+    try {
+      const response = await apiService.neuronz.getTopicSummary();
+      if (response.data?.success && response.data?.data?.topics) {
+        setTopicSummary(response.data.data.topics);
+      }
+    } catch (error) {
+      console.error('Error fetching NeuronZ topic summary:', error);
     }
   };
 

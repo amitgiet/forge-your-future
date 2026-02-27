@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Brain, ArrowRight, BookOpen, Target, Zap } from 'lucide-react';
 import { apiService } from '../lib/apiService';
@@ -21,16 +21,67 @@ const POPULAR_TOPICS = {
 
 const StartPractice = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('');
   const [customTopic, setCustomTopic] = useState('');
   const [loading, setLoading] = useState(false);
+  const [availability, setAvailability] = useState<{
+    available: boolean;
+    mappedLineCount: number;
+  } | null>(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+
+  useEffect(() => {
+    const subjectParam = String(searchParams.get('subject') || '').toLowerCase().trim();
+    const topicParam = String(searchParams.get('topic') || '').trim();
+
+    if (subjectParam && SUBJECTS.some((s) => s.id === subjectParam)) {
+      setSelectedSubject(subjectParam);
+    }
+
+    if (topicParam) {
+      setCustomTopic(topicParam);
+      setSelectedTopic('');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const topic = (customTopic || selectedTopic || '').trim();
+    if (!selectedSubject || !topic) {
+      setAvailability(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setCheckingAvailability(true);
+      try {
+        const response = await apiService.neuronz.getTopicAvailability(selectedSubject, topic);
+        const data = response.data?.data;
+        setAvailability({
+          available: Boolean(data?.available),
+          mappedLineCount: Number(data?.mappedLineCount || 0)
+        });
+      } catch (error) {
+        setAvailability(null);
+      } finally {
+        setCheckingAvailability(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [selectedSubject, selectedTopic, customTopic]);
 
   const handleStart = async () => {
     const topic = customTopic || selectedTopic;
     
     if (!selectedSubject || !topic) {
       alert('Please select subject and topic');
+      return;
+    }
+
+    if (availability && !availability.available) {
+      alert('No mapped NCERT lines/questions yet for this topic. Please ask admin/content team to map it first.');
       return;
     }
 
@@ -45,7 +96,11 @@ const StartPractice = () => {
         navigate('/revision?autoStart=1');
       }
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to start practice');
+      const backendMessage = error.response?.data?.error || error.response?.data?.message;
+      alert(
+        backendMessage ||
+        'No mapped NCERT lines/questions yet for this topic. Please ask admin/content team to map it first.'
+      );
     } finally {
       setLoading(false);
     }
@@ -66,7 +121,7 @@ const StartPractice = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Start NeuronZ Practice</h1>
-              <p className="text-sm text-muted-foreground">Enter Level 1 with 100 MCQs</p>
+              <p className="text-sm text-muted-foreground">Track a topic and revise mapped NCERT lines</p>
             </div>
           </div>
         </motion.div>
@@ -82,10 +137,10 @@ const StartPractice = () => {
             How NeuronZ Works
           </h3>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>• Practice 100 MCQs → Enter Level 1</p>
-            <p>• Correct answers unlock next levels (L2→L3→L4→L5→L6→L7)</p>
-            <p>• Intervals: 24h → 3d → 5d → 7d → 10d → 15d → 30d</p>
-            <p>• System brings questions back exactly when you're about to forget</p>
+            <p>- Track one topic and start from Level 1 with mapped lines</p>
+            <p>- Correct answers unlock next levels (L2-L3-L4-L5-L6-L7)</p>
+            <p>- Intervals: 24h to 3d to 5d to 7d to 10d to 15d to 30d</p>
+            <p>- System brings questions back when revision is due</p>
           </div>
         </motion.div>
 
@@ -177,22 +232,42 @@ const StartPractice = () => {
 
         {/* Start Button */}
         {selectedSubject && (selectedTopic || customTopic) && (
+          <>
+            <div className={`mb-3 text-xs rounded-lg px-3 py-2 ${
+              checkingAvailability
+                ? 'bg-muted text-muted-foreground'
+                : availability?.available
+                  ? 'bg-success/15 text-success'
+                  : availability
+                    ? 'bg-warning/15 text-warning'
+                    : 'bg-muted text-muted-foreground'
+            }`}>
+              {checkingAvailability
+                ? 'Checking topic mapping...'
+                : availability?.available
+                  ? `Mapped content found (${availability.mappedLineCount} lines). You can start revision.`
+                  : availability
+                    ? 'No mapped NCERT lines/questions found for this topic yet.'
+                    : 'Select topic to check mapped content.'}
+            </div>
+
           <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={handleStart}
-            disabled={loading}
+            disabled={loading || checkingAvailability || (availability !== null && !availability.available)}
             className="nf-btn-primary w-full flex items-center justify-center gap-2"
           >
             {loading ? (
               <>Starting NeuronZ Practice...</>
             ) : (
               <>
-                Enter Level 1 with 100 MCQs
+                Start Topic Revision
                 <ArrowRight className="w-5 h-5" />
               </>
             )}
           </motion.button>
+          </>
         )}
       </div>
 
