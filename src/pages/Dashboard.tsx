@@ -1,4 +1,4 @@
-import { Flame, Star, Upload, BookOpen, Brain, Trophy, Zap, Target, Sparkles, FileText, Wand2 } from 'lucide-react';
+import { Flame, Star, Upload, BookOpen, Brain, Trophy, Zap, Target, Sparkles, FileText, Wand2, BookMarked, Lightbulb, Crown, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -325,6 +325,73 @@ const Dashboard = () => {
                 <div className={`text-lg font-extrabold ${item.highlight ? 'text-success' : 'text-foreground'}`}>{item.val}</div>
                 <div className="text-[10px] text-muted-foreground">{item.label}</div>
               </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Study Resources Cards */}
+        <motion.div
+          className="mt-6"
+          initial="hidden"
+          animate="show"
+          variants={stagger}
+        >
+          <motion.h3 variants={fadeUp} className="nf-heading text-foreground mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+            <BookMarked className="w-4 h-4 text-primary" />
+            Study Resources
+          </motion.h3>
+          <div className="space-y-3">
+            {[
+              {
+                icon: BookMarked,
+                title: 'PYQ Marked Notes',
+                description: 'Physics, Biology, Chemistry',
+                color: 'primary',
+                path: '/pyq-marked-ncert',
+              },
+              {
+                icon: Lightbulb,
+                title: 'Important Topics',
+                description: 'Chapter-wise essentials',
+                color: 'warning',
+                path: '#',
+              },
+              {
+                icon: Crown,
+                title: "Toppers' Essentials",
+                description: 'Expert study guides',
+                color: 'success',
+                path: '#',
+              },
+            ].map((resource, index) => (
+              <motion.button
+                key={index}
+                variants={fadeUp}
+                onClick={() => navigate(resource.path)}
+                disabled={resource.path === '#'}
+                className={`w-full p-4 rounded-2xl flex items-center gap-3 glass-card group cursor-pointer transition-all ${
+                  resource.path === '#' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent/20'
+                }`}
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div
+                  className={`p-3 rounded-lg group-hover:scale-110 transition-transform ${
+                    resource.color === 'primary'
+                      ? 'bg-primary/20 text-primary'
+                      : resource.color === 'warning'
+                        ? 'bg-warning/20 text-warning'
+                        : 'bg-success/20 text-success'
+                  }`}
+                >
+                  <resource.icon className="w-5 h-5" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-semibold text-foreground text-sm">{resource.title}</p>
+                  <p className="text-[10px] text-muted-foreground">{resource.description}</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </motion.button>
             ))}
           </div>
         </motion.div>

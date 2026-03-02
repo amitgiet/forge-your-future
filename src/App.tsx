@@ -43,6 +43,8 @@ import DailyChallenge from "./pages/DailyChallenge";
 import Leaderboard from "./pages/Leaderboard";
 import AIAssistant from "./pages/AIAssistant";
 import AIQuizSession from "./pages/AIQuizSession";
+import PYQMarkedNCERT from "./pages/PYQMarkedNCERT";
+import PYQTopicViewer from "./pages/PYQTopicViewer";
 import NotFound from "./pages/NotFound";
  
  const queryClient = new QueryClient();
@@ -94,6 +96,8 @@ const App = () => (
                     <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
                     <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
                     <Route path="/ai-quiz-session" element={<ProtectedRoute><AIQuizSession /></ProtectedRoute>} />
+                    <Route path="/pyq-marked-ncert" element={<ProtectedRoute><PYQMarkedNCERT /></ProtectedRoute>} />
+                    <Route path="/pyq-marked-ncert/:topicId" element={<ProtectedRoute><PYQTopicViewer /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </TooltipProvider>

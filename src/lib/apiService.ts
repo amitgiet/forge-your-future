@@ -288,6 +288,17 @@ export const apiService = {
 
     getUserRank: () => api.get('/daily-challenge/leaderboard/user-rank'),
   },
+
+  // PYQ Marked NCERT APIs
+  pyqMarkedNCERT: {
+    getAllPYQData: () => api.get('/pyq-marked-ncert/all'),
+
+    getTopicsBySubject: (subject: string, stream?: string) =>
+      api.get('/pyq-marked-ncert/topics', { params: { subject, stream } }),
+
+    getTopicById: (topicId: string) =>
+      api.get(`/pyq-marked-ncert/${topicId}`),
+  },
 };
 
 export default apiService;
