@@ -10,30 +10,30 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { RevisionProvider } from "@/contexts/RevisionContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
- import Splash from "./pages/Splash";
- import Onboarding from "./pages/Onboarding";
- import Login from "./pages/Login";
- import Signup from "./pages/Signup";
- import Dashboard from "./pages/Dashboard";
- import Quiz from "./pages/Quiz";
- import MockAnalyzer from "./pages/MockAnalyzer";
- import NCERTSearch from "./pages/NCERTSearch";
- import NCERTReader from "./pages/NCERTReader";
- import Profile from "./pages/Profile";
- import Revision from "./pages/Revision";
- import CreateLearningPath from "./pages/CreateLearningPath";
- import LearningPathFlow from "./pages/LearningPathFlow";
- import MyLearningPaths from "./pages/MyLearningPaths";
- import StartPractice from "./pages/StartPractice";
- import PracticeSession from "./pages/PracticeSession";
- import MyChallenges from "./pages/MyChallenges";
- import Social from "./pages/Social";
- import ChatPage from "./pages/ChatPage";
- import AddFriend from "./pages/AddFriend";
- import QuizStart from "./pages/QuizStart";
- import QuizSession from "./pages/QuizSession";
- import QuizResults from "./pages/QuizResults";
- import RevisionDashboard from "./pages/RevisionDashboard";
+import Splash from "./pages/Splash";
+import Onboarding from "./pages/Onboarding";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Dashboard from "./pages/Dashboard";
+import Quiz from "./pages/Quiz";
+import MockAnalyzer from "./pages/MockAnalyzer";
+import NCERTSearch from "./pages/NCERTSearch";
+import NCERTReader from "./pages/NCERTReader";
+import Profile from "./pages/Profile";
+import Revision from "./pages/Revision";
+import CreateLearningPath from "./pages/CreateLearningPath";
+import LearningPathFlow from "./pages/LearningPathFlow";
+import MyLearningPaths from "./pages/MyLearningPaths";
+import StartPractice from "./pages/StartPractice";
+import PracticeSession from "./pages/PracticeSession";
+import MyChallenges from "./pages/MyChallenges";
+import Social from "./pages/Social";
+import ChatPage from "./pages/ChatPage";
+import AddFriend from "./pages/AddFriend";
+import QuizStart from "./pages/QuizStart";
+import QuizSession from "./pages/QuizSession";
+import QuizResults from "./pages/QuizResults";
+import RevisionDashboard from "./pages/RevisionDashboard";
 import QuizGenerator from "./pages/QuizGenerator";
 import TestSeries from "./pages/TestSeries";
 import TestSession from "./pages/TestSession";
@@ -45,10 +45,11 @@ import AIAssistant from "./pages/AIAssistant";
 import AIQuizSession from "./pages/AIQuizSession";
 import PYQMarkedNCERT from "./pages/PYQMarkedNCERT";
 import PYQTopicViewer from "./pages/PYQTopicViewer";
+import CurriculumBrowser from "./pages/CurriculumBrowser";
 import NotFound from "./pages/NotFound";
- 
- const queryClient = new QueryClient();
- 
+
+const queryClient = new QueryClient();
+
 const App = () => (
   <Provider store={store}>
     <QueryClientProvider client={queryClient}>
@@ -88,7 +89,7 @@ const App = () => (
                     <Route path="/revision-dashboard" element={<ProtectedRoute><RevisionDashboard /></ProtectedRoute>} />
                     <Route path="/revision/track" element={<ProtectedRoute><StartPractice /></ProtectedRoute>} />
                     <Route path="/quiz-generator" element={<ProtectedRoute><QuizGenerator /></ProtectedRoute>} />
-                <Route path="/tests" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
+                    <Route path="/tests" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
                     <Route path="/test/custom/create" element={<ProtectedRoute><CustomTestCreate /></ProtectedRoute>} />
                     <Route path="/test/session/:attemptId" element={<ProtectedRoute><TestSession /></ProtectedRoute>} />
                     <Route path="/test/report/:attemptId" element={<ProtectedRoute><TestReport /></ProtectedRoute>} />
@@ -98,6 +99,7 @@ const App = () => (
                     <Route path="/ai-quiz-session" element={<ProtectedRoute><AIQuizSession /></ProtectedRoute>} />
                     <Route path="/pyq-marked-ncert" element={<ProtectedRoute><PYQMarkedNCERT /></ProtectedRoute>} />
                     <Route path="/pyq-marked-ncert/:topicId" element={<ProtectedRoute><PYQTopicViewer /></ProtectedRoute>} />
+                    <Route path="/curriculum-browser" element={<ProtectedRoute><CurriculumBrowser /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </TooltipProvider>

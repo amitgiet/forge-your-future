@@ -299,6 +299,27 @@ export const apiService = {
     getTopicById: (topicId: string) =>
       api.get(`/pyq-marked-ncert/${topicId}`),
   },
+
+  // Curriculum Browser APIs (ImportedCurriculum)
+  curriculum: {
+    getSubjects: () => api.get('/curriculum/subjects'),
+
+    getChapters: (subject: string) =>
+      api.get(`/curriculum/${subject}/chapters`),
+
+    getTopics: (subject: string, chapterId: string) =>
+      api.get(`/curriculum/${subject}/chapters/${encodeURIComponent(chapterId)}/topics`),
+
+    getSubTopics: (subject: string, chapterId: string, topic?: string) =>
+      api.get(`/curriculum/${subject}/chapters/${encodeURIComponent(chapterId)}/subtopics`, {
+        params: topic ? { topic } : {},
+      }),
+
+    getQuestionsByUIDs: (uids: number[], page = 1, limit = 20) =>
+      api.get(`/curriculum/questions`, {
+        params: { uids: uids.join(','), page, limit },
+      }),
+  },
 };
 
 export default apiService;

@@ -239,9 +239,8 @@ const Dashboard = () => {
               { value: `${todayProgress.accuracy || 0}%`, label: 'Accuracy', color: 'warning' },
             ].map((s, i) => (
               <div key={i} className="text-center">
-                <p className={`text-xl font-extrabold ${
-                  s.color === 'primary' ? 'text-primary' : s.color === 'success' ? 'text-success' : 'text-warning'
-                }`}>{s.value}</p>
+                <p className={`text-xl font-extrabold ${s.color === 'primary' ? 'text-primary' : s.color === 'success' ? 'text-success' : 'text-warning'
+                  }`}>{s.value}</p>
                 <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">{s.label}</p>
               </div>
             ))}
@@ -343,6 +342,13 @@ const Dashboard = () => {
           <div className="space-y-3">
             {[
               {
+                icon: BookOpen,
+                title: 'Question Bank',
+                description: 'Biology · Chemistry · Physics topics',
+                color: 'success',
+                path: '/curriculum-browser',
+              },
+              {
                 icon: BookMarked,
                 title: 'PYQ Marked Notes',
                 description: 'Physics, Biology, Chemistry',
@@ -369,20 +375,18 @@ const Dashboard = () => {
                 variants={fadeUp}
                 onClick={() => navigate(resource.path)}
                 disabled={resource.path === '#'}
-                className={`w-full p-4 rounded-2xl flex items-center gap-3 glass-card group cursor-pointer transition-all ${
-                  resource.path === '#' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent/20'
-                }`}
+                className={`w-full p-4 rounded-2xl flex items-center gap-3 glass-card group cursor-pointer transition-all ${resource.path === '#' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent/20'
+                  }`}
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >
                 <div
-                  className={`p-3 rounded-lg group-hover:scale-110 transition-transform ${
-                    resource.color === 'primary'
+                  className={`p-3 rounded-lg group-hover:scale-110 transition-transform ${resource.color === 'primary'
                       ? 'bg-primary/20 text-primary'
                       : resource.color === 'warning'
                         ? 'bg-warning/20 text-warning'
                         : 'bg-success/20 text-success'
-                  }`}
+                    }`}
                 >
                   <resource.icon className="w-5 h-5" />
                 </div>
