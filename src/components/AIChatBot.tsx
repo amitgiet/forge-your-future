@@ -267,7 +267,7 @@ export default function AIChatBot() {
     if (!chartData || !chartData.data) return null;
     
     return (
-      <div className="mt-3 p-3 bg-white/5 rounded-lg">
+      <div className="mt-3 p-3 bg-muted rounded-lg">
         {chartData.chartType === 'bar' && <BarChartComponent data={chartData.data} />}
         {chartData.chartType === 'pie' && <PieChartComponent data={chartData.data} />}
       </div>
@@ -439,20 +439,20 @@ export default function AIChatBot() {
     return (
       <div className="mt-3 space-y-2">
         {quizData.data.map((quiz: any, idx: number) => (
-          <div key={idx} className="p-3 bg-white/5 rounded-lg border border-white/10 hover:border-purple-500 transition-colors">
+          <div key={idx} className="p-3 bg-muted rounded-lg border border-border hover:border-primary transition-colors">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
-                <p className="text-sm font-medium">{quiz.topic}</p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-sm font-medium text-foreground">{quiz.topic}</p>
+                <p className="text-xs text-muted-foreground mt-1">
                   {quiz.subject} • Chapter {quiz.chapter}
                 </p>
                 {quiz.reason && (
-                  <p className="text-xs text-purple-400 mt-1">{quiz.reason}</p>
+                  <p className="text-xs text-primary mt-1">{quiz.reason}</p>
                 )}
               </div>
               <button
                 onClick={() => handleStartQuiz(quiz)}
-                className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+                className="nf-btn-primary px-3 py-1.5 text-xs whitespace-nowrap"
               >
                 Take Quiz
               </button>
@@ -466,27 +466,27 @@ export default function AIChatBot() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/dashboard')}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--gradient-primary)' }}>
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="font-bold text-lg">AI Study Assistant</h2>
-            <p className="text-xs text-gray-400">Ask me anything about your performance</p>
+            <h2 className="font-bold text-lg text-foreground">AI Study Assistant</h2>
+            <p className="text-xs text-muted-foreground">Ask me anything about your performance</p>
           </div>
         </div>
         <div className="flex gap-2">
           {messages.length > 0 && (
             <button
               onClick={exportChat}
-              className="text-sm text-gray-400 hover:text-white flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white/10"
+              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-muted"
             >
               <Download className="w-4 h-4" />
             </button>
@@ -494,7 +494,7 @@ export default function AIChatBot() {
           {messages.length > 0 && (
             <button
               onClick={startNewChat}
-              className="text-sm text-gray-400 hover:text-white flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white/10"
+              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-muted"
             >
               <X className="w-4 h-4" />
             </button>
@@ -508,14 +508,14 @@ export default function AIChatBot() {
           <div className="text-center py-12">
             <Bot className="w-16 h-16 mx-auto mb-4 text-purple-400" />
             <h3 className="text-xl font-bold mb-2">Hi {user?.name}! 👋</h3>
-            <p className="text-gray-400 mb-6">I can help you analyze your performance and study better</p>
+            <p className="text-muted-foreground mb-6">I can help you analyze your performance and study better</p>
             
             <div className="grid grid-cols-1 gap-2 max-w-md mx-auto">
               {quickQuestions.map((q, i) => (
                 <button
                   key={i}
                   onClick={() => setInput(q.text)}
-                  className="text-left p-3 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-colors flex items-center gap-2"
+                  className="text-left p-3 bg-muted hover:bg-accent rounded-lg text-sm text-foreground transition-colors flex items-center gap-2"
                 >
                   <q.icon className={`w-4 h-4 ${q.color}`} />
                   {q.text}
@@ -542,8 +542,8 @@ export default function AIChatBot() {
               <div
                 className={`max-w-[70%] p-3 rounded-lg ${
                   msg.role === 'user'
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                    : 'bg-white/10 text-muted-foreground'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-foreground'
                 }`}
               >
                 <div className="prose prose-sm prose-invert max-w-none">
@@ -568,8 +568,8 @@ export default function AIChatBot() {
               </div>
 
               {msg.role === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4 text-foreground" />
                 </div>
               )}
             </motion.div>
@@ -585,8 +585,8 @@ export default function AIChatBot() {
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
               <Bot className="w-4 h-4 text-white" />
             </div>
-            <div className="bg-white/10 p-3 rounded-lg">
-              <Loader2 className="w-5 h-5 animate-spin" />
+            <div className="bg-muted p-3 rounded-lg">
+              <Loader2 className="w-5 h-5 animate-spin text-foreground" />
             </div>
           </motion.div>
         )}
@@ -595,7 +595,7 @@ export default function AIChatBot() {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-white/10 bg-white/5">
+      <div className="p-4 border-t border-border bg-card">
         <div className="flex gap-2">
           <input
             type="text"
@@ -604,7 +604,7 @@ export default function AIChatBot() {
             onKeyPress={handleKeyPress}
             placeholder="Ask me anything..."
             disabled={loading}
-            className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-purple-500 disabled:opacity-50"
+            className="flex-1 bg-muted border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary disabled:opacity-50"
           />
           {recognitionRef.current && (
             <button
@@ -612,8 +612,8 @@ export default function AIChatBot() {
               disabled={loading}
               className={`px-4 py-3 rounded-lg font-semibold disabled:opacity-50 transition-all ${
                 isListening 
-                  ? 'bg-red-500 text-white animate-pulse' 
-                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                  ? 'bg-destructive text-destructive-foreground animate-pulse' 
+                  : 'bg-muted text-muted-foreground hover:bg-accent'
               }`}
             >
               {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -622,7 +622,7 @@ export default function AIChatBot() {
           <button
             onClick={sendMessage}
             disabled={!input.trim() || loading}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+            className="nf-btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </button>
