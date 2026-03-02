@@ -315,7 +315,7 @@ const Dashboard = () => {
             <span className="font-bold nf-gradient-text">{todayQuest.progressPercentage || 0}%</span>
           </div>
 
-          <div className="flex gap-2 mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex gap-2 mt-4 pt-4 border-t border-border">
             {[
               { val: String(todayQuest.stats?.minutesStudied || 0), label: 'mins studied' },
               { val: String(todayQuest.stats?.questions || 0), label: 'questions' },

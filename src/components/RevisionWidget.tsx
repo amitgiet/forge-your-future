@@ -37,12 +37,12 @@ export default function RevisionWidget() {
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-purple-400" />
+          <Calendar className="w-5 h-5 text-primary" />
           <h3 className="nf-heading text-foreground">7-Level Revision</h3>
         </div>
         <button
           onClick={() => navigate('/revision')}
-          className="text-sm text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1"
+          className="text-sm text-primary hover:text-primary/80 font-semibold flex items-center gap-1"
         >
           View All
           <ArrowRight className="w-4 h-4" />
@@ -50,17 +50,17 @@ export default function RevisionWidget() {
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="bg-white/5 rounded-lg p-3 text-center">
+        <div className="bg-muted rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-foreground">{dueLines.total}</div>
-          <div className="text-xs text-gray-400">Due Today</div>
+          <div className="text-xs text-muted-foreground">Due Today</div>
         </div>
-        <div className="bg-white/5 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-red-400">{overdueCount}</div>
-          <div className="text-xs text-gray-400">Overdue</div>
+        <div className="bg-muted rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-destructive">{overdueCount}</div>
+          <div className="text-xs text-muted-foreground">Overdue</div>
         </div>
-        <div className="bg-white/5 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-orange-400">{l2Count}</div>
-          <div className="text-xs text-gray-400">L2 Due</div>
+        <div className="bg-muted rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-warning">{l2Count}</div>
+          <div className="text-xs text-muted-foreground">L2 Due</div>
         </div>
       </div>
 {/* 
@@ -79,7 +79,7 @@ export default function RevisionWidget() {
           );
         })}
       </div> */}
-      <p className="text-xs text-gray-400 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         {dueLines.total} topics due for revision today
       </p>
 
@@ -89,25 +89,25 @@ export default function RevisionWidget() {
             key={line._id}
             whileHover={{ scale: 1.02 }}
             onClick={() => navigate(`/revision?revisionId=${line._id}`)}
-            className="bg-white/5 rounded-lg p-3 border border-white/10 hover:border-purple-500/50 cursor-pointer transition-all"
+            className="bg-muted rounded-lg p-3 border border-border hover:border-primary/50 cursor-pointer transition-all"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs px-2 py-0.5 rounded bg-white/10 border border-white/20">
+                  <span className="text-xs px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary font-semibold">
                     L{line.level}
                   </span>
-                  <span className="font-semibold text-sm break-words line-clamp-2">
+                  <span className="font-semibold text-sm text-foreground break-words line-clamp-2">
                     {line.lineId?.ncertText || 'NCERT Line'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-400 flex-wrap">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                   <span>{line.lineId?.subject}</span>
                   <span>•</span>
                   <span>Level {line.level}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
                 <TrendingUp className="w-3 h-3" />
                 {Math.round(line.overallAccuracy || 0)}%
               </div>
@@ -120,7 +120,7 @@ export default function RevisionWidget() {
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => navigate('/revision')}
-        className="w-full mt-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white font-semibold"
+        className="nf-btn-primary w-full mt-4"
       >
         Start Revising ({dueLines.total} topics)
       </motion.button>

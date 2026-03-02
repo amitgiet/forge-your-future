@@ -31,7 +31,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center px-4 py-6 relative overflow-hidden">
       {/* Background glows */}
       <div className="glow-orb glow-orb-primary w-[500px] h-[500px] -top-64 -right-32 animate-glow-pulse" />
       <div className="glow-orb glow-orb-secondary w-[400px] h-[400px] -bottom-48 -left-32 animate-glow-pulse" style={{ animationDelay: '1.5s' }} />
@@ -43,14 +43,14 @@ const Login = () => {
         className="w-full max-w-md relative z-10"
       >
         {/* Logo */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-extrabold nf-gradient-text tracking-tighter mb-2">NEETFORGE</h1>
-          <p className="text-muted-foreground text-sm">Welcome back — let's continue learning</p>
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-extrabold nf-gradient-text tracking-tighter mb-1">NEETFORGE</h1>
+          <p className="text-muted-foreground text-xs">Welcome back — let's continue learning</p>
         </div>
 
         {/* Login Form */}
         <div className="glass-card">
-          <h2 className="text-xl font-bold text-foreground mb-6">Sign in</h2>
+          <h2 className="text-lg font-bold text-foreground mb-4">Sign in</h2>
 
           {error && (
             <div className="mb-4 p-3 rounded-2xl" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
@@ -58,7 +58,7 @@ const Login = () => {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Email</label>
               <div className="relative">
@@ -69,7 +69,7 @@ const Login = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   required
-                  className="w-full pl-11 pr-4 py-3.5 rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                   style={{
                     background: 'rgba(255,255,255,0.04)',
                     border: '1px solid rgba(255,255,255,0.08)',
@@ -88,7 +88,7 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full pl-11 pr-12 py-3.5 rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  className="w-full pl-11 pr-12 py-3 rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                   style={{
                     background: 'rgba(255,255,255,0.04)',
                     border: '1px solid rgba(255,255,255,0.08)',
@@ -119,7 +119,7 @@ const Login = () => {
           </form>
 
           {/* Demo */}
-          <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="mt-4 pt-4 border-t border-border">
             <button
               type="button"
               onClick={handleDemoLogin}
@@ -131,7 +131,7 @@ const Login = () => {
             </button>
           </div>
 
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
               <button onClick={() => navigate('/signup')} className="text-primary font-semibold hover:underline">
