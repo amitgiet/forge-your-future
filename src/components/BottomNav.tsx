@@ -22,16 +22,8 @@ const BottomNav = () => {
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)' }}
     >
-      {/* Glass background */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: 'rgba(10, 10, 14, 0.92)',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-        }}
-      />
+      {/* Clean background */}
+      <div className="absolute inset-0 bg-card border-t border-border shadow-elevated" />
       <div className="max-w-md mx-auto flex justify-around items-center py-2.5 px-2 relative z-10">
         {navItems.map(({ icon: Icon, path, label }) => {
           const isActive = location.pathname === path;
@@ -39,21 +31,17 @@ const BottomNav = () => {
             <motion.button
               key={path}
               onClick={() => navigate(path)}
-              className={`relative flex flex-col items-center justify-center py-2 px-4 rounded-2xl transition-all ${
+              className={`relative flex flex-col items-center justify-center py-2 px-4 rounded-xl transition-all ${
                 isActive
                   ? 'text-primary'
-                  : 'text-zinc-400 hover:text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
               whileTap={{ scale: 0.9 }}
             >
               {isActive && (
                 <motion.div
                   layoutId="nav-indicator"
-                  className="absolute inset-0 rounded-2xl"
-                  style={{
-                    background: 'rgba(99, 102, 241, 0.1)',
-                    border: '1px solid rgba(99, 102, 241, 0.2)',
-                  }}
+                  className="absolute inset-0 rounded-xl bg-primary/10"
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}
