@@ -60,6 +60,26 @@ type SubTopic = {
     expiresAt: string | null;
     resumeRemaining: number;
   } | null;
+  activeRuns?: {
+    practice: {
+      runId: string;
+      mode: 'practice';
+      attemptedQuestions: number;
+      totalQuestions: number;
+      lastActivityAt: string | null;
+      expiresAt: string | null;
+      resumeRemaining: number;
+    } | null;
+    test: {
+      runId: string;
+      mode: 'test';
+      attemptedQuestions: number;
+      totalQuestions: number;
+      lastActivityAt: string | null;
+      expiresAt: string | null;
+      resumeRemaining: number;
+    } | null;
+  };
 };
 
 type TopicWithSubs = {
@@ -458,8 +478,10 @@ const CurriculumBrowser = () => {
                 const progress = sub.progress || emptyProgress;
                 const status = getStatus(progress, sub.activeRun);
                 const alignRight = index % 2 === 1;
-                const hasPracticeResume = sub.activeRun?.mode === 'practice';
-                const hasTestResume = sub.activeRun?.mode === 'test';
+                const practiceRun = sub.activeRuns?.practice || (sub.activeRun?.mode === 'practice' ? sub.activeRun : null);
+                const testRun = sub.activeRuns?.test || (sub.activeRun?.mode === 'test' ? sub.activeRun : null);
+                const hasPracticeResume = Boolean(practiceRun);
+                const hasTestResume = Boolean(testRun);
 
                 return (
                   <motion.div
@@ -493,9 +515,11 @@ const CurriculumBrowser = () => {
                               <span>Attempts: {progress.attempts}</span>
                               <span>Best: {progress.bestScore}%</span>
                               {progress.hasTaken && <span>Last: {progress.lastScore}%</span>}
-                              {sub.activeRun && (
+                              {(testRun || practiceRun) && (
                                 <span className="text-primary font-semibold">
-                                  {sub.activeRun.mode === 'test' ? 'Resume Test' : 'Resume Practice'} ({sub.activeRun.attemptedQuestions}/{sub.activeRun.totalQuestions})
+                                  {testRun
+                                    ? `Resume Test (${testRun.attemptedQuestions}/${testRun.totalQuestions})`
+                                    : `Resume Practice (${practiceRun?.attemptedQuestions || 0}/${practiceRun?.totalQuestions || 0})`}
                                 </span>
                               )}
                               {progress.lastAttemptAt && (

@@ -1,8 +1,9 @@
 import { ChevronLeft, Loader, AlertCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import apiService from '@/lib/apiService';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Topic {
   _id: string;
@@ -12,6 +13,55 @@ interface Topic {
   stream?: string;
 }
 
+const optimizeHtmlForMobile = (html: string): string => {
+  const patch = `
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<style id="pyq-mobile-patch">
+html, body {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+body {
+  margin: 0 auto !important;
+  padding: 8px 10px !important;
+  box-sizing: border-box !important;
+  word-break: break-word !important;
+}
+img, table, pre, iframe, video, svg, canvas {
+  max-width: 100% !important;
+  height: auto !important;
+}
+table {
+  display: block !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+</style>
+<script>
+(function () {
+  function fitToMobileWidth() {
+    var d = document.documentElement;
+    var b = document.body;
+    if (!b) return;
+    b.style.zoom = '1';
+    var contentWidth = Math.max(d.scrollWidth || 0, b.scrollWidth || 0);
+    var viewportWidth = window.innerWidth || d.clientWidth || 360;
+    var scale = contentWidth > viewportWidth ? Math.max(0.55, viewportWidth / contentWidth) : 1;
+    b.style.zoom = String(scale);
+  }
+  window.addEventListener('load', fitToMobileWidth);
+  window.addEventListener('resize', fitToMobileWidth);
+  setTimeout(fitToMobileWidth, 0);
+  setTimeout(fitToMobileWidth, 300);
+})();
+</script>`;
+
+  if (/<head[^>]*>/i.test(html)) {
+    return html.replace(/<head([^>]*)>/i, `<head$1>${patch}`);
+  }
+  return `<head>${patch}</head>${html}`;
+};
+
 const PYQTopicViewer = () => {
   const navigate = useNavigate();
   const { topicId } = useParams<{ topicId: string }>();
@@ -19,6 +69,8 @@ const PYQTopicViewer = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [iframeError, setIframeError] = useState<string | null>(null);
+  const [iframeHtml, setIframeHtml] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTopicDetails();
@@ -51,6 +103,48 @@ const PYQTopicViewer = () => {
 
   const handleIframeLoad = () => {
     setIframeLoaded(true);
+    setIframeError(null);
+  };
+
+  const proxiedUrl = useMemo(() => {
+    if (!topic?.url) return '';
+    const sourceUrl = String(topic.url || '').trim();
+    return `${API_BASE_URL}/api/v1/pyq-marked-ncert/html-proxy?url=${encodeURIComponent(sourceUrl)}`;
+  }, [topic?.url]);
+
+  useEffect(() => {
+    if (!proxiedUrl) return;
+    let cancelled = false;
+
+    const loadIframeHtml = async () => {
+      try {
+        setIframeLoaded(false);
+        setIframeError(null);
+        setIframeHtml(null);
+        const response = await fetch(proxiedUrl, { method: 'GET' });
+        if (!response.ok) {
+          throw new Error(`Proxy load failed (${response.status})`);
+        }
+        const html = await response.text();
+        if (!cancelled) setIframeHtml(optimizeHtmlForMobile(html));
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Error loading proxied PYQ HTML:', err);
+          setIframeError('Could not load this content inside app. Please open it in a new tab.');
+          setIframeLoaded(true);
+        }
+      }
+    };
+
+    loadIframeHtml();
+    return () => {
+      cancelled = true;
+    };
+  }, [proxiedUrl]);
+
+  const handleIframeError = () => {
+    setIframeLoaded(true);
+    setIframeError('Could not load this content inside app. Please open it in a new tab.');
   };
 
   if (loading) {
@@ -95,7 +189,7 @@ const PYQTopicViewer = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20 relative overflow-hidden bg-background">
+    <div className="min-h-screen relative overflow-x-hidden bg-background">
       {/* Background glow orbs */}
       <div className="glow-orb glow-orb-primary w-[400px] h-[400px] -top-48 -right-32 animate-glow-pulse fixed" />
       <div className="glow-orb glow-orb-secondary w-[300px] h-[300px] top-1/3 -left-24 animate-glow-pulse fixed" style={{ animationDelay: '1.5s' }} />
@@ -106,21 +200,21 @@ const PYQTopicViewer = () => {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 sticky top-0 backdrop-blur-xl bg-background/80 border-b border-border/20"
       >
-        <div className="nf-safe-area p-4 max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 min-h-16 flex-wrap">
+        <div className="nf-safe-area px-3 py-2 sm:px-4 sm:py-3 max-w-4xl mx-auto">
+          <div className="flex items-center gap-2 min-h-12">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+              className="p-1.5 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
             >
-              <ChevronLeft className="w-6 h-6 text-foreground" />
+              <ChevronLeft className="w-5 h-5 text-foreground" />
             </button>
             
             <div className="flex-1 min-w-0">
-              <h1 className="nf-heading text-xl nf-gradient-text tracking-tighter truncate">
+              <h1 className="nf-heading text-base sm:text-lg nf-gradient-text tracking-tight truncate">
                 {topic.topicName}
               </h1>
-              <p className="text-xs text-muted-foreground mt-1 capitalize">
-                {topic.subject} {topic.stream ? `• ${topic.stream}` : ''}
+              <p className="text-[11px] text-muted-foreground mt-0.5 capitalize truncate">
+                {topic.subject} {topic.stream ? `| ${topic.stream}` : ''}
               </p>
             </div>
           </div>
@@ -128,12 +222,12 @@ const PYQTopicViewer = () => {
       </motion.div>
 
       {/* Content Container */}
-      <div className="relative z-10 px-8 max-w-7xl mx-auto">
+      <div className="relative z-10 px-0 sm:px-3 max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="relative w-full"
+          className="relative w-full overflow-x-hidden"
         >
           {/* Loading overlay for iframe */}
           {!iframeLoaded && (
@@ -145,17 +239,21 @@ const PYQTopicViewer = () => {
             </div>
           )}
 
+          {iframeError && (
+            <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              {iframeError}
+            </div>
+          )}
+
           {/* IFrame to load HTML content - Direct, no card styling */}
           <iframe
-            src={topic.url}
+            src={iframeHtml ? undefined : proxiedUrl}
+            srcDoc={iframeHtml || undefined}
             onLoad={handleIframeLoad}
-            className="w-full border-0"
+            onError={handleIframeError}
+            className="block w-full border-0 overflow-hidden"
             style={{
-              minHeight: '100vh',
-              zoom: 0.8,
-              transformOrigin: 'top left',
-              width: '125%',
-              marginLeft: '-2.5%',
+              minHeight: 'calc(100dvh - 64px)',
             }}
             title={topic.topicName}
           />
@@ -170,7 +268,7 @@ const PYQTopicViewer = () => {
         className="hidden md:flex fixed bottom-8 right-8 z-40"
       >
         <button
-          onClick={() => window.open(topic.url, '_blank')}
+          onClick={() => window.open(proxiedUrl, '_blank')}
           className="p-4 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-110 active:scale-95"
           title="Open in new tab"
         >

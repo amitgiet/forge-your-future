@@ -494,7 +494,7 @@ const QuizSession = () => {
       await onDiscardAttempt();
       return;
     }
-    await saveProgress();
+    await saveProgress({ force: true });
     setLeaveOpen(false);
     navigateBackToOrigin();
   };
