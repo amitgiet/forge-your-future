@@ -19,7 +19,7 @@ const optimizeHtmlForMobile = (html: string): string => {
 <style id="pyq-mobile-patch">
 html, body {
   max-width: 100% !important;
-  overflow-x: hidden !important;
+  padding:0 20px !important;
 }
 body {
   margin: 0 auto !important;
@@ -80,14 +80,14 @@ const PYQTopicViewer = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       if (!topicId) {
         setError('Topic ID is missing');
         return;
       }
 
       const response = await apiService.pyqMarkedNCERT.getTopicById(topicId);
-      
+
       if (response.data?.success && response.data?.data) {
         setTopic(response.data.data);
       } else {
@@ -152,7 +152,7 @@ const PYQTopicViewer = () => {
       <div className="min-h-screen pb-20 relative overflow-hidden flex items-center justify-center">
         <div className="glow-orb glow-orb-primary w-[400px] h-[400px] -top-48 -right-32 animate-glow-pulse" />
         <div className="glow-orb glow-orb-secondary w-[300px] h-[300px] top-1/3 -left-24 animate-glow-pulse" style={{ animationDelay: '1.5s' }} />
-        
+
         <div className="relative z-10 text-center">
           <Loader className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Loading topic...</p>
@@ -166,7 +166,7 @@ const PYQTopicViewer = () => {
       <div className="min-h-screen pb-20 relative overflow-hidden flex items-center justify-center">
         <div className="glow-orb glow-orb-primary w-[400px] h-[400px] -top-48 -right-32 animate-glow-pulse" />
         <div className="glow-orb glow-orb-secondary w-[300px] h-[300px] top-1/3 -left-24 animate-glow-pulse" style={{ animationDelay: '1.5s' }} />
-        
+
         <div className="nf-safe-area p-4 max-w-md mx-auto relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -208,7 +208,7 @@ const PYQTopicViewer = () => {
             >
               <ChevronLeft className="w-5 h-5 text-foreground" />
             </button>
-            
+
             <div className="flex-1 min-w-0">
               <h1 className="nf-heading text-base sm:text-lg nf-gradient-text tracking-tight truncate">
                 {topic.topicName}
