@@ -302,6 +302,54 @@ export const apiService = {
 
   // Curriculum Browser APIs (ImportedCurriculum)
   curriculum: {
+    startRun: (data: {
+      subject: 'biology' | 'chemistry' | 'physics';
+      chapterId: string;
+      topic: string;
+      subTopic: string;
+      mode: 'practice' | 'test';
+      uids: number[];
+    }) => api.post('/curriculum/runs/start', data),
+
+    getRun: (runId: string) =>
+      api.get(`/curriculum/runs/${runId}`),
+
+    saveRunProgress: (
+      runId: string,
+      data: {
+        currentIndex?: number;
+        answers?: Array<number | null>;
+        questionTimes?: number[];
+        elapsedSeconds?: number;
+        remainingSeconds?: number | null;
+      }
+    ) => api.put(`/curriculum/runs/${runId}/progress`, data),
+
+    abandonRun: (runId: string) =>
+      api.post(`/curriculum/runs/${runId}/abandon`),
+
+    submitRun: (
+      runId: string,
+      data: {
+        answers?: Array<number | null>;
+        questionTimes?: number[];
+        elapsedSeconds?: number;
+        remainingSeconds?: number | null;
+      }
+    ) => api.post(`/curriculum/runs/${runId}/submit`, data),
+
+    trackAttempt: (data: {
+      subject: 'biology' | 'chemistry' | 'physics';
+      chapterId: string;
+      topic: string;
+      subTopic: string;
+      mode: 'practice' | 'test';
+      totalQuestions: number;
+      correctAnswers: number;
+      timeTaken?: number;
+      uids?: number[];
+    }) => api.post('/curriculum/attempts', data),
+
     getSubjects: () => api.get('/curriculum/subjects'),
 
     getChapters: (subject: string) =>
