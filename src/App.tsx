@@ -36,6 +36,7 @@ import QuizResults from "./pages/QuizResults";
 import RevisionDashboard from "./pages/RevisionDashboard";
 import QuizGenerator from "./pages/QuizGenerator";
 import TestSeries from "./pages/TestSeries";
+import MockPdfViewer from "./pages/MockPdfViewer";
 import TestSession from "./pages/TestSession";
 import TestReport from "./pages/TestReport";
 import CustomTestCreate from "./pages/CustomTestCreate";
@@ -90,6 +91,9 @@ const App = () => (
                     <Route path="/revision/track" element={<ProtectedRoute><StartPractice /></ProtectedRoute>} />
                     <Route path="/quiz-generator" element={<ProtectedRoute><QuizGenerator /></ProtectedRoute>} />
                     <Route path="/tests" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
+                    <Route path="/tests/:seriesKey" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
+                    <Route path="/tests/:seriesKey/:typeKey" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
+                    <Route path="/tests/pdf-viewer" element={<ProtectedRoute><MockPdfViewer /></ProtectedRoute>} />
                     <Route path="/test/custom/create" element={<ProtectedRoute><CustomTestCreate /></ProtectedRoute>} />
                     <Route path="/test/session/:attemptId" element={<ProtectedRoute><TestSession /></ProtectedRoute>} />
                     <Route path="/test/report/:attemptId" element={<ProtectedRoute><TestReport /></ProtectedRoute>} />
