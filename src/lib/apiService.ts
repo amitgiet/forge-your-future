@@ -93,7 +93,13 @@ export const apiService = {
 
   // Mock Tests APIs
   mocks: {
-    getMockTests: () => api.get('/mocks'),
+    getMockTests: (params?: { examType?: string; testType?: string; classCategory?: string; freeOnly?: boolean }) =>
+      api.get('/mocks', { params }),
+
+    getMockProgress: () => api.get('/mocks/progress'),
+
+    markMockCompleted: (mockId: string, data?: { completed?: boolean; notes?: string }) =>
+      api.post(`/mocks/${mockId}/complete`, data || { completed: true }),
 
     createMockTest: (data: any) => api.post('/mocks', data),
 

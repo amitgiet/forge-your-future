@@ -163,7 +163,7 @@ const Dashboard = () => {
     { icon: Sparkles, label: 'Learn', sub: 'AI Path', path: '/my-learning-paths', color: 'warning' },
     { icon: Upload, label: 'Mock', sub: 'Analyze', path: '/mock-analyzer', color: 'secondary' },
     { icon: BookOpen, label: 'NCERT', sub: 'Search', path: '/ncert-search', color: 'primary' },
-    { icon: FileText, label: 'Tests', sub: 'Series', path: '/tests', color: 'warning' },
+    { icon: FileText, label: 'Mock Tests', sub: 'Series', path: '/tests', color: 'warning' },
     { icon: Wand2, label: 'AI Quiz', sub: 'Generate', path: '/quiz-generator', color: 'primary' },
   ];
 
