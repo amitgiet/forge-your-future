@@ -5,6 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '@/lib/api';
 import { BarChartComponent, PieChartComponent } from './AICharts';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
 
 interface Message {
   role: 'user' | 'ai';
@@ -13,6 +16,12 @@ interface Message {
   chartData?: { type: string; chartType: string; data: any[]; message: string };
   quizData?: { type: string; data: Array<{ quizId?: string; lineId?: string; topic: string; subject: string; chapter: string; reason?: string }> };
   toolsUsed?: string[];
+  dataSourcesUsed?: string[];
+  dataAvailability?: 'sufficient' | 'partial' | 'insufficient';
+  lastUpdatedAt?: string;
+  mode?: 'coach' | 'analysis' | 'doubt';
+  blocks?: Array<{ type: 'markdown' | 'chart' | 'quiz_suggestions' | 'actions'; data: any }>;
+  actions?: Array<{ id: string; label: string; actionType: string; payload?: any }>;
 }
 
 export default function AIChatBot() {
@@ -21,24 +30,35 @@ export default function AIChatBot() {
   const [loading, setLoading] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [mode, setMode] = useState<'coach' | 'analysis' | 'doubt'>('coach');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const CACHE_KEY = 'aiChat.cache.v1';
+  const CACHE_KEY = 'aiChat.cache.v2';
   const MAX_UI_MESSAGES = 15;
 
-  const persistCache = (nextChatId: string | null, nextMessages: Message[]) => {
+  const persistCache = (nextChatId: string | null, nextMessages: Message[], nextMode: 'coach' | 'analysis' | 'doubt') => {
     try {
       const trimmed = nextMessages.slice(-MAX_UI_MESSAGES);
       const payload = {
         chatId: nextChatId,
+        mode: nextMode,
         messages: trimmed.map(m => ({
           role: m.role,
           content: m.content,
-          timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : new Date().toISOString()
+          timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : new Date().toISOString(),
+          chartData: m.chartData || null,
+          quizData: m.quizData || null,
+          blocks: m.blocks || [],
+          actions: m.actions || [],
+          toolsUsed: m.toolsUsed || [],
+          dataSourcesUsed: m.dataSourcesUsed || [],
+          dataAvailability: m.dataAvailability || 'insufficient',
+          lastUpdatedAt: m.lastUpdatedAt || null,
+          mode: m.mode || nextMode
         }))
       };
       localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
@@ -84,13 +104,14 @@ export default function AIChatBot() {
 
   const parseChartData = (text: string) => {
     try {
-      // Decode HTML entities first
+      // First decode all HTML entities
       const decodedText = text
         .replace(/&quot;/g, '"')
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
-        .replace(/&#39;/g, "'");
+        .replace(/&#39;/g, "'")
+        .replace(/&apos;/g, "'");
       
       const jsonMatch = decodedText.match(/\{"type":"chart".*?\}/s);
       if (jsonMatch) {
@@ -105,10 +126,20 @@ export default function AIChatBot() {
         const cleanText = decodedText.replace(quizMatch[0], '').trim();
         return { chartData: null, cleanText, quizData };
       }
+      
+      return { chartData: null, cleanText: decodedText, quizData: null };
     } catch (e) {
       console.error('Parse error:', e, text.substring(0, 200));
+      // Return decoded text even if parsing fails
+      const decodedText = text
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'")
+        .replace(/&apos;/g, "'");
+      return { chartData: null, cleanText: decodedText, quizData: null };
     }
-    return { chartData: null, cleanText: text, quizData: null };
   };
 
   // Hydrate from cache, then reconcile with DB (last 15)
@@ -116,14 +147,45 @@ export default function AIChatBot() {
     try {
       const raw = localStorage.getItem(CACHE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as { chatId?: string | null; messages?: Array<{ role: 'user' | 'ai'; content: string; timestamp: string }> };
+        const parsed = JSON.parse(raw) as {
+          chatId?: string | null;
+          mode?: 'coach' | 'analysis' | 'doubt';
+          messages?: Array<{
+            role: 'user' | 'ai';
+            content: string;
+            timestamp: string;
+            chartData?: any;
+            quizData?: any;
+            blocks?: any[];
+            actions?: any[];
+            toolsUsed?: string[];
+            dataSourcesUsed?: string[];
+            dataAvailability?: 'sufficient' | 'partial' | 'insufficient';
+            lastUpdatedAt?: string;
+            mode?: 'coach' | 'analysis' | 'doubt';
+          }>;
+        };
         if (parsed.chatId) setChatId(parsed.chatId);
+        if (parsed.mode) setMode(parsed.mode);
         if (Array.isArray(parsed.messages) && parsed.messages.length > 0) {
           const hydrated: Message[] = parsed.messages.map((m) => {
             const ts = new Date(m.timestamp);
             if (m.role === 'ai') {
               const { chartData, cleanText, quizData } = parseChartData(m.content);
-              return { role: 'ai', content: cleanText || m.content, timestamp: ts, chartData, quizData };
+              return {
+                role: 'ai',
+                content: cleanText || m.content,
+                timestamp: ts,
+                chartData: m.chartData || chartData,
+                quizData: m.quizData || quizData,
+                blocks: Array.isArray(m.blocks) ? m.blocks : undefined,
+                actions: Array.isArray(m.actions) ? m.actions : undefined,
+                toolsUsed: Array.isArray(m.toolsUsed) ? m.toolsUsed : undefined,
+                dataSourcesUsed: Array.isArray(m.dataSourcesUsed) ? m.dataSourcesUsed : undefined,
+                dataAvailability: m.dataAvailability,
+                lastUpdatedAt: m.lastUpdatedAt,
+                mode: m.mode || parsed.mode || 'coach'
+              };
             }
             return { role: 'user', content: m.content, timestamp: ts };
           });
@@ -159,8 +221,8 @@ export default function AIChatBot() {
   }, [chatId]);
 
   useEffect(() => {
-    persistCache(chatId, messages);
-  }, [chatId, messages]);
+    persistCache(chatId, messages, mode);
+  }, [chatId, messages, mode]);
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -168,7 +230,8 @@ export default function AIChatBot() {
     const userMessage: Message = {
       role: 'user',
       content: input,
-      timestamp: new Date()
+      timestamp: new Date(),
+      mode
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -178,21 +241,36 @@ export default function AIChatBot() {
     try {
       const response = await api.post('/ai-chat/message', {
         message: input,
-        chatId
+        chatId,
+        mode,
+        clientContext: {
+          route: window.location.pathname,
+          preferredLanguage: (localStorage.getItem('preferredLanguage') === 'hi' ? 'hi' : 'en'),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        }
       });
 
       const nextChatId = response.data.data.chatId;
       if (!chatId && nextChatId) setChatId(nextChatId);
 
-      const { chartData, cleanText, quizData } = parseChartData(response.data.data.message);
+      const payload = response.data?.data || {};
+      const responseText = String(payload.message || '');
+      const ui = payload.ui || null;
+      const { chartData, cleanText, quizData } = parseChartData(responseText);
 
       const aiMessage: Message = {
         role: 'ai',
-        content: cleanText || response.data.data.message,
+        content: cleanText || responseText,
         timestamp: new Date(),
         chartData,
         quizData,
-        toolsUsed: response.data.data.toolsUsed
+        toolsUsed: Array.isArray(payload.toolsUsed) ? payload.toolsUsed : [],
+        dataSourcesUsed: Array.isArray(payload.dataSourcesUsed) ? payload.dataSourcesUsed : [],
+        dataAvailability: payload.dataAvailability || 'insufficient',
+        lastUpdatedAt: ui?.lastUpdatedAt || new Date().toISOString(),
+        mode,
+        blocks: Array.isArray(ui?.blocks) ? ui.blocks : undefined,
+        actions: Array.isArray(ui?.actions) ? ui.actions : undefined
       };
 
       setMessages(prev => [...prev, aiMessage]);
@@ -248,11 +326,11 @@ export default function AIChatBot() {
         const newId = res.data?.data?.chatId || null;
         setMessages([]);
         setChatId(newId);
-        persistCache(newId, []);
+        persistCache(newId, [], mode);
       } catch {
         setMessages([]);
         setChatId(null);
-        persistCache(null, []);
+        persistCache(null, [], mode);
       }
     })();
   };
@@ -260,8 +338,127 @@ export default function AIChatBot() {
   const quickQuestions = [
     { icon: TrendingUp, text: "What are my weak points?", color: "text-red-400" },
     { icon: BookOpen, text: "Review my last quiz", color: "text-blue-400" },
-    { icon: Target, text: "What should I study today?", color: "text-green-400" }
+    { icon: Target, text: "Build my today plan", color: "text-green-400" }
   ];
+
+  const modeOptions: Array<{ id: 'coach' | 'analysis' | 'doubt'; label: string }> = [
+    { id: 'coach', label: 'Coach' },
+    { id: 'analysis', label: 'Analysis' },
+    { id: 'doubt', label: 'Doubt' }
+  ];
+
+  const renderMarkdown = (content: string) => (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeSanitize]}
+      className="prose prose-sm max-w-none text-sm whitespace-pre-wrap text-inherit prose-headings:text-inherit prose-strong:text-inherit prose-code:text-inherit prose-p:my-1 prose-li:my-0.5"
+    >
+      {content}
+    </ReactMarkdown>
+  );
+
+  const startQuizFromAction = async (quiz: any) => {
+    if (quiz?.quizId) {
+      const response = await api.get(`/quiz-generator/${quiz.quizId}`);
+      const storedQuiz = response.data.data;
+      const questions = (storedQuiz.questions || []).map((q: any, idx: number) => ({
+        id: q._id || idx + 1,
+        question: q.question,
+        type: 'mcq',
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation
+      }));
+      navigate('/ai-quiz-session', {
+        state: {
+          quizId: String(quiz.quizId),
+          topic: storedQuiz.topic || quiz.topic,
+          subject: storedQuiz.subject || quiz.subject,
+          chapter: storedQuiz.chapterId || quiz.chapter || '',
+          questions
+        }
+      });
+      return;
+    }
+
+    if (quiz?.lineId) {
+      const response = await api.get(`/neuronz/quizzes/${quiz.lineId}`);
+      const questions = (response.data.data || []).map((q: any, idx: number) => ({
+        id: q._id || idx + 1,
+        question: q.question,
+        type: 'mcq',
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation
+      }));
+      navigate('/ai-quiz-session', {
+        state: {
+          lineId: String(quiz.lineId),
+          topic: quiz.topic,
+          subject: quiz.subject,
+          chapter: String(quiz.chapter ?? ''),
+          questions
+        }
+      });
+    }
+  };
+
+  const handleActionClick = async (action: any) => {
+    const type = String(action?.actionType || '');
+    const payload = action?.payload || {};
+    try {
+      if (type === 'resume_curriculum' || type === 'start_curriculum_quiz') {
+        navigate('/curriculum-browser', {
+          state: {
+            selectedSubject: payload.subject,
+            selectedChapterId: payload.chapterId,
+            selectedTopic: payload.topic,
+            selectedSubTopic: payload.subTopic,
+            preferredMode: payload.mode || 'practice',
+            resumeRunId: payload.runId
+          }
+        });
+        return;
+      }
+      if (type === 'open_mock_pdf' && payload.questionPdf) {
+        navigate('/tests/pdf-viewer', {
+          state: {
+            url: payload.questionPdf,
+            title: payload.title || 'Mock PDF'
+          }
+        });
+        return;
+      }
+      if (type === 'open_test_series') {
+        navigate('/tests');
+        return;
+      }
+      if (type === 'take_quiz' || type === 'start_ai_quiz') {
+        await startQuizFromAction(payload);
+        return;
+      }
+    } catch (e) {
+      console.error('Action execution failed:', e);
+    }
+  };
+
+  const renderActionCards = (actions?: any[]) => {
+    if (!Array.isArray(actions) || actions.length === 0) return null;
+    return (
+      <div className="mt-3 space-y-2">
+        {actions.map((action) => (
+          <button
+            key={String(action.id || action.label)}
+            onClick={() => handleActionClick(action)}
+            className="w-full text-left p-3 rounded-lg border border-border bg-background hover:bg-accent/50 transition-colors"
+          >
+            <p className="text-sm font-semibold text-foreground">{String(action.label || 'Open')}</p>
+            <p className="text-xs text-muted-foreground mt-1">{String(action.actionType || '')}</p>
+          </button>
+        ))}
+      </div>
+    );
+  };
 
   const renderChart = (chartData: any) => {
     if (!chartData || !chartData.data) return null;
@@ -502,6 +699,24 @@ export default function AIChatBot() {
         </div>
       </div>
 
+      <div className="px-4 py-2 border-b border-border bg-card/60">
+        <div className="flex items-center gap-2 overflow-x-auto">
+          {modeOptions.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => setMode(m.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                mode === m.id
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background text-muted-foreground border-border hover:text-foreground'
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-2 py-4 space-y-4">
         {messages.length === 0 && (
@@ -546,22 +761,60 @@ export default function AIChatBot() {
                     : 'bg-muted text-foreground'
                 }`}
               >
-                <div className="prose prose-sm prose-invert max-w-none">
-                  <div className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ 
-                    __html: msg.content
-                      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>')
-                      .replace(/\*(.*?)\*/g, '<em class="text-foreground/90 italic">$1</em>')
-                      .replace(/`(.*?)`/g, '<code class="bg-white/10 px-1 py-0.5 rounded text-xs">$1</code>')
-                      .replace(/^### (.*$)/gm, '<h3 class="text-base font-bold mt-3 mb-2 text-foreground">$1</h3>')
-                      .replace(/^## (.*$)/gm, '<h2 class="text-lg font-bold mt-4 mb-2 text-foreground">$1</h2>')
-                      .replace(/^# (.*$)/gm, '<h1 class="text-xl font-bold mt-4 mb-2 text-foreground">$1</h1>')
-                      .replace(/^- (.*$)/gm, '<li class="ml-4 text-muted-foreground">$1</li>')
-                      .replace(/^\d+\. (.*$)/gm, '<li class="ml-4 list-decimal text-muted-foreground">$1</li>')
-                      .replace(/\n/g, '<br/>')
-                  }} />
-                </div>
-                {msg.chartData && renderChart(msg.chartData)}
-                {msg.quizData && renderQuizSuggestions(msg.quizData)}
+                {msg.blocks && msg.blocks.length > 0 ? (
+                  <div className="space-y-3">
+                    {msg.blocks.map((block, blockIdx) => {
+                      if (block.type === 'markdown') {
+                        return (
+                          <div key={`b-${blockIdx}`}>
+                            {renderMarkdown(String(block?.data?.content || msg.content || ''))}
+                          </div>
+                        );
+                      }
+                      if (block.type === 'chart') {
+                        return <div key={`b-${blockIdx}`}>{renderChart(block.data)}</div>;
+                      }
+                      if (block.type === 'quiz_suggestions') {
+                        return <div key={`b-${blockIdx}`}>{renderQuizSuggestions({ data: Array.isArray(block.data) ? block.data : block?.data?.data })}</div>;
+                      }
+                      if (block.type === 'actions') {
+                        const items = Array.isArray(block?.data?.items) ? block.data.items : msg.actions;
+                        return <div key={`b-${blockIdx}`}>{renderActionCards(items)}</div>;
+                      }
+                      return null;
+                    })}
+                  </div>
+                ) : (
+                  <>
+                    {renderMarkdown(msg.content)}
+                    {msg.chartData && renderChart(msg.chartData)}
+                    {msg.quizData && renderQuizSuggestions(msg.quizData)}
+                    {renderActionCards(msg.actions)}
+                  </>
+                )}
+                {msg.role === 'ai' && (
+                  <div className="mt-2 space-y-1">
+                    {msg.dataAvailability && (
+                      <p className="text-[10px] text-muted-foreground">
+                        Data availability: {msg.dataAvailability}
+                      </p>
+                    )}
+                    {Array.isArray(msg.dataSourcesUsed) && msg.dataSourcesUsed.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {msg.dataSourcesUsed.map((source) => (
+                          <span key={source} className="text-[10px] px-2 py-0.5 rounded-full border border-border bg-background text-muted-foreground">
+                            {source}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {msg.lastUpdatedAt && (
+                      <p className="text-[10px] text-muted-foreground">
+                        Last updated: {new Date(msg.lastUpdatedAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <span className="text-xs opacity-60 mt-1 block">
                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>

@@ -209,20 +209,64 @@ const DailyChallenge = () => {
               </div>
               <div className="prose prose-sm max-w-none text-foreground">
                 {(challenge.content || '').split('\n').map((line, i) => {
-                  if (line.startsWith('## ')) {
-                    return <h2 key={i} className="text-lg font-bold mt-4 mb-2 text-foreground">{line.replace('## ', '')}</h2>;
+                  // Decode HTML entities
+                  let decodedLine = line
+                    .replace(/&quot;/g, '"')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&#39;/g, "'")
+                    .replace(/&apos;/g, "'");
+                  
+                  // Convert LaTeX to readable format
+                  let formattedLine = decodedLine
+                    .replace(/\$([^$]+)\$/g, (_, math) => {
+                      return math
+                        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
+                        .replace(/\\pi/g, 'π')
+                        .replace(/\\theta/g, 'θ')
+                        .replace(/\\sin/g, 'sin')
+                        .replace(/\\cos/g, 'cos')
+                        .replace(/\\tan/g, 'tan')
+                        .replace(/\\cot/g, 'cot')
+                        .replace(/\\sec/g, 'sec')
+                        .replace(/\\csc/g, 'csc')
+                        .replace(/\^\{-1\}/g, '⁻¹')
+                        .replace(/\\le/g, '≤')
+                        .replace(/\\ge/g, '≥')
+                        .replace(/\\ne/g, '≠')
+                        .replace(/\\{/g, '')
+                        .replace(/\\}/g, '')
+                        .replace(/[{}]/g, '');
+                    })
+                    .replace(/\\\{/g, '{')
+                    .replace(/\\\}/g, '}')
+                    .replace(/\\0\\/g, '{0}')
+                    .replace(/\\\(/g, '(')
+                    .replace(/\\\)/g, ')');
+                  
+                  if (formattedLine.startsWith('## ')) {
+                    return <h2 key={i} className="text-lg font-bold mt-4 mb-2 text-foreground">{formattedLine.replace('## ', '')}</h2>;
                   }
-                  if (line.startsWith('### ')) {
-                    return <h3 key={i} className="text-base font-bold mt-3 mb-2 text-foreground">{line.replace('### ', '')}</h3>;
+                  if (formattedLine.startsWith('### ')) {
+                    return <h3 key={i} className="text-base font-bold mt-3 mb-2 text-foreground">{formattedLine.replace('### ', '')}</h3>;
                   }
-                  if (line.startsWith('**') && line.endsWith('**')) {
-                    return <p key={i} className="font-bold text-primary mt-3">{line.replace(/\*\*/g, '')}</p>;
+                  if (formattedLine.startsWith('**') && formattedLine.endsWith('**')) {
+                    return <p key={i} className="font-bold text-primary mt-3">{formattedLine.replace(/\*\*/g, '')}</p>;
                   }
-                  if (line.startsWith('- ')) {
-                    return <li key={i} className="ml-4 text-muted-foreground">{line.replace('- ', '')}</li>;
+                  if (formattedLine.startsWith('- ')) {
+                    return <li key={i} className="ml-4 text-muted-foreground">{formattedLine.replace('- ', '')}</li>;
                   }
-                  if (line.trim()) {
-                    return <p key={i} className="text-muted-foreground my-1">{line}</p>;
+                  if (formattedLine.trim()) {
+                    // Handle inline bold **text**
+                    const parts = formattedLine.split(/\*\*([^*]+)\*\*/g);
+                    return (
+                      <p key={i} className="text-muted-foreground my-1">
+                        {parts.map((part, idx) => 
+                          idx % 2 === 1 ? <strong key={idx} className="font-bold text-foreground">{part}</strong> : part
+                        )}
+                      </p>
+                    );
                   }
                   return null;
                 })}
@@ -390,20 +434,64 @@ const DailyChallenge = () => {
                 
                 <div className="prose prose-sm max-w-none text-foreground">
                   {(challenge.content || '').split('\n').map((line, i) => {
-                    if (line.startsWith('## ')) {
-                      return <h2 key={i} className="text-lg font-bold mt-4 mb-2 text-foreground">{line.replace('## ', '')}</h2>;
+                    // Decode HTML entities
+                    let decodedLine = line
+                      .replace(/&quot;/g, '"')
+                      .replace(/&amp;/g, '&')
+                      .replace(/&lt;/g, '<')
+                      .replace(/&gt;/g, '>')
+                      .replace(/&#39;/g, "'")
+                      .replace(/&apos;/g, "'");
+                    
+                    // Convert LaTeX to readable format
+                    let formattedLine = decodedLine
+                      .replace(/\$([^$]+)\$/g, (_, math) => {
+                        return math
+                          .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
+                          .replace(/\\pi/g, 'π')
+                          .replace(/\\theta/g, 'θ')
+                          .replace(/\\sin/g, 'sin')
+                          .replace(/\\cos/g, 'cos')
+                          .replace(/\\tan/g, 'tan')
+                          .replace(/\\cot/g, 'cot')
+                          .replace(/\\sec/g, 'sec')
+                          .replace(/\\csc/g, 'csc')
+                          .replace(/\^\{-1\}/g, '⁻¹')
+                          .replace(/\\le/g, '≤')
+                          .replace(/\\ge/g, '≥')
+                          .replace(/\\ne/g, '≠')
+                          .replace(/\\{/g, '')
+                          .replace(/\\}/g, '')
+                          .replace(/[{}]/g, '');
+                      })
+                      .replace(/\\\{/g, '{')
+                      .replace(/\\\}/g, '}')
+                      .replace(/\\0\\/g, '{0}')
+                      .replace(/\\\(/g, '(')
+                      .replace(/\\\)/g, ')');
+                    
+                    if (formattedLine.startsWith('## ')) {
+                      return <h2 key={i} className="text-lg font-bold mt-4 mb-2 text-foreground">{formattedLine.replace('## ', '')}</h2>;
                     }
-                    if (line.startsWith('### ')) {
-                      return <h3 key={i} className="text-base font-bold mt-3 mb-2 text-foreground">{line.replace('### ', '')}</h3>;
+                    if (formattedLine.startsWith('### ')) {
+                      return <h3 key={i} className="text-base font-bold mt-3 mb-2 text-foreground">{formattedLine.replace('### ', '')}</h3>;
                     }
-                    if (line.startsWith('**') && line.endsWith('**')) {
-                      return <p key={i} className="font-bold text-primary mt-3">{line.replace(/\*\*/g, '')}</p>;
+                    if (formattedLine.startsWith('**') && formattedLine.endsWith('**')) {
+                      return <p key={i} className="font-bold text-primary mt-3">{formattedLine.replace(/\*\*/g, '')}</p>;
                     }
-                    if (line.startsWith('- ')) {
-                      return <li key={i} className="ml-4 text-muted-foreground">{line.replace('- ', '')}</li>;
+                    if (formattedLine.startsWith('- ')) {
+                      return <li key={i} className="ml-4 text-muted-foreground">{formattedLine.replace('- ', '')}</li>;
                     }
-                    if (line.trim()) {
-                      return <p key={i} className="text-muted-foreground my-1">{line}</p>;
+                    if (formattedLine.trim()) {
+                      // Handle inline bold **text**
+                      const parts = formattedLine.split(/\*\*([^*]+)\*\*/g);
+                      return (
+                        <p key={i} className="text-muted-foreground my-1">
+                          {parts.map((part, idx) => 
+                            idx % 2 === 1 ? <strong key={idx} className="font-bold text-foreground">{part}</strong> : part
+                          )}
+                        </p>
+                      );
                     }
                     return null;
                   })}
