@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, CheckCircle2, ChevronRight, Clock, ExternalLink, FileText, Filter, Loader2, Search } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowLeft, BookOpen, CheckCircle2, ChevronRight, Clock, ExternalLink,
+  FileText, Filter, Layers, Loader2, Search, SlidersHorizontal, Trophy, X, Zap
+} from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import apiService from '../lib/apiService';
@@ -30,27 +33,22 @@ type MockItem = {
 };
 
 const classLabel: Record<ClassCategory, string> = {
-  all: 'All Classes',
-  '11': 'Class 11',
-  '12': 'Class 12',
-  dropper: 'Dropper',
-  mixed: '11 + 12',
-  other: 'Other',
+  all: 'All Classes', '11': 'Class 11', '12': 'Class 12',
+  dropper: 'Dropper', mixed: '11 + 12', other: 'Other',
 };
 
 const typeLabel: Record<TypeFilter, string> = {
-  all: 'All Types',
-  'part-test': 'Part Test',
-  'full-test': 'Full Test',
-  'fulllength-test': 'Full Length',
+  all: 'All Types', 'part-test': 'Part Test', 'full-test': 'Full Test', 'fulllength-test': 'Full Length',
 };
 
 const coachingLabel: Record<CoachingFilter, string> = {
-  all: 'All Modes',
-  self: 'Self Study',
-  local: 'Local Coaching',
-  national: 'National Coaching',
-  unknown: 'Unknown',
+  all: 'All Modes', self: 'Self Study', local: 'Local Coaching', national: 'National Coaching', unknown: 'Unknown',
+};
+
+const typeIcons: Record<string, React.ReactNode> = {
+  'part-test': <Layers className="w-5 h-5" />,
+  'full-test': <BookOpen className="w-5 h-5" />,
+  'fulllength-test': <Trophy className="w-5 h-5" />,
 };
 
 const getTestForTokens = (item: MockItem): string[] => {
@@ -106,13 +104,20 @@ const getSeriesKey = (item: MockItem): string => {
 
 const prettySeriesLabel = (series: string): string => {
   const s = String(series || '').toUpperCase();
-  if (s === 'BPT') return 'Brahmastra Part Tests (BPT)';
-  if (s === 'BFLT') return 'Brahmastra FLT (BFLT)';
+  if (s === 'BPT') return 'Brahmastra Part Tests';
+  if (s === 'BFLT') return 'Brahmastra FLT';
   if (s === 'DROPPER') return 'Dropper Series';
   if (s === 'BOOTCAMP') return 'Bootcamp Series';
   if (s === 'TEST') return 'Generic Tests';
   if (s === 'OTHER') return 'Other';
   return s;
+};
+
+const seriesIcons: Record<string, React.ReactNode> = {
+  BPT: <Zap className="w-5 h-5" />,
+  BFLT: <Trophy className="w-5 h-5" />,
+  DROPPER: <BookOpen className="w-5 h-5" />,
+  BOOTCAMP: <Layers className="w-5 h-5" />,
 };
 
 const normalizeSeriesParam = (value?: string) => String(value || '').trim().toUpperCase();
@@ -130,6 +135,7 @@ const TestSeries = () => {
   const [selectedCoaching, setSelectedCoaching] = useState<CoachingFilter>('all');
   const [showFreeOnly, setShowFreeOnly] = useState(false);
   const [showCompletedOnly, setShowCompletedOnly] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const activeSeries = normalizeSeriesParam(seriesKey);
   const activeType = normalizeTypeParam(typeKey) as TypeFilter;
@@ -150,9 +156,7 @@ const TestSeries = () => {
     }
   };
 
-  useEffect(() => {
-    loadTests();
-  }, []);
+  useEffect(() => { loadTests(); }, []);
 
   const coachingCounts = useMemo(() => {
     const counts: Record<CoachingFilter, number> = { all: tests.length, self: 0, local: 0, national: 0, unknown: 0 };
@@ -178,10 +182,7 @@ const TestSeries = () => {
 
   const seriesCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const t of baseFiltered) {
-      const s = getSeriesKey(t);
-      counts[s] = (counts[s] || 0) + 1;
-    }
+    for (const t of baseFiltered) { const s = getSeriesKey(t); counts[s] = (counts[s] || 0) + 1; }
     return counts;
   }, [baseFiltered]);
 
@@ -196,8 +197,8 @@ const TestSeries = () => {
       const cls = classOrder.filter((c) => rows.some((r) => inferClass(r) === c));
       const md = modeOrder.filter((m) => rows.some((r) => inferCoaching(r) === m));
       meta[series] = {
-        classes: cls.map((c) => classLabel[c]).join(' | ') || 'All Classes',
-        modes: md.map((m) => coachingLabel[m]).join(' | ') || 'All Modes',
+        classes: cls.map((c) => classLabel[c]).join(' · ') || 'All Classes',
+        modes: md.map((m) => coachingLabel[m]).join(' · ') || 'All Modes',
       };
     }
     return meta;
@@ -210,10 +211,7 @@ const TestSeries = () => {
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const t of inSeries) {
-      const tp = getOriginalType(t) || 'unknown';
-      counts[tp] = (counts[tp] || 0) + 1;
-    }
+    for (const t of inSeries) { const tp = getOriginalType(t) || 'unknown'; counts[tp] = (counts[tp] || 0) + 1; }
     return counts;
   }, [inSeries]);
 
@@ -236,184 +234,228 @@ const TestSeries = () => {
       setTests((prev) =>
         prev.map((t) =>
           t._id === item._id
-            ? {
-                ...t,
-                progress: {
-                  completed: nextCompleted,
-                  completedAt: nextCompleted ? new Date().toISOString() : null,
-                },
-              }
+            ? { ...t, progress: { completed: nextCompleted, completedAt: nextCompleted ? new Date().toISOString() : null } }
             : t
         )
       );
     } catch (e) {
       console.error('Failed to update completion status:', e);
-      alert('Could not update completion status.');
     }
   };
 
+  const activeFilterCount = [selectedClass !== 'all', selectedCoaching !== 'all', showFreeOnly, showCompletedOnly].filter(Boolean).length;
+
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="nf-safe-area p-4 max-w-md mx-auto">
-        <div className="mb-4 flex items-center gap-2">
-          {pageLevel !== 'series' && (
+      {/* Hero Header */}
+      <div className="sticky top-0 z-20 bg-card border-b border-border" style={{ boxShadow: 'var(--shadow-sm)' }}>
+        <div className="max-w-md mx-auto px-4 py-3">
+          <div className="flex items-center gap-3">
+            {pageLevel !== 'series' && (
+              <button
+                onClick={() => pageLevel === 'tests' ? navigate(`/tests/${activeSeries}`) : navigate('/tests')}
+                className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4 text-foreground" />
+              </button>
+            )}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold text-foreground nf-heading truncate">
+                {pageLevel === 'series'
+                  ? '📝 Test Series'
+                  : pageLevel === 'types'
+                    ? prettySeriesLabel(activeSeries)
+                    : typeLabel[activeType] || activeType}
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                {pageLevel === 'series'
+                  ? `${tests.length} tests available`
+                  : pageLevel === 'types'
+                    ? `${inSeries.length} tests · Choose type`
+                    : `${finalTests.length} tests`}
+              </p>
+            </div>
             <button
-              onClick={() => {
-                if (pageLevel === 'tests') navigate(`/tests/${activeSeries}`);
-                else navigate('/tests');
-              }}
-              className="h-9 w-9 rounded-lg border border-border flex items-center justify-center"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`h-9 w-9 rounded-xl flex items-center justify-center transition-colors relative ${showFilters ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-primary/10'}`}
             >
-              <ArrowLeft className="w-4 h-4 text-foreground" />
+              <SlidersHorizontal className="w-4 h-4" />
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-md mx-auto px-4 pt-3">
+        {/* Search Bar */}
+        <div className="relative mb-3">
+          <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search tests..."
+            className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+              <X className="w-4 h-4 text-muted-foreground" />
             </button>
           )}
-          <div>
-            <h1 className="text-2xl font-black text-foreground">
-              {pageLevel === 'series'
-                ? 'Brahmastra Test Series'
-                : pageLevel === 'types'
-                  ? prettySeriesLabel(activeSeries)
-                  : `${prettySeriesLabel(activeSeries)} - ${typeLabel[activeType] || activeType}`}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {pageLevel === 'series'
-                ? 'Search and choose a series'
-                : pageLevel === 'types'
-                  ? 'Choose test type'
-                  : 'Choose a test'}
-            </p>
-          </div>
         </div>
 
-        <div className="mb-4 rounded-xl border border-border bg-card p-3">
-          <div className="flex items-center gap-2 mb-3">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <p className="text-sm font-semibold text-foreground">Search & Filters</p>
-          </div>
-
-          <div className="mb-2 relative">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-2.5 top-2.5" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by test id/title (e.g. BPT_9)"
-              className="h-9 w-full rounded-lg border border-border bg-background pl-8 pr-2 text-sm"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <select
-              className="h-9 rounded-lg border border-border bg-background px-2 text-sm"
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value as ClassCategory)}
+        {/* Collapsible Filters */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden mb-3"
             >
-              {(Object.keys(classLabel) as ClassCategory[]).map((k) => (
-                <option key={k} value={k}>
-                  {classLabel[k]}
-                </option>
-              ))}
-            </select>
+              <div className="rounded-xl border border-border bg-card p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-foreground">Filters</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    className="h-9 rounded-lg border border-border bg-background px-2 text-xs focus:border-primary outline-none"
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value as ClassCategory)}
+                  >
+                    {(Object.keys(classLabel) as ClassCategory[]).map((k) => (
+                      <option key={k} value={k}>{classLabel[k]}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="h-9 rounded-lg border border-border bg-background px-2 text-xs focus:border-primary outline-none"
+                    value={selectedCoaching}
+                    onChange={(e) => setSelectedCoaching(e.target.value as CoachingFilter)}
+                  >
+                    {(Object.keys(coachingLabel) as CoachingFilter[])
+                      .filter((k) => k === 'all' || coachingCounts[k] > 0)
+                      .map((k) => (
+                        <option key={k} value={k}>{coachingLabel[k]}</option>
+                      ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-4 text-xs">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox" checked={showFreeOnly} onChange={(e) => setShowFreeOnly(e.target.checked)} className="rounded border-border text-primary" />
+                    <span className="text-muted-foreground">Free only</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox" checked={showCompletedOnly} onChange={(e) => setShowCompletedOnly(e.target.checked)} className="rounded border-border text-primary" />
+                    <span className="text-muted-foreground">Completed</span>
+                  </label>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            <select
-              className="h-9 rounded-lg border border-border bg-background px-2 text-sm"
-              value={selectedCoaching}
-              onChange={(e) => setSelectedCoaching(e.target.value as CoachingFilter)}
-            >
-              {(Object.keys(coachingLabel) as CoachingFilter[])
-                .filter((k) => k === 'all' || coachingCounts[k] > 0)
-                .map((k) => (
-                  <option key={k} value={k}>
-                    {coachingLabel[k]}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-3 text-xs">
-            <label className="flex items-center gap-1.5">
-              <input type="checkbox" checked={showFreeOnly} onChange={(e) => setShowFreeOnly(e.target.checked)} />
-              Free only
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={showCompletedOnly}
-                onChange={(e) => setShowCompletedOnly(e.target.checked)}
-              />
-              Completed only
-            </label>
-          </div>
-        </div>
-
+        {/* Loading */}
         {loading && (
-          <div className="flex items-center justify-center py-14">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+            <p className="text-sm text-muted-foreground">Loading tests...</p>
           </div>
         )}
 
+        {/* Error */}
         {!loading && error && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
+          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-center">
+            <p className="text-sm text-destructive font-medium">{error}</p>
+            <button onClick={loadTests} className="mt-2 text-xs text-primary font-semibold">Retry</button>
           </div>
         )}
 
+        {/* ========= SERIES LIST ========= */}
         {!loading && !error && pageLevel === 'series' && (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {seriesOptions.length === 0 && (
-              <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground text-center">
-                No series found for current filters.
+              <div className="rounded-xl bg-card border border-border p-8 text-center">
+                <BookOpen className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No series found</p>
               </div>
             )}
-            {seriesOptions.map(([series, count]) => (
-              <button
+            {seriesOptions.map(([series, count], idx) => (
+              <motion.button
                 key={series}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.04 }}
                 onClick={() => navigate(`/tests/${encodeURIComponent(series)}`)}
-                className="w-full rounded-xl border border-border bg-card p-3 text-left hover:border-primary/30"
+                className="w-full rounded-xl border border-border bg-card p-4 text-left hover:border-primary/40 transition-all group"
+                style={{ boxShadow: 'var(--shadow-card)' }}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{prettySeriesLabel(series)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{seriesMeta[series]?.classes}</p>
-                    <p className="text-[11px] text-muted-foreground">{seriesMeta[series]?.modes}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">{count} tests</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    {seriesIcons[series] || <FileText className="w-5 h-5" />}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground">{prettySeriesLabel(series)}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{seriesMeta[series]?.classes}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-primary font-semibold">
+                        <FileText className="w-3 h-3" /> {count} tests
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
                 </div>
-              </button>
+              </motion.button>
             ))}
           </div>
         )}
 
+        {/* ========= TYPE LIST ========= */}
         {!loading && !error && pageLevel === 'types' && (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {typeOptions.length === 0 && (
-              <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground text-center">
-                No types found under this series.
+              <div className="rounded-xl bg-card border border-border p-8 text-center">
+                <Layers className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No test types found</p>
               </div>
             )}
-            {typeOptions.map(([tp, count]) => (
-              <button
+            {typeOptions.map(([tp, count], idx) => (
+              <motion.button
                 key={tp}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.04 }}
                 onClick={() => navigate(`/tests/${encodeURIComponent(activeSeries)}/${encodeURIComponent(tp)}`)}
-                className="w-full rounded-xl border border-border bg-card p-3 text-left hover:border-primary/30"
+                className="w-full rounded-xl border border-border bg-card p-4 text-left hover:border-primary/40 transition-all group"
+                style={{ boxShadow: 'var(--shadow-card)' }}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{typeLabel[tp as TypeFilter] || tp}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">{count} tests</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center flex-shrink-0 group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors">
+                    {typeIcons[tp] || <FileText className="w-5 h-5" />}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground">{typeLabel[tp as TypeFilter] || tp}</p>
+                    <span className="text-xs text-muted-foreground">{count} tests available</span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
                 </div>
-              </button>
+              </motion.button>
             ))}
           </div>
         )}
 
+        {/* ========= TEST CARDS ========= */}
         {!loading && !error && pageLevel === 'tests' && (
           <div className="space-y-3">
             {finalTests.length === 0 && (
-              <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground text-center">
-                No tests in this type for current filters.
+              <div className="rounded-xl bg-card border border-border p-8 text-center">
+                <FileText className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No tests found</p>
               </div>
             )}
 
@@ -421,96 +463,111 @@ const TestSeries = () => {
               const title = item.title?.en || item.title?.hi || item.testId;
               const desc = item.description?.en || item.description?.hi || '';
               const completed = Boolean(item.progress?.completed);
+              const hasPdfs = item.resources?.questionPdf || item.resources?.answerPdf;
+
               return (
                 <motion.div
                   key={item._id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.02 }}
-                  className="rounded-xl border border-border bg-card p-3"
+                  transition={{ delay: idx * 0.025 }}
+                  className={`rounded-xl border bg-card overflow-hidden transition-all ${completed ? 'border-success/30' : 'border-border'}`}
+                  style={{ boxShadow: 'var(--shadow-card)' }}
                 >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground leading-tight">{title}</p>
-                      <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{desc}</p>
+                  {/* Card Header */}
+                  <div className="p-4 pb-3">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${completed ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'}`}>
+                        {completed ? <CheckCircle2 className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-foreground leading-snug">{title}</p>
+                        {desc && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{desc}</p>}
+                      </div>
+                      {item.accessType === 'FREE' && (
+                        <span className="nf-badge nf-badge-success text-[10px] py-0.5 px-2">FREE</span>
+                      )}
                     </div>
-                    {completed ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Completed
+
+                    {/* Meta row */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3">
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="w-3.5 h-3.5" />
+                        {item.config?.duration || 0} min
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                        Not Taken
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <FileText className="w-3.5 h-3.5" />
+                        {item.config?.totalQuestions || 0} Qs
                       </span>
+                      <span className="text-xs text-muted-foreground">{classLabel[inferClass(item)]}</span>
+                      {completed && (
+                        <span className="inline-flex items-center gap-1 text-xs text-success font-medium">
+                          <CheckCircle2 className="w-3 h-3" /> Done
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="border-t border-border px-4 py-3 bg-muted/30">
+                    {hasPdfs && (
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <button
+                          onClick={() => openPdf(item.resources?.questionPdf, `${title} - Questions`)}
+                          disabled={!item.resources?.questionPdf}
+                          className="h-8 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 disabled:opacity-40 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <FileText className="w-3 h-3" /> Questions
+                        </button>
+                        <button
+                          onClick={() => openPdf(item.resources?.answerPdf, `${title} - Solutions`)}
+                          disabled={!item.resources?.answerPdf}
+                          className="h-8 rounded-lg bg-success/10 text-success text-xs font-semibold hover:bg-success/20 disabled:opacity-40 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <CheckCircle2 className="w-3 h-3" /> Solutions
+                        </button>
+                      </div>
                     )}
-                  </div>
 
-                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground mb-3">
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {item.config?.duration || 0} min
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <FileText className="w-3 h-3" />
-                      {item.config?.totalQuestions || 0} questions
-                    </span>
-                    <span>{classLabel[inferClass(item)]}</span>
-                    <span>{getOriginalType(item) || '-'}</span>
-                  </div>
+                    {(item.resources?.hindiQuestionPdf || item.resources?.hindiAnswerPdf) && (
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <button
+                          onClick={() => openPdf(item.resources?.hindiQuestionPdf, `${title} - Hindi Questions`)}
+                          disabled={!item.resources?.hindiQuestionPdf}
+                          className="h-7 rounded-lg bg-muted text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+                        >
+                          Hindi Qs
+                        </button>
+                        <button
+                          onClick={() => openPdf(item.resources?.hindiAnswerPdf, `${title} - Hindi Solutions`)}
+                          disabled={!item.resources?.hindiAnswerPdf}
+                          className="h-7 rounded-lg bg-muted text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+                        >
+                          Hindi Ans
+                        </button>
+                      </div>
+                    )}
 
-                  <div className="grid grid-cols-2 gap-2 mb-2">
-                    <button
-                      onClick={() => openPdf(item.resources?.questionPdf, `${title} - Question PDF`)}
-                      disabled={!item.resources?.questionPdf}
-                      className="h-9 rounded-lg border border-primary/30 bg-primary/10 text-xs font-semibold text-primary disabled:opacity-50"
-                    >
-                      Question PDF
-                    </button>
-                    <button
-                      onClick={() => openPdf(item.resources?.answerPdf, `${title} - Solution PDF`)}
-                      disabled={!item.resources?.answerPdf}
-                      className="h-9 rounded-lg border border-success/30 bg-success/10 text-xs font-semibold text-success disabled:opacity-50"
-                    >
-                      Solution PDF
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-2">
-                    <button
-                      onClick={() => openPdf(item.resources?.hindiQuestionPdf, `${title} - Hindi Question PDF`)}
-                      disabled={!item.resources?.hindiQuestionPdf}
-                      className="h-8 rounded-lg border border-border bg-muted/40 text-[11px] font-medium text-foreground disabled:opacity-50"
-                    >
-                      Hindi Q PDF
-                    </button>
-                    <button
-                      onClick={() => openPdf(item.resources?.hindiAnswerPdf, `${title} - Hindi Solution PDF`)}
-                      disabled={!item.resources?.hindiAnswerPdf}
-                      className="h-8 rounded-lg border border-border bg-muted/40 text-[11px] font-medium text-foreground disabled:opacity-50"
-                    >
-                      Hindi A PDF
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => toggleCompleted(item)}
-                      className={`h-9 flex-1 rounded-lg text-xs font-semibold ${
-                        completed
-                          ? 'bg-muted text-muted-foreground border border-border'
-                          : 'bg-secondary text-secondary-foreground'
-                      }`}
-                    >
-                      {completed ? 'Mark Not Completed' : 'Mark Completed'}
-                    </button>
-                    <button
-                      onClick={() => openPdf(item.resources?.questionPdf || item.resources?.answerPdf, `${title} - PDF`)}
-                      className="h-9 w-10 rounded-lg border border-border flex items-center justify-center"
-                      title="Open"
-                    >
-                      <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleCompleted(item)}
+                        className={`h-9 flex-1 rounded-xl text-xs font-semibold transition-all ${
+                          completed
+                            ? 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            : 'text-primary-foreground hover:opacity-90'
+                        }`}
+                        style={!completed ? { background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-glow-primary)' } : undefined}
+                      >
+                        {completed ? 'Undo Completion' : '✓ Mark Complete'}
+                      </button>
+                      <button
+                        onClick={() => openPdf(item.resources?.questionPdf || item.resources?.answerPdf, `${title}`)}
+                        className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
+                        title="Open PDF"
+                      >
+                        <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               );
