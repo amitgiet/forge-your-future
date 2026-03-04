@@ -1,18 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Users, MessageCircle, Trophy, UserPlus, Search, Check, X, Bell } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Users, MessageCircle, Trophy, UserPlus, Search, Check, X, Bell, ChevronRight, Crown, Medal, Award } from 'lucide-react';
 import { apiService } from '../lib/apiService';
 import { useSocket } from '../hooks/useSocket';
 import { useAuth } from '../contexts/AuthContext';
 import BottomNav from '../components/BottomNav';
+
+const tabs = [
+  { key: 'friends', label: 'Friends', icon: Users },
+  { key: 'requests', label: 'Requests', icon: Bell },
+  { key: 'chats', label: 'Chats', icon: MessageCircle },
+  { key: 'leaderboard', label: 'Rank', icon: Trophy },
+] as const;
+
+type TabKey = typeof tabs[number]['key'];
 
 const Social = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { onFriendsListUpdated, onFriendRequestReceived } = useSocket(user?._id);
 
-  const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'chats' | 'leaderboard'>('friends');
+  const [activeTab, setActiveTab] = useState<TabKey>('friends');
   const [friends, setFriends] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [chats, setChats] = useState<any[]>([]);
@@ -20,97 +29,37 @@ const Social = () => {
   const [loading, setLoading] = useState(true);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-    // Load requests on mount to show badge
-    loadRequests();
-  }, [activeTab]);
+  useEffect(() => { loadData(); loadRequests(); }, [activeTab]);
 
-  // Listen for real-time updates
   useEffect(() => {
-    const unsubscribe = onFriendsListUpdated(() => {
-      if (activeTab === 'friends') {
-        loadFriends();
-      }
-    });
+    const unsubscribe = onFriendsListUpdated(() => { if (activeTab === 'friends') loadFriends(); });
     return unsubscribe;
   }, [activeTab]);
 
-  // Listen for new friend requests
   useEffect(() => {
-    const unsubscribe = onFriendRequestReceived((data) => {
-      console.log('Friend request received:', data);
-      loadRequests();
-    });
+    const unsubscribe = onFriendRequestReceived(() => { loadRequests(); });
     return unsubscribe;
   }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      if (activeTab === 'friends') {
-        await loadFriends();
-      } else if (activeTab === 'requests') {
-        await loadRequests();
-      } else if (activeTab === 'chats') {
-        await loadChats();
-      } else if (activeTab === 'leaderboard') {
-        await loadLeaderboard();
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
+      if (activeTab === 'friends') await loadFriends();
+      else if (activeTab === 'requests') await loadRequests();
+      else if (activeTab === 'chats') await loadChats();
+      else if (activeTab === 'leaderboard') await loadLeaderboard();
+    } catch (error) { console.error('Error loading data:', error); }
+    finally { setLoading(false); }
   };
 
-  const loadFriends = async () => {
-    try {
-      const response = await apiService.social.getFriends();
-      setFriends(response.data.data || []);
-    } catch (error) {
-      console.error('Error loading friends:', error);
-    }
-  };
+  const loadFriends = async () => { try { const r = await apiService.social.getFriends(); setFriends(r.data.data || []); } catch (e) { console.error(e); } };
+  const loadRequests = async () => { try { const r = await apiService.social.getFriendRequests(); setRequests(r.data.data || []); } catch (e) { console.error(e); } };
+  const loadChats = async () => { try { const r = await apiService.social.getChats(); setChats(r.data.data || []); } catch (e) { console.error(e); } };
+  const loadLeaderboard = async () => { try { const r = await apiService.social.getFriendsLeaderboard(); setLeaderboard(r.data.data || []); } catch (e) { console.error(e); } };
 
-  const loadRequests = async () => {
-    try {
-      const response = await apiService.social.getFriendRequests();
-      setRequests(response.data.data || []);
-    } catch (error) {
-      console.error('Error loading requests:', error);
-    }
-  };
-
-  const loadChats = async () => {
-    try {
-      const response = await apiService.social.getChats();
-      setChats(response.data.data || []);
-    } catch (error) {
-      console.error('Error loading chats:', error);
-    }
-  };
-
-  const loadLeaderboard = async () => {
-    try {
-      const response = await apiService.social.getFriendsLeaderboard();
-      setLeaderboard(response.data.data || []);
-    } catch (error) {
-      console.error('Error loading leaderboard:', error);
-    }
-  };
-
-  const handleChatClick = (chatId: string) => {
-    navigate(`/chat/${chatId}`);
-  };
-
+  const handleChatClick = (chatId: string) => navigate(`/chat/${chatId}`);
   const handleStartChat = async (friendId: string) => {
-    try {
-      const response = await apiService.social.createDirectChat(friendId);
-      navigate(`/chat/${response.data.data._id}`);
-    } catch (error) {
-      console.error('Error creating chat:', error);
-    }
+    try { const r = await apiService.social.createDirectChat(friendId); navigate(`/chat/${r.data.data._id}`); } catch (e) { console.error(e); }
   };
 
   const handleAcceptRequest = async (friendId: string) => {
@@ -118,270 +67,267 @@ const Social = () => {
     try {
       await apiService.social.acceptFriendRequest(friendId);
       setRequests(requests.filter(r => r.userId._id !== friendId));
-      loadFriends(); // Refresh friends list
-    } catch (error) {
-      console.error('Error accepting friend request:', error);
-    } finally {
-      setAcceptingId(null);
-    }
+      loadFriends();
+    } catch (e) { console.error(e); }
+    finally { setAcceptingId(null); }
   };
 
+  const rankIcon = (rank: number) => {
+    if (rank === 1) return <Crown className="w-4 h-4 text-warning" />;
+    if (rank === 2) return <Medal className="w-4 h-4 text-muted-foreground" />;
+    if (rank === 3) return <Award className="w-4 h-4 text-warning" />;
+    return <span className="text-xs font-bold text-muted-foreground">#{rank}</span>;
+  };
+
+  const emptyMessages: Record<TabKey, { icon: React.ReactNode; text: string; action?: string }> = {
+    friends: { icon: <Users className="w-8 h-8" />, text: 'No friends yet', action: 'Add your first friend!' },
+    requests: { icon: <Bell className="w-8 h-8" />, text: 'No pending requests', action: 'All caught up 🎉' },
+    chats: { icon: <MessageCircle className="w-8 h-8" />, text: 'No chats yet', action: 'Start chatting with friends!' },
+    leaderboard: { icon: <Trophy className="w-8 h-8" />, text: 'No rankings yet', action: 'Add friends to compete!' },
+  };
+
+  const isEmpty = (activeTab === 'friends' && friends.length === 0) ||
+    (activeTab === 'requests' && requests.length === 0) ||
+    (activeTab === 'chats' && chats.length === 0) ||
+    (activeTab === 'leaderboard' && leaderboard.length === 0);
+
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="max-w-2xl mx-auto p-4">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">Social</h1>
+    <div className="min-h-screen bg-background pb-24">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-20 bg-card border-b border-border" style={{ boxShadow: 'var(--shadow-sm)' }}>
+        <div className="max-w-md mx-auto px-4 py-3">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h1 className="text-lg font-bold text-foreground nf-heading">👥 Social</h1>
+              <p className="text-xs text-muted-foreground">Connect & compete with friends</p>
+            </div>
             <button
               onClick={() => navigate('/add-friend')}
-              className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center"
+              className="h-9 px-3 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90"
+              style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-glow-primary)' }}
             >
-              <UserPlus className="w-5 h-5" />
+              <UserPlus className="w-4 h-4" />
+              Add
             </button>
           </div>
-        </motion.div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('friends')}
-            className={`px-4 py-3 rounded-xl font-semibold transition-all whitespace-nowrap ${
-              activeTab === 'friends'
-                ? 'bg-primary text-white'
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            <Users className="w-5 h-5 inline mr-2" />
-            Friends
-          </button>
-          <button
-            onClick={() => setActiveTab('requests')}
-            className={`px-4 py-3 rounded-xl font-semibold transition-all whitespace-nowrap relative ${
-              activeTab === 'requests'
-                ? 'bg-primary text-white'
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            <Bell className="w-5 h-5 inline mr-2" />
-            Requests
-            {requests.length > 0 && (
-              <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                {requests.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('chats')}
-            className={`px-4 py-3 rounded-xl font-semibold transition-all whitespace-nowrap ${
-              activeTab === 'chats'
-                ? 'bg-primary text-white'
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            <MessageCircle className="w-5 h-5 inline mr-2" />
-            Chats
-          </button>
-          <button
-            onClick={() => setActiveTab('leaderboard')}
-            className={`px-4 py-3 rounded-xl font-semibold transition-all whitespace-nowrap ${
-              activeTab === 'leaderboard'
-                ? 'bg-primary text-white'
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            <Trophy className="w-5 h-5 inline mr-2" />
-            Rank
-          </button>
-        </div>
-
-        {/* Content */}
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {activeTab === 'friends' && friends.map((friend, index) => (
-              <motion.div
-                key={friend._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="nf-card flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3 flex-1">
-                  {friend.avatar ? (
-                    <img 
-                      src={friend.avatar} 
-                      alt={friend.name}
-                      className="w-12 h-12 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                      <Users className="w-6 h-6 text-primary" />
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-semibold text-foreground">{friend.name}</p>
-                    <p className="text-sm text-muted-foreground">{friend.email}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleStartChat(friend._id)}
-                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors"
-                >
-                  Chat
-                </button>
-              </motion.div>
-            ))}
-
-            {activeTab === 'requests' && requests.map((request, index) => (
-              <motion.div
-                key={request._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="nf-card flex items-center justify-between border-2 border-primary/30 bg-primary/5"
-              >
-                <div className="flex items-center gap-3 flex-1">
-                  {request.userId?.avatar ? (
-                    <img 
-                      src={request.userId.avatar} 
-                      alt={request.userId?.name}
-                      className="w-12 h-12 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                      <UserPlus className="w-6 h-6 text-primary" />
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-semibold text-foreground">{request.userId?.name}</p>
-                    <p className="text-sm text-muted-foreground">{request.userId?.email}</p>
-                    <p className="text-xs text-primary mt-1">Sent you a friend request</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleAcceptRequest(request.userId?._id)}
-                    disabled={acceptingId === request.userId?._id}
-                    className="px-3 py-2 rounded-lg bg-green-500/20 text-green-600 text-sm font-semibold hover:bg-green-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
-                  >
-                    <Check className="w-4 h-4" />
-                    Accept
-                  </button>
-                  <button
-                    className="px-3 py-2 rounded-lg bg-red-500/20 text-red-600 text-sm font-semibold hover:bg-red-500/30 transition-colors flex items-center gap-1"
-                  >
-                    <X className="w-4 h-4" />
-                    Decline
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-
-            {activeTab === 'chats' && chats.map((chat, index) => {
-              const otherParticipant = chat.type === 'direct' 
-                ? chat.participants.find((p: any) => p._id !== user?._id)
-                : null;
-              
+          {/* Tabs */}
+          <div className="flex gap-1 bg-muted rounded-xl p-1">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.key;
               return (
-                <motion.div
-                  key={chat._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => handleChatClick(chat._id)}
-                  className="nf-card cursor-pointer hover:border-primary/50 transition-colors"
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all relative ${
+                    isActive
+                      ? 'bg-card text-primary shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
-                  <div className="flex items-center gap-3">
-                    {chat.type === 'group' ? (
-                      <div className="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center">
-                        <Users className="w-6 h-6 text-secondary" />
-                      </div>
-                    ) : otherParticipant?.avatar ? (
-                      <img 
-                        src={otherParticipant.avatar}
-                        alt={otherParticipant.name}
-                        className="w-12 h-12 rounded-xl object-cover"
-                      />
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden min-[340px]:inline">{tab.label}</span>
+                  {tab.key === 'requests' && requests.length > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                      {requests.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-md mx-auto px-4 pt-4">
+        {/* Loading */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          </div>
+        ) : isEmpty ? (
+          /* Empty State */
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center py-16 text-center"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground mb-3">
+              {emptyMessages[activeTab].icon}
+            </div>
+            <p className="text-sm font-semibold text-foreground">{emptyMessages[activeTab].text}</p>
+            <p className="text-xs text-muted-foreground mt-1">{emptyMessages[activeTab].action}</p>
+            {activeTab === 'friends' && (
+              <button
+                onClick={() => navigate('/add-friend')}
+                className="mt-4 h-9 px-5 rounded-xl text-xs font-semibold text-primary-foreground"
+                style={{ background: 'var(--gradient-primary)' }}
+              >
+                <UserPlus className="w-3.5 h-3.5 inline mr-1.5" />
+                Find Friends
+              </button>
+            )}
+          </motion.div>
+        ) : (
+          /* Content */
+          <div className="space-y-2.5">
+            <AnimatePresence mode="wait">
+              {/* ===== FRIENDS ===== */}
+              {activeTab === 'friends' && friends.map((friend, idx) => (
+                <motion.div
+                  key={friend._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.03 }}
+                  className="rounded-xl border border-border bg-card p-3 flex items-center gap-3"
+                  style={{ boxShadow: 'var(--shadow-sm)' }}
+                >
+                  {friend.avatar ? (
+                    <img src={friend.avatar} alt={friend.name} className="w-11 h-11 rounded-xl object-cover" />
+                  ) : (
+                    <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{friend.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{friend.email}</p>
+                  </div>
+                  <button
+                    onClick={() => handleStartChat(friend._id)}
+                    className="h-8 px-3 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors flex items-center gap-1"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    Chat
+                  </button>
+                </motion.div>
+              ))}
+
+              {/* ===== REQUESTS ===== */}
+              {activeTab === 'requests' && requests.map((request, idx) => (
+                <motion.div
+                  key={request._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.03 }}
+                  className="rounded-xl border-2 border-primary/20 bg-card p-3"
+                  style={{ boxShadow: 'var(--shadow-card)' }}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    {request.userId?.avatar ? (
+                      <img src={request.userId.avatar} alt={request.userId?.name} className="w-11 h-11 rounded-xl object-cover" />
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center">
-                        <MessageCircle className="w-6 h-6 text-secondary" />
+                      <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <UserPlus className="w-5 h-5 text-primary" />
                       </div>
                     )}
-                    <div className="flex-1">
-                      <p className="font-semibold text-foreground">
-                        {chat.type === 'group' ? chat.name : otherParticipant?.name}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{request.userId?.name}</p>
+                      <p className="text-xs text-primary">Wants to be friends</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleAcceptRequest(request.userId?._id)}
+                      disabled={acceptingId === request.userId?._id}
+                      className="flex-1 h-9 rounded-xl text-xs font-semibold text-primary-foreground disabled:opacity-50 flex items-center justify-center gap-1.5 transition-all"
+                      style={{ background: 'var(--gradient-success)' }}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      Accept
+                    </button>
+                    <button className="flex-1 h-9 rounded-xl border border-border bg-muted text-xs font-semibold text-muted-foreground hover:text-destructive hover:border-destructive/30 transition-colors flex items-center justify-center gap-1.5">
+                      <X className="w-3.5 h-3.5" />
+                      Decline
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* ===== CHATS ===== */}
+              {activeTab === 'chats' && chats.map((chat, idx) => {
+                const other = chat.type === 'direct' ? chat.participants.find((p: any) => p._id !== user?._id) : null;
+                return (
+                  <motion.div
+                    key={chat._id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.03 }}
+                    onClick={() => handleChatClick(chat._id)}
+                    className="rounded-xl border border-border bg-card p-3 flex items-center gap-3 cursor-pointer hover:border-primary/30 transition-all group"
+                    style={{ boxShadow: 'var(--shadow-sm)' }}
+                  >
+                    {chat.type === 'group' ? (
+                      <div className="w-11 h-11 rounded-xl bg-secondary/10 flex items-center justify-center">
+                        <Users className="w-5 h-5 text-secondary" />
+                      </div>
+                    ) : other?.avatar ? (
+                      <img src={other.avatar} alt={other.name} className="w-11 h-11 rounded-xl object-cover" />
+                    ) : (
+                      <div className="w-11 h-11 rounded-xl bg-secondary/10 flex items-center justify-center">
+                        <MessageCircle className="w-5 h-5 text-secondary" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {chat.type === 'group' ? chat.name : other?.name}
                       </p>
                       {chat.lastMessage && (
-                        <p className="text-sm text-muted-foreground line-clamp-1">
+                        <p className="text-xs text-muted-foreground truncate">
                           {chat.lastMessage.sender?._id === user?._id ? 'You: ' : ''}{chat.lastMessage.text}
                         </p>
                       )}
                     </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                  </motion.div>
+                );
+              })}
 
-            {activeTab === 'leaderboard' && leaderboard.map((user, index) => (
-              <motion.div
-                key={user.userId}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`nf-card ${user.isCurrentUser ? 'border-primary bg-primary/5' : ''}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
-                    user.rank === 1 ? 'bg-warning/20 text-warning' :
-                    user.rank === 2 ? 'bg-muted text-foreground' :
-                    user.rank === 3 ? 'bg-orange-100 text-orange-700' :
-                    'bg-muted/50 text-muted-foreground'
+              {/* ===== LEADERBOARD ===== */}
+              {activeTab === 'leaderboard' && leaderboard.map((u, idx) => (
+                <motion.div
+                  key={u.userId}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.03 }}
+                  className={`rounded-xl border bg-card p-3 flex items-center gap-3 ${
+                    u.isCurrentUser ? 'border-primary/40 bg-primary/5' : 'border-border'
+                  } ${u.rank <= 3 ? '' : ''}`}
+                  style={{ boxShadow: u.rank <= 3 ? 'var(--shadow-card)' : 'var(--shadow-sm)' }}
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    u.rank === 1 ? 'bg-warning/15' :
+                    u.rank === 2 ? 'bg-muted' :
+                    u.rank === 3 ? 'bg-warning/10' :
+                    'bg-muted/50'
                   }`}>
-                    #{user.rank}
+                    {rankIcon(u.rank)}
                   </div>
-                  {user.avatar ? (
-                    <img 
-                      src={user.avatar}
-                      alt={user.name}
-                      className="w-10 h-10 rounded-lg object-cover"
-                    />
+                  {u.avatar ? (
+                    <img src={u.avatar} alt={u.name} className="w-10 h-10 rounded-xl object-cover" />
                   ) : (
-                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-primary" />
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Users className="w-4 h-4 text-primary" />
                     </div>
                   )}
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground">
-                      {user.name} {user.isCurrentUser && '(You)'}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {u.name} {u.isCurrentUser && <span className="text-primary text-xs">(You)</span>}
                     </p>
-                    <p className="text-sm text-muted-foreground">{user.xp} XP • {user.streak} day streak</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium text-primary">{u.xp} XP</span>
+                      <span>•</span>
+                      <span>🔥 {u.streak}d streak</span>
+                    </div>
                   </div>
-                  {user.rank === 1 && <Trophy className="w-6 h-6 text-warning" />}
-                </div>
-              </motion.div>
-            ))}
-
-            {((activeTab === 'friends' && friends.length === 0) ||
-              (activeTab === 'requests' && requests.length === 0) ||
-              (activeTab === 'chats' && chats.length === 0) ||
-              (activeTab === 'leaderboard' && leaderboard.length === 0)) && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">
-                  {activeTab === 'friends' && 'No friends yet. Add some!'}
-                  {activeTab === 'requests' && 'No pending requests'}
-                  {activeTab === 'chats' && 'No chats yet. Start chatting!'}
-                  {activeTab === 'leaderboard' && 'Add friends to see leaderboard'}
-                </p>
-              </div>
-            )}
+                  {u.rank === 1 && <Trophy className="w-5 h-5 text-warning flex-shrink-0" />}
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>
@@ -390,6 +336,5 @@ const Social = () => {
     </div>
   );
 };
-
 
 export default Social;
