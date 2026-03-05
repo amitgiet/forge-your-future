@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Flame, Target, BookOpen, Award, Globe, Crown, Zap, LogOut, Edit2, Save } from 'lucide-react';
+import { User, Flame, Target, BookOpen, Award, Globe, Crown, Zap, LogOut, Edit2, Save, ChevronLeft, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
 import { apiService } from '@/lib/apiService';
 
 const Profile = () => {
   const { t, language, setLanguage } = useLanguage();
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
@@ -21,13 +23,6 @@ const Profile = () => {
     weakSubjects: [] as string[]
   });
 
-  const stats = [
-    { icon: Flame, label: t('dashboard.streak'), value: '7 days', color: 'nf-stat-icon-warning' },
-    { icon: BookOpen, label: t('profile.quizzesCompleted'), value: '45', color: 'nf-stat-icon-primary' },
-    { icon: Target, label: t('profile.accuracy'), value: '78%', color: 'nf-stat-icon-success' },
-    { icon: Award, label: t('dashboard.score'), value: '2,450', color: 'nf-stat-icon-secondary' },
-  ];
-
   const achievements = [
     { icon: '🔥', label: '7 Day Streak', unlocked: true },
     { icon: '📚', label: 'First Quiz', unlocked: true },
@@ -35,9 +30,7 @@ const Profile = () => {
     { icon: '🏆', label: 'Top 10%', unlocked: false },
   ];
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
+  useEffect(() => { loadProfile(); }, []);
 
   const loadProfile = async () => {
     try {
@@ -82,54 +75,70 @@ const Profile = () => {
   };
 
   const toggleArrayItem = (array: string[], item: string) => {
-    return array.includes(item)
-      ? array.filter(i => i !== item)
-      : [...array, item];
+    return array.includes(item) ? array.filter(i => i !== item) : [...array, item];
   };
 
   const handleLanguageChange = async (lang: 'en' | 'hi') => {
     setLanguage(lang);
     try {
       await apiService.auth.updateProfile({ preferredLanguage: lang });
-      setProfileData((prev: any) => ({
-        ...prev,
-        profile: {
-          ...(prev?.profile || {}),
-          preferredLanguage: lang
-        }
-      }));
+      setProfileData((prev: any) => ({ ...prev, profile: { ...(prev?.profile || {}), preferredLanguage: lang } }));
     } catch (error) {
       console.error('Update preferred language error:', error);
     }
   };
 
+  const xpProgress = ((profileData?.gamification?.totalXP || 0) % 1000) / 10;
+
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="nf-safe-area p-4 max-w-md mx-auto">
-        {/* Profile Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="nf-card text-center mb-6"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-foreground">Profile Details</h2>
-            <button
-              onClick={() => editing ? handleSave() : setEditing(true)}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border-2 border-primary/30 text-primary font-semibold hover:bg-primary/20 transition-colors"
-            >
-              {editing ? (
-                <>{loading ? 'Saving...' : <><Save className="w-4 h-4" /> Save</> }</>
-              ) : (
-                <><Edit2 className="w-4 h-4" /> Edit</>
-              )}
+      {/* Sticky Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="sticky top-0 z-30 bg-card border-b border-border px-4 py-3"
+        style={{ boxShadow: 'var(--shadow-sm)' }}
+      >
+        <div className="flex items-center justify-between max-w-md mx-auto">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-muted hover:bg-accent transition-colors">
+              <ChevronLeft className="w-5 h-5 text-foreground" />
             </button>
+            <h1 className="text-base font-bold text-foreground">Profile</h1>
           </div>
+          <button
+            onClick={() => editing ? handleSave() : setEditing(true)}
+            disabled={loading}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
+              editing
+                ? 'text-primary-foreground shadow-sm'
+                : 'bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20'
+            }`}
+            style={editing ? { background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-glow-primary)' } : undefined}
+          >
+            {editing ? (
+              <>{loading ? 'Saving...' : <><Save className="w-4 h-4" /> Save</>}</>
+            ) : (
+              <><Edit2 className="w-4 h-4" /> Edit</>
+            )}
+          </button>
+        </div>
+      </motion.div>
 
-          <div className="relative inline-block mb-4">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center border-4 border-white shadow-elevated">
-              <User className="w-12 h-12 text-white" />
+      <div className="p-4 max-w-md mx-auto space-y-4">
+        {/* Profile Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card border border-border rounded-2xl p-5 text-center"
+          style={{ boxShadow: 'var(--shadow-card)' }}
+        >
+          <div className="relative inline-block mb-3">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center border-2 border-primary/20" style={{ background: 'var(--gradient-primary)' }}>
+              <User className="w-10 h-10 text-primary-foreground" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-success flex items-center justify-center border-2 border-card">
+              <Shield className="w-3 h-3 text-success-foreground" />
             </div>
           </div>
 
@@ -138,245 +147,188 @@ const Profile = () => {
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="text-2xl font-bold text-center w-full px-4 py-2 rounded-xl bg-background border-2 border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary mb-2"
+              className="text-xl font-bold text-center w-full px-3 py-2 rounded-xl bg-muted border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary mb-1"
             />
           ) : (
-            <h1 className="nf-heading text-2xl text-foreground">{profileData?.name || 'NEET Aspirant'}</h1>
+            <h2 className="text-xl font-bold text-foreground mb-0.5">{profileData?.name || 'NEET Aspirant'}</h2>
           )}
           <p className="text-sm text-muted-foreground">{user?.email}</p>
+
+          {/* Plan badge */}
+          <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+            <span className="text-xs font-semibold text-primary capitalize">{profileData?.subscription?.plan || 'Free'} Plan</span>
+          </div>
         </motion.div>
-
-        {/* Profile Info */}
-        {editing ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="nf-card mb-6 space-y-4"
-          >
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Target Year</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['2027', '2026', 'Dropper'].map((year) => (
-                  <button
-                    key={year}
-                    onClick={() => setFormData({ ...formData, targetYear: year })}
-                    className={`py-2 rounded-xl border-2 font-semibold text-sm transition-all ${
-                      formData.targetYear === year
-                        ? 'bg-primary/10 border-primary text-primary'
-                        : 'bg-card border-border text-foreground'
-                    }`}
-                  >
-                    {year}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Study Hours</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['2-3', '4-6', '6+'].map((hours) => (
-                  <button
-                    key={hours}
-                    onClick={() => setFormData({ ...formData, studyHours: hours })}
-                    className={`py-2 rounded-xl border-2 font-semibold text-sm transition-all ${
-                      formData.studyHours === hours
-                        ? 'bg-primary/10 border-primary text-primary'
-                        : 'bg-card border-border text-foreground'
-                    }`}
-                  >
-                    {hours}hr
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Board %</label>
-              <div className="grid grid-cols-2 gap-2">
-                {['<60%', '60-75%', '75-90%', '90+%'].map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => setFormData({ ...formData, boardPercentage: range })}
-                    className={`py-2 rounded-xl border-2 font-semibold text-sm transition-all ${
-                      formData.boardPercentage === range
-                        ? 'bg-secondary/10 border-secondary text-secondary'
-                        : 'bg-card border-border text-foreground'
-                    }`}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Mock Score</label>
-              <input
-                type="text"
-                value={formData.mockScore}
-                onChange={(e) => setFormData({ ...formData, mockScore: e.target.value })}
-                placeholder="450/720"
-                className="w-full px-4 py-2 rounded-xl bg-background border-2 border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Weak Subjects</label>
-              <div className="space-y-2">
-                {['Physics', 'Chemistry', 'Biology'].map((subject) => (
-                  <button
-                    key={subject}
-                    onClick={() => setFormData({
-                      ...formData,
-                      weakSubjects: toggleArrayItem(formData.weakSubjects, subject)
-                    })}
-                    className={`w-full py-2 rounded-xl border-2 font-semibold text-sm transition-all ${
-                      formData.weakSubjects.includes(subject)
-                        ? 'bg-destructive/10 border-destructive text-destructive'
-                        : 'bg-card border-border text-foreground'
-                    }`}
-                  >
-                    {formData.weakSubjects.includes(subject) && '✓ '}{subject}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="nf-card mb-6"
-          >
-            <h3 className="font-bold text-foreground mb-3">Academic Info</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Target Year:</span>
-                <span className="font-semibold text-foreground">{profileData?.profile?.targetYear || 'Not set'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Study Hours:</span>
-                <span className="font-semibold text-foreground">{profileData?.profile?.studyHoursPerDay || 6}hr/day</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Board %:</span>
-                <span className="font-semibold text-foreground">{profileData?.profile?.boardPercentage || 'Not set'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Mock Score:</span>
-                <span className="font-semibold text-foreground">{profileData?.profile?.mockScore || 'Not attempted'}</span>
-              </div>
-              {profileData?.profile?.weakSubjects?.length > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Weak Subjects:</span>
-                  <span className="font-semibold text-destructive">{profileData.profile.weakSubjects.join(', ')}</span>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
 
         {/* XP Progress */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="nf-card mb-6"
+          transition={{ delay: 0.1 }}
+          className="bg-card border border-border rounded-2xl p-4"
+          style={{ boxShadow: 'var(--shadow-sm)' }}
         >
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-warning" />
-              <span className="nf-heading text-foreground">{profileData?.gamification?.totalXP || 0} XP</span>
+              <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-warning" />
+              </div>
+              <span className="font-bold text-foreground">{profileData?.gamification?.totalXP || 0} XP</span>
             </div>
-            <span className="text-sm text-muted-foreground">Level {profileData?.gamification?.level || 1}</span>
+            <span className="text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">Level {profileData?.gamification?.level || 1}</span>
           </div>
-          <div className="nf-progress-bar">
+          <div className="h-2.5 rounded-full bg-muted overflow-hidden">
             <motion.div
-              className="nf-progress-fill"
+              className="h-full rounded-full"
+              style={{ background: 'var(--gradient-primary)' }}
               initial={{ width: 0 }}
-              animate={{ width: `${((profileData?.gamification?.totalXP || 0) % 1000) / 10}%` }}
+              animate={{ width: `${xpProgress}%` }}
               transition={{ duration: 1, delay: 0.3 }}
             />
           </div>
+          <p className="text-[11px] text-muted-foreground mt-1.5">{Math.round(xpProgress * 10)} / 1000 XP to next level</p>
         </motion.div>
 
         {/* Stats Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="nf-card mb-6"
+          transition={{ delay: 0.15 }}
+          className="grid grid-cols-2 gap-3"
         >
-          <h3 className="nf-heading text-foreground mb-4">{t('profile.stats')}</h3>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <motion.div className="nf-card-stat">
-              <div className="nf-stat-icon nf-stat-icon-warning">
-                <Flame className="w-5 h-5" />
+          {[
+            { icon: Flame, label: t('dashboard.streak'), value: profileData?.gamification?.currentStreak || 0, unit: 'days', color: 'warning' },
+            { icon: BookOpen, label: 'Mocks', value: profileData?.analytics?.totalMocksAttempted || 0, unit: '', color: 'primary' },
+            { icon: Target, label: t('profile.accuracy'), value: `${profileData?.analytics?.overallAccuracy || 0}%`, unit: '', color: 'success' },
+            { icon: Award, label: 'Coins', value: profileData?.gamification?.coins || 0, unit: '', color: 'secondary' },
+          ].map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 + i * 0.05 }}
+              className="bg-card border border-border rounded-xl p-3.5 flex items-center gap-3"
+              style={{ boxShadow: 'var(--shadow-sm)' }}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-${stat.color}/10`}>
+                <stat.icon className={`w-5 h-5 text-${stat.color}`} />
               </div>
               <div>
-                <p className="text-xl font-black text-foreground">{profileData?.gamification?.currentStreak || 0}</p>
-                <p className="text-xs text-muted-foreground font-medium">{t('dashboard.streak')}</p>
+                <p className="text-lg font-black text-foreground leading-tight">{stat.value}{stat.unit && <span className="text-xs font-medium text-muted-foreground ml-0.5">{stat.unit}</span>}</p>
+                <p className="text-[11px] text-muted-foreground font-medium">{stat.label}</p>
               </div>
             </motion.div>
+          ))}
+        </motion.div>
 
-            <motion.div className="nf-card-stat">
-              <div className="nf-stat-icon nf-stat-icon-primary">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xl font-black text-foreground">{profileData?.analytics?.totalMocksAttempted || 0}</p>
-                <p className="text-xs text-muted-foreground font-medium">Mocks</p>
-              </div>
-            </motion.div>
+        {/* Academic Info / Edit Form */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-card border border-border rounded-2xl p-4"
+          style={{ boxShadow: 'var(--shadow-sm)' }}
+        >
+          <h3 className="font-bold text-foreground mb-3 text-sm">{editing ? 'Edit Academic Info' : 'Academic Info'}</h3>
 
-            <motion.div className="nf-card-stat">
-              <div className="nf-stat-icon nf-stat-icon-success">
-                <Target className="w-5 h-5" />
+          {editing ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Target Year</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['2027', '2026', 'Dropper'].map((year) => (
+                    <button key={year} onClick={() => setFormData({ ...formData, targetYear: year })}
+                      className={`py-2 rounded-xl border text-sm font-semibold transition-all ${
+                        formData.targetYear === year ? 'bg-primary/10 border-primary text-primary' : 'bg-muted border-border text-foreground'
+                      }`}>{year}</button>
+                  ))}
+                </div>
               </div>
               <div>
-                <p className="text-xl font-black text-foreground">{profileData?.analytics?.overallAccuracy || 0}%</p>
-                <p className="text-xs text-muted-foreground font-medium">{t('profile.accuracy')}</p>
-              </div>
-            </motion.div>
-
-            <motion.div className="nf-card-stat">
-              <div className="nf-stat-icon nf-stat-icon-secondary">
-                <Award className="w-5 h-5" />
+                <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Study Hours/Day</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['2-3', '4-6', '6+'].map((hours) => (
+                    <button key={hours} onClick={() => setFormData({ ...formData, studyHours: hours })}
+                      className={`py-2 rounded-xl border text-sm font-semibold transition-all ${
+                        formData.studyHours === hours ? 'bg-primary/10 border-primary text-primary' : 'bg-muted border-border text-foreground'
+                      }`}>{hours}hr</button>
+                  ))}
+                </div>
               </div>
               <div>
-                <p className="text-xl font-black text-foreground">{profileData?.gamification?.coins || 0}</p>
-                <p className="text-xs text-muted-foreground font-medium">Coins</p>
+                <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Board %</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['<60%', '60-75%', '75-90%', '90+%'].map((range) => (
+                    <button key={range} onClick={() => setFormData({ ...formData, boardPercentage: range })}
+                      className={`py-2 rounded-xl border text-sm font-semibold transition-all ${
+                        formData.boardPercentage === range ? 'bg-secondary/10 border-secondary text-secondary' : 'bg-muted border-border text-foreground'
+                      }`}>{range}</button>
+                  ))}
+                </div>
               </div>
-            </motion.div>
-          </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Mock Score</label>
+                <input type="text" value={formData.mockScore} onChange={(e) => setFormData({ ...formData, mockScore: e.target.value })}
+                  placeholder="e.g. 450/720"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-muted border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Weak Subjects</label>
+                <div className="flex gap-2">
+                  {['Physics', 'Chemistry', 'Biology'].map((subject) => (
+                    <button key={subject}
+                      onClick={() => setFormData({ ...formData, weakSubjects: toggleArrayItem(formData.weakSubjects, subject) })}
+                      className={`flex-1 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                        formData.weakSubjects.includes(subject) ? 'bg-destructive/10 border-destructive text-destructive' : 'bg-muted border-border text-foreground'
+                      }`}>
+                      {formData.weakSubjects.includes(subject) && '✓ '}{subject}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {[
+                { label: 'Target Year', value: profileData?.profile?.targetYear || 'Not set' },
+                { label: 'Study Hours', value: `${profileData?.profile?.studyHoursPerDay || 6}hr/day` },
+                { label: 'Board %', value: profileData?.profile?.boardPercentage || 'Not set' },
+                { label: 'Mock Score', value: profileData?.profile?.mockScore || 'Not attempted' },
+              ].map(item => (
+                <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
+                  <span className="text-sm text-muted-foreground">{item.label}</span>
+                  <span className="text-sm font-semibold text-foreground">{item.value}</span>
+                </div>
+              ))}
+              {profileData?.profile?.weakSubjects?.length > 0 && (
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-sm text-muted-foreground">Weak Subjects</span>
+                  <div className="flex gap-1">
+                    {profileData.profile.weakSubjects.map((s: string) => (
+                      <span key={s} className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">{s}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* Achievements */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="nf-card mb-6"
+          transition={{ delay: 0.25 }}
+          className="bg-card border border-border rounded-2xl p-4"
+          style={{ boxShadow: 'var(--shadow-sm)' }}
         >
-          <h3 className="nf-heading text-foreground mb-4">Achievements</h3>
-          
-          <div className="grid grid-cols-4 gap-3">
-            {achievements.map((achievement, index) => (
-              <motion.div
-                key={achievement.label}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4 + index * 0.05 }}
-                className={`text-center py-3 rounded-xl border-2 ${
-                  achievement.unlocked 
-                    ? 'bg-warning/10 border-warning/30' 
-                    : 'bg-muted/50 border-border opacity-50'
-                }`}
-              >
-                <div className="text-2xl mb-1">{achievement.icon}</div>
-                <p className="text-[10px] text-foreground font-medium leading-tight">{achievement.label}</p>
+          <h3 className="font-bold text-foreground mb-3 text-sm">Achievements</h3>
+          <div className="grid grid-cols-4 gap-2">
+            {achievements.map((a, i) => (
+              <motion.div key={a.label} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + i * 0.05 }}
+                className={`text-center py-3 rounded-xl border ${a.unlocked ? 'bg-warning/5 border-warning/20' : 'bg-muted/30 border-border opacity-50'}`}>
+                <div className="text-2xl mb-1">{a.icon}</div>
+                <p className="text-[10px] text-foreground font-medium leading-tight">{a.label}</p>
               </motion.div>
             ))}
           </div>
@@ -384,78 +336,52 @@ const Profile = () => {
 
         {/* Upgrade CTA */}
         {profileData?.subscription?.plan === 'free' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="nf-card-achievement mb-6"
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-warning to-primary flex items-center justify-center">
-                <Crown className="w-7 h-7 text-white" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            className="rounded-2xl p-4 border-2 border-primary/20" style={{ background: 'var(--gradient-glass)', boxShadow: 'var(--shadow-glow-primary)' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'var(--gradient-primary)' }}>
+                <Crown className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="nf-heading text-foreground">Go Pro</h3>
-                <p className="text-sm text-muted-foreground">Unlimited revisions & features</p>
+                <h3 className="font-bold text-foreground">Go Pro</h3>
+                <p className="text-xs text-muted-foreground">Unlimited revisions & features</p>
               </div>
             </div>
-            <button className="nf-btn-secondary">
-              <Crown className="w-5 h-5" />
-              Upgrade - ₹149/mo
+            <button className="w-full py-2.5 rounded-xl text-sm font-semibold text-primary-foreground" style={{ background: 'var(--gradient-primary)' }}>
+              <Crown className="w-4 h-4 inline mr-1.5" /> Upgrade — ₹149/mo
             </button>
           </motion.div>
         )}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="nf-card mb-6"
-        >
+
+        {/* Language Toggle */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+          className="bg-card border border-border rounded-2xl p-4" style={{ boxShadow: 'var(--shadow-sm)' }}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="nf-stat-icon nf-stat-icon-secondary">
-                <Globe className="w-5 h-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-lg bg-secondary/10 flex items-center justify-center">
+                <Globe className="w-4 h-4 text-secondary" />
               </div>
-              <span className="font-bold text-foreground">{t('profile.language')}</span>
+              <span className="font-semibold text-foreground text-sm">{t('profile.language')}</span>
             </div>
-            
-            <div className="flex items-center gap-1 p-1 bg-muted rounded-xl border-2 border-border">
-              <button
-                onClick={() => handleLanguageChange('en')}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                  language === 'en'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                EN
-              </button>
-              <button
-                onClick={() => handleLanguageChange('hi')}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                  language === 'hi'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                हिं
-              </button>
+            <div className="flex items-center gap-1 p-1 bg-muted rounded-xl">
+              {(['en', 'hi'] as const).map(lang => (
+                <button key={lang} onClick={() => handleLanguageChange(lang)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    language === lang ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}>
+                  {lang === 'en' ? 'EN' : 'हिं'}
+                </button>
+              ))}
             </div>
           </div>
         </motion.div>
 
-        {/* Logout Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <button
-            onClick={logout}
-            className="w-full nf-card hover:border-destructive/50 transition-colors flex items-center justify-center gap-2 text-destructive font-semibold"
-          >
-            <LogOut className="w-5 h-5" />
-            Logout
+        {/* Logout */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <button onClick={logout}
+            className="w-full bg-card border border-border rounded-2xl p-3.5 flex items-center justify-center gap-2 text-destructive font-semibold text-sm hover:border-destructive/40 transition-colors"
+            style={{ boxShadow: 'var(--shadow-sm)' }}>
+            <LogOut className="w-4 h-4" /> Logout
           </button>
         </motion.div>
       </div>

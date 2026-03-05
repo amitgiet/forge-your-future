@@ -22,31 +22,28 @@ const BottomNav = () => {
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)' }}
     >
-      {/* Clean background */}
-      <div className="absolute inset-0 bg-card border-t border-border shadow-elevated" />
-      <div className="max-w-md mx-auto flex justify-around items-center py-2.5 px-2 relative z-10">
+      <div className="absolute inset-0 bg-card border-t border-border" style={{ boxShadow: '0 -2px 12px -2px rgba(0,0,0,0.08)' }} />
+      <div className="max-w-md mx-auto flex justify-around items-center py-1.5 px-1 relative z-10">
         {navItems.map(({ icon: Icon, path, label }) => {
           const isActive = location.pathname === path;
           return (
             <motion.button
               key={path}
               onClick={() => navigate(path)}
-              className={`relative flex flex-col items-center justify-center py-2 px-4 rounded-xl transition-all ${
-                isActive
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+              className={`relative flex flex-col items-center justify-center py-2 px-3.5 rounded-xl transition-all ${
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}
               whileTap={{ scale: 0.9 }}
             >
               {isActive && (
                 <motion.div
                   layoutId="nav-indicator"
-                  className="absolute inset-0 rounded-xl bg-primary/10"
+                  className="absolute inset-0 rounded-xl bg-primary/8"
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}
-              <Icon className={`w-5 h-5 relative z-10 ${isActive ? 'stroke-[2.5]' : ''}`} />
-              <span className={`text-[10px] mt-1 relative z-10 font-medium ${isActive ? 'text-primary' : ''}`}>
+              <Icon className={`w-5 h-5 relative z-10 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+              <span className={`text-[10px] mt-0.5 relative z-10 font-semibold ${isActive ? 'text-primary' : ''}`}>
                 {label}
               </span>
             </motion.button>
