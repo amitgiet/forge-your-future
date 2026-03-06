@@ -9,7 +9,9 @@ const ActiveChallenges = () => {
   const [challenges, setChallenges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { loadChallenges(); }, []);
+  useEffect(() => {
+    loadChallenges();
+  }, []);
 
   const loadChallenges = async () => {
     try {
@@ -17,7 +19,9 @@ const ActiveChallenges = () => {
       setChallenges(response.data.data.filter((c: any) => c.status === 'active'));
     } catch (error) {
       console.error('Error loading challenges:', error);
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading || challenges.length === 0) return null;
@@ -30,11 +34,10 @@ const ActiveChallenges = () => {
       </h3>
       <div className="space-y-3">
         {challenges.map((challenge, index) => {
-          const todaySchedule = challenge.dailySchedule.find((s: any) =>
+          const todaySchedule = challenge.dailySchedule.find((s: any) => 
             s.isUnlocked && !s.isCompleted
           );
-          const progressPct = Math.round((challenge.progress.completedDays / challenge.duration) * 100);
-
+          
           return (
             <motion.div
               key={challenge._id}
@@ -42,13 +45,9 @@ const ActiveChallenges = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               onClick={() => navigate(`/practice-session/${challenge._id}`)}
-              className="nf-card relative overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
+              className="nf-card cursor-pointer hover:border-primary/50 transition-colors"
             >
-              {/* Decorative corner orb */}
-              <div className="absolute -top-5 -right-5 w-16 h-16 rounded-full bg-primary/[0.06]" />
-              <div className="absolute -bottom-3 -left-3 w-10 h-10 rounded-full bg-secondary/[0.05]" />
-
-              <div className="flex items-start justify-between gap-3 relative">
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h4 className="font-semibold text-foreground">{challenge.title}</h4>
@@ -56,7 +55,7 @@ const ActiveChallenges = () => {
                       {challenge.subject}
                     </span>
                   </div>
-
+                  
                   <div className="flex items-center gap-4 mb-3">
                     <div className="flex items-center gap-1 text-sm">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -72,12 +71,11 @@ const ActiveChallenges = () => {
 
                   <div className="mb-2">
                     <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full"
-                        style={{ background: 'var(--gradient-primary)' }}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progressPct}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{
+                          width: `${(challenge.progress.completedDays / challenge.duration) * 100}%`
+                        }}
                       />
                     </div>
                   </div>
