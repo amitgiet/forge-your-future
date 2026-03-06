@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Search } from 'lucide-react';
+import { ArrowLeft, BookOpen, Search, ChevronRight, CheckCircle2, Trophy, X, Filter } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import apiService from '@/lib/apiService';
 import { API_BASE_URL } from '@/lib/api';
@@ -102,6 +102,7 @@ const NCERTSearch = () => {
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
   const [quizStartedAt, setQuizStartedAt] = useState<number | null>(null);
   const [readConfirmed, setReadConfirmed] = useState(false);
+  const [showDetailSheet, setShowDetailSheet] = useState(false);
 
   const loadSubjects = async () => {
     const response = await apiService.ncertSearch.getSubjects();
@@ -129,39 +130,23 @@ const NCERTSearch = () => {
     }
   };
 
-  useEffect(() => {
-    loadSubjects();
-  }, []);
+  useEffect(() => { loadSubjects(); }, []);
 
   useEffect(() => {
-    if (!selectedSubject) {
-      setChapters([]);
-      return;
-    }
+    if (!selectedSubject) { setChapters([]); return; }
     loadChapters(selectedSubject, selectedClass ? Number(selectedClass) as 11 | 12 : undefined);
   }, [selectedSubject, selectedClass, language]);
 
   useEffect(() => {
-    if (selectedSubject || query.trim()) {
-      searchTopics();
-    }
+    if (selectedSubject || query.trim()) searchTopics();
   }, [language]);
 
   useEffect(() => {
-    if (selectedSubject) {
-      searchTopics();
-    }
+    if (selectedSubject) searchTopics();
   }, [selectedSubject, selectedClass]);
 
   useEffect(() => {
-    sessionStorage.setItem(
-      FILTERS_STORAGE_KEY,
-      JSON.stringify({
-        selectedClass,
-        selectedSubject,
-        query
-      })
-    );
+    sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify({ selectedClass, selectedSubject, query }));
   }, [selectedClass, selectedSubject, query]);
 
   useEffect(() => {
@@ -170,9 +155,7 @@ const NCERTSearch = () => {
       const raw = sessionStorage.getItem('ncert_read_map');
       const readMap = raw ? JSON.parse(raw) : {};
       setReadConfirmed(Boolean(readMap[selectedTopic._id]));
-    } catch {
-      setReadConfirmed(false);
-    }
+    } catch { setReadConfirmed(false); }
   }, [selectedTopic]);
 
   const selectedChapter = useMemo(
@@ -182,16 +165,11 @@ const NCERTSearch = () => {
     [chapters, selectedTopic]
   );
 
-  const selectedContentSource = selectedTopic?.resolvedContentSource?.resourceUrl
-    ? selectedTopic.resolvedContentSource
-    : selectedTopic?.chapter?.resolvedContentSource || null;
-  const selectedPdfEmbedUrl = selectedContentSource?.resourceUrl
-    ? `${API_BASE_URL}/api/v1/ncert-search/pdf-proxy?url=${encodeURIComponent(selectedContentSource.resourceUrl)}`
-    : '';
   const resolveItemContentSource = (item: TopicResult) =>
     item?.resolvedContentSource?.resourceUrl
       ? item.resolvedContentSource
       : item?.chapter?.resolvedContentSource || null;
+
   const openReader = (item: TopicResult) => {
     const source = resolveItemContentSource(item);
     if (!source?.resourceUrl) return;
@@ -199,6 +177,15 @@ const NCERTSearch = () => {
     navigate(
       `/ncert-reader?url=${encodeURIComponent(source.resourceUrl)}&type=${encodeURIComponent(source.resourceType || 'external')}&title=${encodeURIComponent(title)}&itemKey=${encodeURIComponent(item._id)}`
     );
+  };
+
+  const openTopicDetail = (topic: TopicResult) => {
+    setSelectedTopic(topic);
+    setQuizQuestions([]);
+    setQuizAnswers({});
+    setQuizResult(null);
+    setReadConfirmed(false);
+    setShowDetailSheet(true);
   };
 
   const startTopicQuiz = async () => {
@@ -211,9 +198,7 @@ const NCERTSearch = () => {
       setQuizQuestions(questions);
       setQuizAnswers({});
       setQuizStartedAt(Date.now());
-    } finally {
-      setIsLoadingQuiz(false);
-    }
+    } finally { setIsLoadingQuiz(false); }
   };
 
   const submitTopicQuiz = async () => {
@@ -236,12 +221,11 @@ const NCERTSearch = () => {
         attempts: data?.analytics?.attempts || 1
       });
       await searchTopics();
-    } finally {
-      setIsSubmittingQuiz(false);
-    }
+    } finally { setIsSubmittingQuiz(false); }
   };
 
-  const clearPreview = () => {
+  const closeDetail = () => {
+    setShowDetailSheet(false);
     setSelectedTopic(null);
     setQuizQuestions([]);
     setQuizAnswers({});
@@ -249,261 +233,370 @@ const NCERTSearch = () => {
     setReadConfirmed(false);
   };
 
+  const selectedContentSource = selectedTopic?.resolvedContentSource?.resourceUrl
+    ? selectedTopic.resolvedContentSource
+    : selectedTopic?.chapter?.resolvedContentSource || null;
+  const selectedPdfEmbedUrl = selectedContentSource?.resourceUrl
+    ? `${API_BASE_URL}/api/v1/ncert-search/pdf-proxy?url=${encodeURIComponent(selectedContentSource.resourceUrl)}`
+    : '';
+
+  const attemptedCount = topics.filter(t => t.quiz.hasTaken).length;
+
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="nf-safe-area p-4 max-w-3xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate('/dashboard')} className="nf-btn-icon !w-10 !h-10">
-            <ArrowLeft className="w-5 h-5" />
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-30 bg-card border-b border-border shadow-sm">
+        <div className="flex items-center gap-3 px-4 py-3 max-w-3xl mx-auto">
+          <button onClick={() => navigate('/dashboard')} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+            <ArrowLeft className="w-4.5 h-4.5 text-foreground" />
           </button>
-          <div>
-            <h1 className="nf-heading text-xl text-foreground">NCERT Search</h1>
-            <p className="text-xs text-muted-foreground">Subject -&gt; Chapter -&gt; Topic -&gt; Quiz</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold text-foreground tracking-tight">NCERT Search</h1>
+            <p className="text-xs text-muted-foreground">Browse topics & practice quizzes</p>
           </div>
-        </motion.div>
+          {topics.length > 0 && (
+            <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+              {attemptedCount}/{topics.length}
+            </span>
+          )}
+        </div>
+      </div>
 
-        <div className="nf-card mb-4">
-          <div className="grid grid-cols-2 gap-3">
+      <div className="px-4 max-w-3xl mx-auto mt-4 space-y-4">
+        {/* Filters Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card rounded-2xl border border-border shadow-sm p-4"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">Filters</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
             <select
               value={selectedClass}
-              onChange={(e) => {
-                setSelectedClass(e.target.value);
-              }}
-              className="h-11 rounded-lg border border-border bg-background text-foreground px-3"
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="h-10 rounded-xl border border-border bg-muted/50 text-foreground text-sm px-3 focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
-              <option value="" className="bg-background text-foreground" style={{ color: '#111827', backgroundColor: '#ffffff' }}>All classes</option>
-              <option value="11" className="bg-background text-foreground" style={{ color: '#111827', backgroundColor: '#ffffff' }}>Class 11</option>
-              <option value="12" className="bg-background text-foreground" style={{ color: '#111827', backgroundColor: '#ffffff' }}>Class 12</option>
+              <option value="">All Classes</option>
+              <option value="11">Class 11</option>
+              <option value="12">Class 12</option>
             </select>
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="h-11 rounded-lg border border-border bg-background text-foreground px-3"
+              className="h-10 rounded-xl border border-border bg-muted/50 text-foreground text-sm px-3 focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
-              <option value="" className="bg-background text-foreground" style={{ color: '#111827', backgroundColor: '#ffffff' }}>All subjects</option>
-              {subjects.map((subject) => (
-                <option
-                  key={subject}
-                  value={subject}
-                  className="bg-background text-foreground"
-                  style={{ color: '#111827', backgroundColor: '#ffffff' }}
-                >
-                  {subject}
-                </option>
+              <option value="">All Subjects</option>
+              {subjects.map((s) => (
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && searchTopics()}
-              placeholder="Search topic name"
-              className="h-11 rounded-lg border border-border bg-background px-3"
-            />
-            <button onClick={searchTopics} className="nf-btn-primary h-11">
-              <Search className="w-4 h-4 mr-1" />
-              {isSearching ? 'Searching...' : 'Search'}
+          <div className="flex gap-2.5 mt-2.5">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && searchTopics()}
+                placeholder="Search topic…"
+                className="w-full h-10 rounded-xl border border-border bg-muted/50 text-sm pl-9 pr-3 focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <button
+              onClick={searchTopics}
+              disabled={isSearching}
+              className="h-10 px-5 rounded-xl text-sm font-semibold text-primary-foreground"
+              style={{ background: 'var(--gradient-primary)' }}
+            >
+              {isSearching ? '...' : 'Go'}
             </button>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="nf-card">
-            <h2 className="nf-heading text-base mb-3">Chapters / Topics</h2>
-            <div className="space-y-2 max-h-[560px] overflow-y-auto pr-1">
-              {topics.length === 0 && <p className="text-sm text-muted-foreground">Select class and subject to load chapters.</p>}
-              {topics.map((topic) => {
-                const itemSource = resolveItemContentSource(topic);
-                const isActive = selectedTopic?._id === topic._id;
-                const itemPdfEmbedUrl = itemSource?.resourceUrl
-                  ? `${API_BASE_URL}/api/v1/ncert-search/pdf-proxy?url=${encodeURIComponent(itemSource.resourceUrl)}`
-                  : '';
-                return (
-                  <div
-                    key={topic._id}
-                    className={`w-full rounded-lg border p-3 transition ${isActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+        {/* Topics List */}
+        <div className="space-y-2.5">
+          {isSearching && (
+            <div className="flex justify-center py-12">
+              <div className="w-7 h-7 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+            </div>
+          )}
+
+          {!isSearching && topics.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-card rounded-2xl border border-border p-8 text-center"
+            >
+              <BookOpen className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">Select a class & subject to browse topics</p>
+            </motion.div>
+          )}
+
+          {!isSearching && topics.map((topic, i) => {
+            const itemSource = resolveItemContentSource(topic);
+            return (
+              <motion.div
+                key={topic._id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="bg-card rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center gap-3 p-3.5">
+                  {/* Status icon */}
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    topic.quiz.hasTaken
+                      ? 'bg-green-50 dark:bg-green-500/10'
+                      : 'bg-primary/10'
+                  }`}>
+                    {topic.quiz.hasTaken
+                      ? <CheckCircle2 className="w-4.5 h-4.5 text-green-600 dark:text-green-400" />
+                      : <BookOpen className="w-4.5 h-4.5 text-primary" />
+                    }
+                  </div>
+
+                  {/* Info */}
+                  <button
+                    onClick={() => openTopicDetail(topic)}
+                    className="flex-1 min-w-0 text-left"
                   >
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedTopic(topic);
-                          setQuizQuestions([]);
-                          setQuizAnswers({});
-                          setQuizResult(null);
-                          setReadConfirmed(false);
-                        }}
-                        className="flex-1 text-left"
-                      >
-                        <p className="font-semibold text-foreground">{topic.displayName || topic.name.en}</p>
-                        {/* <p className="text-xs text-muted-foreground">{topic.chapter?.displayName || topic.chapter?.name?.en || topic.chapterId}</p> */}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {topic.quiz.hasTaken ? `Best ${topic.quiz.bestScore}% | Attempts ${topic.quiz.attempts}` : 'Not attempted yet'}
-                        </p>
-                      </button>
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {topic.displayName || topic.name.en}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                      {topic.chapter?.displayName || topic.chapter?.name?.en || topic.chapterId}
+                    </p>
+                    {topic.quiz.hasTaken && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                          Best {topic.quiz.bestScore}%
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          · {topic.quiz.attempts} attempt{topic.quiz.attempts !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {itemSource?.resourceUrl && (
                       <button
                         onClick={() => openReader(topic)}
-                        disabled={!itemSource?.resourceUrl}
-                        className="self-center px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1.5 text-xs rounded-lg font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
                       >
                         Read
                       </button>
-                    </div>
-                    {isActive ? (
-                      <div className="mt-2">
-                        <button
-                          onClick={clearPreview}
-                          className="mb-2 px-2 py-1 text-xs rounded-md border border-border text-foreground hover:border-primary"
-                        >
-                          Close Preview
-                        </button>
-                        {itemSource?.resourceUrl ? (
-                          <div className="rounded-md overflow-hidden border border-border bg-background">
-                            {itemSource.resourceType === 'pdf' ? (
-                              <iframe
-                                src={itemPdfEmbedUrl}
-                                title={`Inline preview ${topic._id}`}
-                                className="w-full h-52"
-                              />
-                            ) : (
-                              <iframe
-                                src={itemSource.resourceUrl}
-                                title={`Inline preview ${topic._id}`}
-                                className="w-full h-52"
-                              />
-                            )}
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
+                    )}
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
 
-          <div className="hidden md:block nf-card">
-            {!selectedTopic && <p className="text-sm text-muted-foreground">Select a topic to read and start quiz.</p>}
-            {selectedTopic && (
-              <>
-                <h2 className="nf-heading text-base">{selectedTopic.displayName || selectedTopic.name.en}</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {selectedTopic.chapter?.displayName || selectedTopic.chapter?.name?.en || selectedTopic.chapterId}
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Class {selectedTopic.chapter?.ncert?.class || '-'} | Chapter {selectedTopic.chapter?.ncert?.chapterNumber || '-'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Page {selectedTopic.ncertReference?.pageNumber || '-'} | Lines {selectedTopic.ncertReference?.lineRange || '-'}
-                </p>
+      {/* Detail Bottom Sheet (mobile) / Side Panel (desktop) */}
+      <AnimatePresence>
+        {showDetailSheet && selectedTopic && (
+          <>
+            {/* Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeDetail}
+              className="fixed inset-0 z-40 bg-black/40"
+            />
+            {/* Sheet */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              className="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] bg-card rounded-t-3xl border-t border-border shadow-lg overflow-y-auto md:inset-x-auto md:right-0 md:top-0 md:bottom-0 md:w-[420px] md:rounded-t-none md:rounded-l-3xl md:border-l md:border-t-0"
+            >
+              {/* Handle bar (mobile) */}
+              <div className="flex justify-center pt-3 md:hidden">
+                <div className="w-10 h-1 rounded-full bg-border" />
+              </div>
 
-                {selectedContentSource?.resourceUrl ? (
-                  <div className="mt-3 rounded-lg border border-border p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-foreground">NCERT Source</p>
+              <div className="p-5 space-y-4">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0 pr-3">
+                    <h2 className="text-base font-bold text-foreground leading-snug">
+                      {selectedTopic.displayName || selectedTopic.name.en}
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {selectedTopic.chapter?.displayName || selectedTopic.chapter?.name?.en || selectedTopic.chapterId}
+                    </p>
+                  </div>
+                  <button
+                    onClick={closeDetail}
+                    className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0"
+                  >
+                    <X className="w-4 h-4 text-foreground" />
+                  </button>
+                </div>
+
+                {/* Meta chips */}
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                    Class {selectedTopic.chapter?.ncert?.class || '—'}
+                  </span>
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium">
+                    Ch. {selectedTopic.chapter?.ncert?.chapterNumber || '—'}
+                  </span>
+                  {selectedTopic.ncertReference?.pageNumber && (
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium">
+                      Pg. {selectedTopic.ncertReference.pageNumber}
+                    </span>
+                  )}
+                </div>
+
+                {/* PDF preview */}
+                {selectedContentSource?.resourceUrl && (
+                  <div className="rounded-xl border border-border overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 bg-muted/50">
+                      <p className="text-xs font-semibold text-foreground">NCERT Source</p>
                       <a
                         href={selectedContentSource.resourceUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs text-primary hover:underline"
+                        className="text-xs text-primary font-medium"
                       >
-                        Open in new tab
+                        Open ↗
                       </a>
                     </div>
                     {selectedContentSource.resourceType === 'pdf' ? (
-                      <iframe
-                        src={selectedPdfEmbedUrl}
-                        title="NCERT Source PDF Viewer"
-                        className="w-full h-72 rounded-md border border-border"
-                      />
+                      <iframe src={selectedPdfEmbedUrl} title="PDF" className="w-full h-52 border-t border-border" />
                     ) : selectedContentSource.resourceType === 'html' ? (
-                      <iframe
-                        src={selectedContentSource.resourceUrl}
-                        title="NCERT Source"
-                        className="w-full h-72 rounded-md border border-border"
-                      />
+                      <iframe src={selectedContentSource.resourceUrl} title="HTML" className="w-full h-52 border-t border-border" />
                     ) : (
-                      <a
-                        href={selectedContentSource.resourceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sm text-primary hover:underline break-all"
-                      >
+                      <a href={selectedContentSource.resourceUrl} target="_blank" rel="noreferrer" className="block px-3 py-2 text-sm text-primary break-all">
                         {selectedContentSource.resourceUrl}
                       </a>
                     )}
                     <button
                       onClick={() => openReader(selectedTopic)}
-                      className="mt-3 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground font-semibold"
+                      className="w-full py-2.5 text-xs font-semibold text-primary border-t border-border hover:bg-primary/5 transition-colors"
                     >
-                      Read Full Screen
+                      Open Full Screen Reader
                     </button>
                   </div>
-                ) : null}
-
-                <div className="mt-3 rounded-lg border border-border p-3 bg-muted/20">
-                  <p className="text-sm text-foreground">
-                    Read this topic first. After reading, start the associated quiz to mark it as taken.
-                  </p>
-                  <button onClick={() => setReadConfirmed(true)} className="nf-btn-outline mt-3">
-                    Mark as Read
-                  </button>
-                </div>
-
-                {selectedTopic.quiz.available ? (
-                  <button onClick={startTopicQuiz} disabled={!readConfirmed || isLoadingQuiz} className="nf-btn-primary mt-3 w-full">
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    {selectedTopic.quiz.hasTaken ? 'Reattempt Quiz' : 'Take Quiz'}
-                  </button>
-                ) : (
-                  <p className="text-sm text-muted-foreground mt-3">No quiz questions mapped for this topic/chapter yet.</p>
                 )}
 
-                {quizQuestions.length > 0 && (
-                  <div className="mt-4 space-y-3">
+                {/* Mark as read */}
+                {!readConfirmed && (
+                  <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-3.5">
+                    <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">
+                      📖 Read this topic first, then mark as read to unlock the quiz.
+                    </p>
+                    <button
+                      onClick={() => setReadConfirmed(true)}
+                      className="mt-2.5 w-full h-9 rounded-xl text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+                    >
+                      Mark as Read ✓
+                    </button>
+                  </div>
+                )}
+
+                {readConfirmed && !quizQuestions.length && !quizResult && (
+                  <div className="rounded-xl bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 p-3">
+                    <p className="text-sm text-green-700 dark:text-green-400 font-medium flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4" /> Marked as read
+                    </p>
+                  </div>
+                )}
+
+                {/* Quiz CTA */}
+                {selectedTopic.quiz.available ? (
+                  quizQuestions.length === 0 && !quizResult && (
+                    <button
+                      onClick={startTopicQuiz}
+                      disabled={!readConfirmed || isLoadingQuiz}
+                      className="w-full h-11 rounded-xl text-sm font-semibold text-primary-foreground disabled:opacity-50 flex items-center justify-center gap-2"
+                      style={{ background: readConfirmed ? 'var(--gradient-primary)' : undefined }}
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      {isLoadingQuiz ? 'Loading…' : selectedTopic.quiz.hasTaken ? 'Reattempt Quiz' : 'Take Quiz'}
+                    </button>
+                  )
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-2">No quiz available for this topic yet.</p>
+                )}
+
+                {/* Quiz Questions */}
+                {quizQuestions.length > 0 && !quizResult && (
+                  <div className="space-y-3">
                     {quizQuestions.map((q, index) => (
-                      <div key={q.questionId} className="rounded-lg border border-border p-3">
-                        <p className="text-sm font-semibold text-foreground">{index + 1}. {q.question}</p>
-                        <div className="mt-2 space-y-1">
-                          {q.options.map((opt) => (
-                            <label key={`${q.questionId}-${opt.key}`} className="flex items-center gap-2 text-sm text-foreground">
-                              <input
-                                type="radio"
-                                name={q.questionId}
-                                checked={quizAnswers[q.questionId] === opt.key}
-                                onChange={() => setQuizAnswers((prev) => ({ ...prev, [q.questionId]: opt.key }))}
-                              />
-                              <span>{opt.key}. {opt.text}</span>
-                            </label>
-                          ))}
+                      <div key={q.questionId} className="rounded-xl border border-border p-3.5 bg-muted/30">
+                        <p className="text-sm font-semibold text-foreground leading-snug">
+                          {index + 1}. {q.question}
+                        </p>
+                        <div className="mt-2.5 space-y-1.5">
+                          {q.options.map((opt) => {
+                            const selected = quizAnswers[q.questionId] === opt.key;
+                            return (
+                              <button
+                                key={`${q.questionId}-${opt.key}`}
+                                onClick={() => setQuizAnswers((prev) => ({ ...prev, [q.questionId]: opt.key }))}
+                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors border ${
+                                  selected
+                                    ? 'border-primary bg-primary/10 text-primary font-medium'
+                                    : 'border-border bg-card text-foreground hover:border-primary/40'
+                                }`}
+                              >
+                                <span className="font-semibold mr-1.5">{opt.key}.</span>{opt.text}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
 
-                    <button onClick={submitTopicQuiz} disabled={isSubmittingQuiz} className="nf-btn-primary w-full">
-                      {isSubmittingQuiz ? 'Submitting...' : 'Submit Quiz'}
+                    <button
+                      onClick={submitTopicQuiz}
+                      disabled={isSubmittingQuiz}
+                      className="w-full h-11 rounded-xl text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                      style={{ background: 'var(--gradient-primary)' }}
+                    >
+                      {isSubmittingQuiz ? 'Submitting…' : 'Submit Quiz'}
                     </button>
                   </div>
                 )}
 
+                {/* Quiz Result */}
                 {quizResult && (
-                  <div className="mt-4 rounded-lg border border-primary/40 bg-primary/10 p-3">
-                    <p className="font-semibold text-foreground">Score: {quizResult.percentage}%</p>
-                    <p className="text-sm text-muted-foreground">Best Score: {quizResult.bestScore}%</p>
-                    <p className="text-sm text-muted-foreground">Attempts: {quizResult.attempts}</p>
-                  </div>
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="rounded-2xl border border-primary/30 bg-primary/5 p-5 text-center"
+                  >
+                    <Trophy className="w-8 h-8 text-primary mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-foreground">{quizResult.percentage}%</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Best: {quizResult.bestScore}% · Attempts: {quizResult.attempts}
+                    </p>
+                    <button
+                      onClick={() => { setQuizQuestions([]); setQuizResult(null); }}
+                      className="mt-3 px-4 py-2 rounded-xl text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
+                    >
+                      Try Again
+                    </button>
+                  </motion.div>
                 )}
-              </>
-            )}
-          </div>
-        </div>
-
-        {selectedChapter && (
-          <p className="text-xs text-muted-foreground mt-3">
-            Filtered chapter: {selectedChapter.displayName || selectedChapter.name.en}
-          </p>
+              </div>
+            </motion.div>
+          </>
         )}
-      </div>
+      </AnimatePresence>
+
       <BottomNav />
     </div>
   );
