@@ -12,20 +12,15 @@ const DailyChallengeCard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchTodaysChallenge();
-  }, []);
+  useEffect(() => { fetchTodaysChallenge(); }, []);
 
   const fetchTodaysChallenge = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true); setError(null);
       const response = await apiService.dailyChallenge.getTodaysChallenge();
       if (response.data?.success) {
         const challengeData = response.data.data;
         setChallenge(challengeData);
-        
-        // Check if user already completed from response
         if (challengeData.completed) {
           setHasCompleted(true);
           setUserScore(challengeData.userScore);
@@ -34,20 +29,11 @@ const DailyChallengeCard = () => {
     } catch (err: any) {
       console.error('Error fetching daily challenge:', err);
       setError(err.response?.data?.error || 'Failed to load daily challenge');
-      // Fallback to mock data if API fails
       setChallenge({
-        id: 'fallback',
-        topic: 'Cell Division - Mitosis',
-        subject: 'Biology',
-        difficulty: 'Medium',
-        xpReward: 150,
-        timeLimit: 10,
-        icon: '🧬',
-        completed: false
+        id: 'fallback', topic: 'Cell Division - Mitosis', subject: 'Biology',
+        difficulty: 'Medium', xpReward: 150, timeLimit: 10, icon: '🧬', completed: false
       });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -61,19 +47,14 @@ const DailyChallengeCard = () => {
 
   if (loading) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="nf-card flex items-center justify-center py-6"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        className="nf-card flex items-center justify-center py-6">
         <Loader2 className="w-6 h-6 text-primary animate-spin" />
       </motion.div>
     );
   }
 
-  if (!challenge) {
-    return null;
-  }
+  if (!challenge) return null;
 
   return (
     <motion.div
@@ -81,9 +62,21 @@ const DailyChallengeCard = () => {
       animate={{ opacity: 1, y: 0 }}
       className="nf-card relative overflow-hidden"
     >
-      {/* Decorative background */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-      
+      {/* Decorative background elements */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/[0.08] to-secondary/[0.06] rounded-full -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-warning/[0.06] to-transparent rounded-full translate-y-1/2 -translate-x-1/3" />
+      {/* Dot pattern */}
+      <div className="absolute bottom-3 right-3 w-14 h-14 opacity-[0.04]"
+        style={{
+          backgroundImage: 'radial-gradient(hsl(var(--primary)) 1px, transparent 1px)',
+          backgroundSize: '6px 6px'
+        }}
+      />
+      {/* Thin accent line */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl"
+        style={{ background: 'var(--gradient-primary)', opacity: 0.4 }}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-3 relative">
         <div className="flex items-center gap-2">
@@ -106,7 +99,7 @@ const DailyChallengeCard = () => {
       </div>
 
       {/* Challenge Info */}
-      <div className="bg-muted/50 rounded-xl p-3 mb-3 border border-border">
+      <div className="relative bg-muted/50 rounded-xl p-3 mb-3 border border-border">
         <div className="flex items-start gap-3">
           <span className="text-3xl">{challenge.icon}</span>
           <div className="flex-1 min-w-0">
@@ -124,7 +117,7 @@ const DailyChallengeCard = () => {
       </div>
 
       {/* Stats Row */}
-      <div className="flex items-center gap-4 mb-3 text-xs">
+      <div className="flex items-center gap-4 mb-3 text-xs relative">
         <div className="flex items-center gap-1 text-muted-foreground">
           <Clock className="w-3.5 h-3.5" />
           <span>{challenge.timeLimit} min</span>
@@ -138,7 +131,7 @@ const DailyChallengeCard = () => {
       {/* Action Button */}
       <motion.button
         onClick={() => navigate('/daily-challenge')}
-        className="nf-btn-primary w-full"
+        className="nf-btn-primary w-full relative"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
@@ -146,6 +139,7 @@ const DailyChallengeCard = () => {
         {hasCompleted ? 'View Details' : 'Start Challenge'}
         <ChevronRight className="w-5 h-5" />
       </motion.button>
+
       {hasCompleted && (
         <div className="flex items-center justify-between p-3 rounded-xl bg-success/10 border-2 border-success/30 mt-2">
           <div className="flex items-center gap-2">
