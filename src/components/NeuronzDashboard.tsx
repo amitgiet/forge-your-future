@@ -1,209 +1,143 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Trophy, Zap, Plus } from 'lucide-react';
+import { Brain, ArrowRight, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { loadDueLines, getMasteryProgress } from '@/store/slices/neuronzSlice';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import TrackChapter from './TrackChapter';
+import { loadDueQuestions, getMasteryProgress } from '@/store/slices/neuronzSlice';
+
+const LEVEL_CONFIG = [
+  { level: 1, name: 'Temporary Memory', description: 'After 24 hrs', color: 'from-blue-500/20 to-cyan-500/20', borderColor: 'border-blue-500/30' },
+  { level: 2, name: 'Short Term Memory (Encoding Stage)', description: 'After 3 days', color: 'from-indigo-500/20 to-purple-500/20', borderColor: 'border-indigo-500/30' },
+  { level: 3, name: 'Repeating Short Memory (Neurons Formation)', description: 'After 5 days', color: 'from-purple-500/20 to-fuchsia-500/20', borderColor: 'border-purple-500/30' },
+  { level: 4, name: 'Arriving Long Term (Connecting Neurons)', description: 'After 7 days', color: 'from-fuchsia-500/20 to-pink-500/20', borderColor: 'border-fuchsia-500/30' },
+  { level: 5, name: 'Retaining Long Term (Hippocampus Processing)', description: 'After 10 days', color: 'from-pink-500/20 to-rose-500/20', borderColor: 'border-pink-500/30' },
+  { level: 6, name: 'Permanent Stage (Cerebral Cortex Storing)', description: 'After 15 days', color: 'from-orange-500/20 to-amber-500/20', borderColor: 'border-orange-500/30' },
+  { level: 7, name: '\uD83D\uDD12 Mastered', description: 'After 30 days', color: 'from-amber-500/20 to-yellow-500/20', borderColor: 'border-yellow-500/30', locked: true },
+];
 
 const NeuronzDashboard: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { dueLines, masteryProgress, isLoading } = useAppSelector((state) => state.neuronz);
-  const [showTrackModal, setShowTrackModal] = useState(false);
+  const { dueQuestions, isLoading } = useAppSelector((state) => state.neuronz);
 
   useEffect(() => {
-    dispatch(loadDueLines());
+    dispatch(loadDueQuestions());
     dispatch(getMasteryProgress());
   }, [dispatch]);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
 
-  const levelInfo = [
-    { level: 1, interval: '24h', color: 'bg-red-500' },
-    { level: 2, interval: '3d', color: 'bg-orange-500' },
-    { level: 3, interval: '5d', color: 'bg-yellow-500' },
-    { level: 4, interval: '7d', color: 'bg-green-500' },
-    { level: 5, interval: '10d', color: 'bg-blue-500' },
-    { level: 6, interval: '15d', color: 'bg-purple-500' },
-    { level: 7, interval: '30d', color: 'bg-pink-500' },
-  ];
+  const handleLevelClick = (level: number, totalQuestions: number) => {
+    if (totalQuestions === 0 || level === 7) return;
+    navigate(`/revision?level=${level}`);
+  };
+
+  const totalCompleted = dueQuestions?.masteredTotal || 0;
+  const totalTarget = dueQuestions?.allTotal || 0;
 
   return (
     <div className="space-y-6">
-      <TrackChapter isOpen={showTrackModal} onClose={() => setShowTrackModal(false)} />
-      
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
+        className="flex flex-col mb-8"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-            <Brain className="w-6 h-6 text-primary" />
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg">
+            <Brain className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground">NeuronZ</h2>
-            <p className="text-sm text-muted-foreground">NCERT Line Revision</p>
+            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">NeuronZ</h2>
+            <p className="text-sm text-muted-foreground font-medium">Spaced Repetition System</p>
           </div>
         </div>
-        
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowTrackModal(true)}
-            className="gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Track Chapter
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!dueLines || dueLines.total === 0}
-            onClick={() => {
-              if (dueLines && dueLines.lines && dueLines.lines.length > 0) {
-                const firstDueLine = dueLines.lines[0];
-                navigate(`/revision?revisionId=${firstDueLine._id}`);
-              }
-            }}
-            className="gap-2"
-          >
-            Start Revision
-          </Button>
-        </div>
+        <p className="text-sm text-foreground/80 mt-2">
+          Practice questions automatically enter Level 1. Answer correctly to move them up the ladder.
+        </p>
       </motion.div>
 
-      {/* Due Today Summary */}
-      {dueLines && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Zap className="w-5 h-5 text-primary" />
-                Due Today: {dueLines.total} lines
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3">
-                {levelInfo.map(({ level, interval, color }) => {
-                  const count = dueLines.byLevel[`L${level}` as keyof typeof dueLines.byLevel]?.length || 0;
-                  return (
-                    <div
-                      key={level}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-card/50"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${color}`} />
-                        <span className="font-medium">L{level}</span>
-                        <span className="text-xs text-muted-foreground">({interval})</span>
-                      </div>
-                      <Badge variant={count > 0 ? "default" : "secondary"}>
-                        {count}
-                      </Badge>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {LEVEL_CONFIG.map((conf, idx) => {
+          const levelKey = `L${conf.level}`;
+          const totalAtLevel = dueQuestions?.totalByLevel?.[levelKey]?.total || 0;
+
+          return (
+            <motion.div
+              key={conf.level}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              onClick={() => handleLevelClick(conf.level, totalAtLevel)}
+              className={`relative overflow-hidden rounded-2xl border-2 ${conf.borderColor} bg-card hover:border-primary/50 transition-all ${totalAtLevel > 0 && !conf.locked ? 'cursor-pointer hover:shadow-lg hover:-translate-y-1' : 'opacity-80 cursor-default'}`}
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${conf.color} opacity-50`} />
+
+              <div className="relative p-5">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-background/50 backdrop-blur-sm flex items-center justify-center shadow-sm border border-white/10">
+                      <Brain className="w-5 h-5 text-foreground/80" />
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Mastery Progress */}
-      {masteryProgress && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Trophy className="w-5 h-5 text-yellow-500" />
-                Mastery Progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>Overall Mastery</span>
-                    <span className="font-medium">{masteryProgress.masteryPercentage}%</span>
+                    <div>
+                      <h3 className="font-bold tracking-tight text-foreground">{conf.name}</h3>
+                      <p className="text-xs font-semibold text-muted-foreground">{conf.description}</p>
+                    </div>
                   </div>
-                  <Progress value={masteryProgress.masteryPercentage} className="h-2" />
+                  {conf.locked && <Lock className="w-4 h-4 text-muted-foreground" />}
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="flex items-end justify-between mt-6">
                   <div>
-                    <p className="text-2xl font-bold text-primary">{masteryProgress.totalLines}</p>
-                    <p className="text-xs text-muted-foreground">Total Lines</p>
+                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">No of Questions: {totalAtLevel}</p>
+                    <p className="text-3xl font-black text-foreground">{totalAtLevel}</p>
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-green-500">{masteryProgress.masteredLines}</p>
-                    <p className="text-xs text-muted-foreground">Mastered (L7)</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-blue-500">{masteryProgress.averageLevel.toFixed(1)}</p>
-                    <p className="text-xs text-muted-foreground">Avg Level</p>
-                  </div>
+
+                  {!conf.locked && totalAtLevel > 0 && (
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-md"
+                    >
+                      <ArrowRight className="w-5 h-5 text-white" />
+                    </motion.div>
+                  )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+            </motion.div>
+          );
+        })}
+      </div>
 
-      {/* Level Guide */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.5 }}
+        className="mt-8 p-6 rounded-2xl bg-card border border-border"
       >
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">NeuronZ Levels</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {levelInfo.map(({ level, interval, color }) => (
-                <div key={level} className="flex items-center gap-3 text-sm">
-                  <div className={`w-3 h-3 rounded-full ${color}`} />
-                  <span className="font-medium min-w-[2rem]">L{level}:</span>
-                  <span className="text-muted-foreground">+{interval}</span>
-                  {level === 7 && (
-                    <Badge variant="secondary" className="ml-auto">
-                      Mastered
-                    </Badge>
-                  )}
-                </div>
-              ))}
-            </div>
-            
-            <div className="mt-4 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
-              <p className="font-medium mb-1">How it works:</p>
-              <p>✅ Correct answer → Advance 1 level</p>
-              <p>❌ Incorrect answer → Stay same level or drop 1</p>
-              <p>🎯 L7 = Mastered (30 days locked)</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex justify-between items-end mb-3">
+          <div>
+            <h4 className="font-bold text-foreground">Total Completed Questions</h4>
+            <p className="text-sm text-muted-foreground">Keep tracking your practice to build strong memory.</p>
+          </div>
+          <p className="text-2xl font-black text-primary">
+            {totalCompleted}
+            <span className="text-base text-muted-foreground font-semibold">/{totalTarget}</span>
+          </p>
+        </div>
+        <div className="h-3 w-full bg-secondary rounded-full overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${totalTarget > 0 ? Math.min(100, (totalCompleted / totalTarget) * 100) : 0}%` }}
+            transition={{ duration: 1, delay: 0.6 }}
+            className="h-full bg-gradient-to-r from-primary to-purple-500 rounded-full"
+          />
+        </div>
       </motion.div>
     </div>
   );

@@ -10,7 +10,7 @@ import RevisionWidget from '@/components/RevisionWidget';
 import ThemeToggle from '@/components/ThemeToggle';
 import DailyChallengeCard from '@/components/DailyChallengeCard';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { loadDueLines } from '@/store/slices/neuronzSlice';
+import { loadDueQuestions } from '@/store/slices/neuronzSlice';
 
 const stagger = {
   hidden: {},
@@ -66,14 +66,14 @@ const Dashboard = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { dueLines } = useAppSelector((state) => state.neuronz);
+  const { dueQuestions } = useAppSelector((state) => state.neuronz);
   const [topicSummary, setTopicSummary] = useState<TopicSummary[]>([]);
   const dueCount = topicSummary.length > 0
     ? topicSummary.reduce((sum, topic) => sum + topic.dueNow, 0)
-    : (dueLines?.total || 0);
+    : (dueQuestions?.total || 0);
   const l2Count = topicSummary.length > 0
     ? topicSummary.reduce((sum, topic) => sum + (topic.byLevel?.L2 || 0), 0)
-    : (dueLines?.byLevel?.L2?.length || 0);
+    : (dueQuestions?.byLevel?.L2?.length || 0);
 
   const [userRank, setUserRank] = useState<any>(null);
   const [todayProgress, setTodayProgress] = useState<TodayProgressStats>({
@@ -102,7 +102,7 @@ const Dashboard = () => {
     fetchTodayProgress();
     fetchTodayQuest();
     fetchTopicSummary();
-    dispatch(loadDueLines());
+    dispatch(loadDueQuestions());
   }, [dispatch]);
 
   const fetchUserRank = async () => {

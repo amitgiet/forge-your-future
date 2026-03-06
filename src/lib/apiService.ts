@@ -25,6 +25,19 @@ export const apiService = {
 
   // NeuronZ APIs
   neuronz: {
+    getDueQuestions: () => api.get('/neuronz/due'),
+
+    getLevelQuestions: (level: number, limit = 50) =>
+      api.get(`/neuronz/level/${level}/questions`, { params: { limit } }),
+
+    reviewQuestion: (data: { questionId: string; wasCorrect: boolean; timeSpent?: number }) =>
+      api.post('/neuronz/review', data),
+
+    reviewBatch: (answers: { questionId: string; wasCorrect: boolean; timeSpent?: number }[]) =>
+      api.post('/neuronz/review/batch', { answers }),
+
+    getUserStats: () => api.get('/neuronz/stats'),
+
     getDueLines: () => api.get('/neuronz/due'),
 
     processLineSession: (data: { lineId: string; correctAnswers: number; totalQuizzes?: number; timeSpent?: number; review?: any[] }) =>
