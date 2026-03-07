@@ -114,6 +114,19 @@ export const reviewBatch = createAsyncThunk(
   }
 );
 
+export const trackChapter = createAsyncThunk(
+  'neuronz/trackChapter',
+  async (chapterId: string) => {
+    const response = await apiService.neuronz.trackChapter(chapterId);
+    return response.data.data;
+  }
+);
+
+export const loadDueLines = createAsyncThunk('neuronz/loadDueLines', async () => {
+  const response = await apiService.neuronz.getDueQuestions();
+  return response.data.data;
+});
+
 // ─── Slice ────────────────────────────────────────────────────────────────────
 
 const neuronzSlice = createSlice({
