@@ -379,6 +379,27 @@ const TestSeries = () => {
         {/* ========= SERIES LIST ========= */}
         {!loading && !error && pageLevel === 'series' && (
           <div className="space-y-2.5">
+
+            {/* ── Custom Test Generator entry point ── */}
+            <motion.button
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => navigate('/test/custom/create')}
+              className="w-full rounded-xl border-2 border-primary/40 bg-primary/5 p-4 text-left hover:bg-primary/10 transition-all group"
+              style={{ boxShadow: 'var(--shadow-card)' }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center flex-shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground">Custom Test Generator</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Pick any chapter & subtopics from 34K+ questions</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-primary flex-shrink-0" />
+              </div>
+            </motion.button>
+
             {seriesOptions.length === 0 && (
               <div className="rounded-xl bg-card border border-border p-8 text-center">
                 <BookOpen className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
@@ -414,6 +435,7 @@ const TestSeries = () => {
             ))}
           </div>
         )}
+
 
         {/* ========= TYPE LIST ========= */}
         {!loading && !error && pageLevel === 'types' && (
@@ -551,11 +573,10 @@ const TestSeries = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => toggleCompleted(item)}
-                        className={`h-9 flex-1 rounded-xl text-xs font-semibold transition-all ${
-                          completed
+                        className={`h-9 flex-1 rounded-xl text-xs font-semibold transition-all ${completed
                             ? 'bg-muted text-muted-foreground hover:bg-muted/80'
                             : 'text-primary-foreground hover:opacity-90'
-                        }`}
+                          }`}
                         style={!completed ? { background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-glow-primary)' } : undefined}
                       >
                         {completed ? 'Undo Completion' : '✓ Mark Complete'}

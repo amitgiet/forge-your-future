@@ -165,6 +165,8 @@ const Dashboard = () => {
     { icon: BookOpen, label: 'NCERT', sub: 'Search', path: '/ncert-search', color: 'primary' },
     { icon: FileText, label: 'Mock Tests', sub: 'Series', path: '/tests', color: 'warning' },
     { icon: Wand2, label: 'AI Quiz', sub: 'Generate', path: '/quiz-generator', color: 'primary' },
+    { icon: Target, label: 'Analytics', sub: 'My Stats', path: '/analytics', color: 'secondary' },
+    { icon: Star, label: 'Doubts', sub: 'Forum', path: '/doubts', color: 'success' },
   ];
 
   const statColorMap: Record<string, string> = {
@@ -382,10 +384,10 @@ const Dashboard = () => {
               >
                 <div
                   className={`p-3 rounded-lg group-hover:scale-110 transition-transform ${resource.color === 'primary'
-                      ? 'bg-primary/20 text-primary'
-                      : resource.color === 'warning'
-                        ? 'bg-warning/20 text-warning'
-                        : 'bg-success/20 text-success'
+                    ? 'bg-primary/20 text-primary'
+                    : resource.color === 'warning'
+                      ? 'bg-warning/20 text-warning'
+                      : 'bg-success/20 text-success'
                     }`}
                 >
                   <resource.icon className="w-5 h-5" />

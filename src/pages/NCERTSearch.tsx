@@ -347,11 +347,10 @@ const NCERTSearch = () => {
               >
                 <div className="flex items-center gap-3 p-3.5">
                   {/* Status icon */}
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    topic.quiz.hasTaken
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${topic.quiz.hasTaken
                       ? 'bg-green-50 dark:bg-green-500/10'
                       : 'bg-primary/10'
-                  }`}>
+                    }`}>
                     {topic.quiz.hasTaken
                       ? <CheckCircle2 className="w-4.5 h-4.5 text-green-600 dark:text-green-400" />
                       : <BookOpen className="w-4.5 h-4.5 text-primary" />
@@ -546,11 +545,10 @@ const NCERTSearch = () => {
                               <button
                                 key={`${q.questionId}-${opt.key}`}
                                 onClick={() => setQuizAnswers((prev) => ({ ...prev, [q.questionId]: opt.key }))}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors border ${
-                                  selected
+                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors border ${selected
                                     ? 'border-primary bg-primary/10 text-primary font-medium'
                                     : 'border-border bg-card text-foreground hover:border-primary/40'
-                                }`}
+                                  }`}
                               >
                                 <span className="font-semibold mr-1.5">{opt.key}.</span>{opt.text}
                               </button>
