@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, CheckCircle, Loader2, Search } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/store/hooks';
 import { trackChapter, loadDueLines, getMasteryProgress } from '@/store/slices/neuronzSlice';
