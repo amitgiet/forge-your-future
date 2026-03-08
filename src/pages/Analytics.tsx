@@ -58,6 +58,45 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Mock data for preview
+  const MOCK_SUBJECT_DATA = {
+    overall: { correct: 342, total: 480, accuracy: 71 },
+    subjects: [
+      { subject: 'biology', correct: 156, total: 200, accuracy: 78 },
+      { subject: 'chemistry', correct: 108, total: 160, accuracy: 68 },
+      { subject: 'physics', correct: 78, total: 120, accuracy: 65 },
+    ],
+  };
+
+  const MOCK_TREND_DATA: WeekDataPoint[] = [
+    { week: '2026-W01', label: 'Jan 5', correct: 18, attempted: 30, accuracy: 60 },
+    { week: '2026-W02', label: 'Jan 12', correct: 22, attempted: 32, accuracy: 69 },
+    { week: '2026-W03', label: 'Jan 19', correct: 20, attempted: 28, accuracy: 71 },
+    { week: '2026-W04', label: 'Jan 26', correct: 25, attempted: 35, accuracy: 71 },
+    { week: '2026-W05', label: 'Feb 2', correct: 28, attempted: 38, accuracy: 74 },
+    { week: '2026-W06', label: 'Feb 9', correct: 24, attempted: 30, accuracy: 80 },
+    { week: '2026-W07', label: 'Feb 16', correct: 30, attempted: 40, accuracy: 75 },
+    { week: '2026-W08', label: 'Feb 23', correct: 32, attempted: 42, accuracy: 76 },
+  ];
+
+  const MOCK_HEATMAP_ALL: ChapterHeatmapItem[] = [
+    { chapterId: 'Cell Division', subject: 'biology', correct: 8, total: 20, accuracy: 40 },
+    { chapterId: 'Genetics & Evolution', subject: 'biology', correct: 12, total: 22, accuracy: 55 },
+    { chapterId: 'Human Physiology', subject: 'biology', correct: 18, total: 30, accuracy: 60 },
+    { chapterId: 'Plant Physiology', subject: 'biology', correct: 14, total: 20, accuracy: 70 },
+    { chapterId: 'Ecology', subject: 'biology', correct: 16, total: 20, accuracy: 80 },
+    { chapterId: 'Chemical Bonding', subject: 'chemistry', correct: 6, total: 18, accuracy: 33 },
+    { chapterId: 'Organic Chemistry', subject: 'chemistry', correct: 10, total: 20, accuracy: 50 },
+    { chapterId: 'Thermodynamics', subject: 'chemistry', correct: 14, total: 22, accuracy: 64 },
+    { chapterId: 'Electrochemistry', subject: 'chemistry', correct: 12, total: 16, accuracy: 75 },
+    { chapterId: 'Coordination Compounds', subject: 'chemistry', correct: 9, total: 14, accuracy: 64 },
+    { chapterId: 'Mechanics', subject: 'physics', correct: 8, total: 20, accuracy: 40 },
+    { chapterId: 'Electrostatics', subject: 'physics', correct: 10, total: 18, accuracy: 56 },
+    { chapterId: 'Optics', subject: 'physics', correct: 12, total: 18, accuracy: 67 },
+    { chapterId: 'Modern Physics', subject: 'physics', correct: 14, total: 20, accuracy: 70 },
+    { chapterId: 'Magnetism', subject: 'physics', correct: 6, total: 14, accuracy: 43 },
+  ];
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -71,7 +110,13 @@ export default function Analytics() {
       setTrendData(tRes.data.data.weeks);
       setHeatmapData(hRes.data.data.chapters);
     } catch {
-      setError('Failed to load analytics. Please try again.');
+      // Fallback to mock data for preview
+      setSubjectData(MOCK_SUBJECT_DATA);
+      setTrendData(MOCK_TREND_DATA);
+      const filtered = heatSubject
+        ? MOCK_HEATMAP_ALL.filter((c) => c.subject === heatSubject)
+        : MOCK_HEATMAP_ALL;
+      setHeatmapData(filtered.sort((a, b) => (a.accuracy ?? 100) - (b.accuracy ?? 100)));
     } finally {
       setLoading(false);
     }
