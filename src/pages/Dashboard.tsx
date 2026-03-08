@@ -435,6 +435,8 @@ const Dashboard = () => {
 
         {/* Revision Widget */}
         <RevisionWidget />
+      </>
+        )}
       </div>
 
       <BottomNav />
