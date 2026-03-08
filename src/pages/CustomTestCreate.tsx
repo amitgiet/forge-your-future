@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, ChevronRight, BookOpen, Beaker, Atom,
-  Zap, Target, BarChart3, CheckCircle2, Loader2, AlertCircle,
+  Zap, Target, BarChart3, CheckCircle2, Loader2, AlertCircle, ChevronDown,
   Shuffle, ClockIcon, Search,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
