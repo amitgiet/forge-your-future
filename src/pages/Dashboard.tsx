@@ -130,6 +130,8 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching today progress:', error);
+    } finally {
+      setProgressLoaded(true);
     }
   };
 
