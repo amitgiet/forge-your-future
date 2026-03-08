@@ -247,7 +247,7 @@ export default function CustomTestCreate() {
           state: {
             questions,
             title: `${subject} - Custom Test`,
-            duration: duration || 60,
+            duration: Math.ceil(questions.length * 1.5),
             subject,
             topic: meta?.filters?.subTopic || meta?.filters?.chapterId || 'Custom Test',
           },
