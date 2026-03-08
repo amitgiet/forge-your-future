@@ -96,7 +96,9 @@ const Dashboard = () => {
       accuracy: 0,
     },
   });
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [progressLoaded, setProgressLoaded] = useState(false);
+  const [questLoaded, setQuestLoaded] = useState(false);
 
   useEffect(() => {
     fetchUserRank();
