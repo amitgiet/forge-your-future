@@ -51,6 +51,9 @@ import CurriculumBrowser from "./pages/CurriculumBrowser";
 import Analytics from "./pages/Analytics";
 import DoubtForum from "./pages/DoubtForum";
 import DoubtDetail from "./pages/DoubtDetail";
+import FormulaCards from "./pages/FormulaCards";
+import FormulaChapterDetail from "./pages/FormulaChapterDetail";
+import FormulaCardViewer from "./pages/FormulaCardViewer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
