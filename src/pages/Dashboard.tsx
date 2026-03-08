@@ -11,6 +11,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import DailyChallengeCard from '@/components/DailyChallengeCard';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loadDueQuestions } from '@/store/slices/neuronzSlice';
+import DashboardSkeleton from '@/components/DashboardSkeleton';
 
 const stagger = {
   hidden: {},
