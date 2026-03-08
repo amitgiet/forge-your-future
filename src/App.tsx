@@ -51,6 +51,9 @@ import CurriculumBrowser from "./pages/CurriculumBrowser";
 import Analytics from "./pages/Analytics";
 import DoubtForum from "./pages/DoubtForum";
 import DoubtDetail from "./pages/DoubtDetail";
+import FormulaCards from "./pages/FormulaCards";
+import FormulaChapterDetail from "./pages/FormulaChapterDetail";
+import FormulaCardViewer from "./pages/FormulaCardViewer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -112,6 +115,9 @@ const App = () => (
                     <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                     <Route path="/doubts" element={<ProtectedRoute><DoubtForum /></ProtectedRoute>} />
                     <Route path="/doubts/:id" element={<ProtectedRoute><DoubtDetail /></ProtectedRoute>} />
+                    <Route path="/formula-cards" element={<ProtectedRoute><FormulaCards /></ProtectedRoute>} />
+                    <Route path="/formula-cards/:chapterId" element={<ProtectedRoute><FormulaChapterDetail /></ProtectedRoute>} />
+                    <Route path="/formula-cards/viewer" element={<ProtectedRoute><FormulaCardViewer /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </TooltipProvider>
