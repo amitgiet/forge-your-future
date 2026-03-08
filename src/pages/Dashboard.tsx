@@ -143,6 +143,8 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching today quest:', error);
+    } finally {
+      setQuestLoaded(true);
     }
   };
 
