@@ -40,6 +40,7 @@ import MockPdfViewer from "./pages/MockPdfViewer";
 import TestSession from "./pages/TestSession";
 import TestReport from "./pages/TestReport";
 import CustomTestCreate from "./pages/CustomTestCreate";
+import CustomTestSession from "./pages/CustomTestSession";
 import DailyChallenge from "./pages/DailyChallenge";
 import Leaderboard from "./pages/Leaderboard";
 import AIAssistant from "./pages/AIAssistant";
@@ -98,6 +99,7 @@ const App = () => (
                     <Route path="/tests/:seriesKey/:typeKey" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
                     <Route path="/tests/pdf-viewer" element={<ProtectedRoute><MockPdfViewer /></ProtectedRoute>} />
                     <Route path="/test/custom/create" element={<ProtectedRoute><CustomTestCreate /></ProtectedRoute>} />
+                    <Route path="/test/custom-session" element={<ProtectedRoute><CustomTestSession /></ProtectedRoute>} />
                     <Route path="/test/session/:attemptId" element={<ProtectedRoute><TestSession /></ProtectedRoute>} />
                     <Route path="/test/report/:attemptId" element={<ProtectedRoute><TestReport /></ProtectedRoute>} />
                     <Route path="/daily-challenge" element={<ProtectedRoute><DailyChallenge /></ProtectedRoute>} />
