@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, BookOpen, Loader2, AlertCircle, Trophy, Clock, ChevronRight, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Sparkles, BookOpen, Loader2, AlertCircle, Trophy, Clock, ChevronRight, RotateCcw, Target } from 'lucide-react';
 import { apiService } from '@/lib/apiService';
 import BottomNav from '@/components/BottomNav';
 import QuizPlayer, { QuizQuestion } from '@/components/QuizPlayer';
