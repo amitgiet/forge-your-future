@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { AlertCircle, ArrowLeft } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import apiService from '../lib/apiService';
-import QuizPlayer, { QuizQuestion } from '@/components/QuizPlayer';
-import BottomNav from '@/components/BottomNav';
+import NTATestPlayer, { NTAQuestion, NTASubmitData, QuestionMeta } from '@/components/NTATestPlayer';
 
 export default function TestSession() {
   const { attemptId } = useParams();
   const navigate = useNavigate();
-  
+
   const [test, setTest] = useState<any>(null);
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [initialAnswers, setInitialAnswers] = useState<(number | number[] | null)[]>([]);
+  const [questions, setQuestions] = useState<NTAQuestion[]>([]);
+  const [initialMeta, setInitialMeta] = useState<QuestionMeta[] | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -25,24 +24,40 @@ export default function TestSession() {
       const res = await apiService.tests.getAttempt(attemptId!);
       const attemptData = res.data.data;
       setTest(attemptData.testId);
-      setQuestions(attemptData.testId.questions);
-      
-      // Convert existing answers to array format
-      const answerArray = new Array(attemptData.testId.questions.length).fill(null);
-      attemptData.answers.forEach((a: any) => {
-        const qIndex = attemptData.testId.questions.findIndex((q: any) => q._id === (a.questionId._id || a.questionId));
+
+      const rawQuestions: NTAQuestion[] = attemptData.testId.questions;
+      setQuestions(rawQuestions);
+
+      // Restore existing answers into meta
+      const metaArray: QuestionMeta[] = rawQuestions.map(() => ({
+        state: 'not-visited' as const,
+        selectedOption: null,
+        bookmarked: false,
+        note: '',
+        timeSpent: 0,
+      }));
+
+      attemptData.answers?.forEach((a: any) => {
+        const qIndex = rawQuestions.findIndex(
+          (q: any) => q._id === (a.questionId?._id || a.questionId)
+        );
         if (qIndex !== -1 && a.selectedOption !== null && a.selectedOption !== undefined) {
+          let optIdx: number | null = null;
           if (typeof a.selectedOption === 'string' && a.selectedOption.length > 0) {
-            // Convert option letter to index (A=0, B=1, etc.)
-            answerArray[qIndex] = a.selectedOption.toUpperCase().charCodeAt(0) - 65;
+            optIdx = a.selectedOption.toUpperCase().charCodeAt(0) - 65;
           } else if (typeof a.selectedOption === 'number') {
-            answerArray[qIndex] = a.selectedOption;
+            optIdx = a.selectedOption;
+          }
+          if (optIdx !== null && optIdx >= 0) {
+            metaArray[qIndex].selectedOption = optIdx;
+            metaArray[qIndex].state = a.isMarkedForReview ? 'answered-marked' : 'answered';
           }
         }
       });
-      setInitialAnswers(answerArray);
-    } catch (error) {
-      console.error('Failed to load test:', error);
+
+      setInitialMeta(metaArray);
+    } catch (err) {
+      console.error('Failed to load test:', err);
       setError('Failed to load test');
       navigate('/tests');
     } finally {
@@ -50,48 +65,50 @@ export default function TestSession() {
     }
   };
 
-  const handleSubmit = async (data: { answers: (number | number[] | null)[]; timeTaken: number }) => {
+  const handleSubmit = async (data: NTASubmitData) => {
     try {
       await apiService.tests.submitTest(attemptId!);
-      navigate(`/test/report/${attemptId}`);
-    } catch (error) {
-      console.error('Failed to submit test:', error);
+      // Pass analytics meta through navigation state
+      navigate(`/test/report/${attemptId}`, {
+        state: { meta: data.meta, timeTaken: data.timeTaken },
+      });
+    } catch (err) {
+      console.error('Failed to submit test:', err);
       setError('Failed to submit test');
     }
   };
 
-  const handleAnswerChange = async (questionIndex: number, answer: number | number[] | null) => {
+  const handleAnswerChange = async (questionIndex: number, answer: number | null, meta: QuestionMeta) => {
     if (!attemptId) return;
-    if (typeof answer !== 'number') return;
-    const question = questions[questionIndex];
+    const question = questions[questionIndex] as any;
     if (!question?._id) return;
 
     try {
       await apiService.tests.saveAnswer(attemptId, {
         questionId: question._id,
-        selectedOption: String.fromCharCode(65 + answer),
-        timeSpent: 0,
-        isMarkedForReview: false,
+        selectedOption: answer !== null ? String.fromCharCode(65 + answer) : '',
+        timeSpent: meta.timeSpent,
+        isMarkedForReview: meta.state === 'marked-review' || meta.state === 'answered-marked',
       });
-    } catch (error) {
-      console.error('Failed to save answer:', error);
+    } catch (err) {
+      console.error('Failed to save answer:', err);
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     );
   }
 
-  if (error || !questions || questions.length === 0) {
+  if (error || !questions.length) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
         <AlertCircle className="w-16 h-16 text-destructive mb-4" />
         <h2 className="text-2xl font-bold mb-2">Error Loading Test</h2>
-        <p className="text-muted-foreground mb-6">{error || 'Could not find any questions for this test.'}</p>
+        <p className="text-muted-foreground mb-6">{error || 'No questions found.'}</p>
         <motion.button
           onClick={() => navigate('/tests')}
           whileHover={{ scale: 1.02 }}
@@ -104,45 +121,16 @@ export default function TestSession() {
     );
   }
 
-  // Transform questions to QuizQuestion format
-  const quizQuestions = questions.map((q: any) => ({
-    id: q._id,
-    question: q.question,
-    type: 'mcq' as const,
-    options: ['A', 'B', 'C', 'D'].map((letter) => q.options[letter]),
-    correctAnswer: q.correctAnswer ? q.correctAnswer.charCodeAt(0) - 65 : null,
-  }));
+  const duration = test?.config?.duration ? test.config.duration * 60 : 10800; // default 3 hours
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <div className="nf-safe-area p-4 max-w-2xl mx-auto">
-        <motion.button
-          onClick={() => navigate('/tests')}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Tests
-        </motion.button>
-      </div>
-
-      <QuizPlayer
-        questions={quizQuestions}
-        title={test?.title || 'Test'}
-        initialAnswers={initialAnswers}
-        onSubmit={handleSubmit}
-        onAnswerChange={handleAnswerChange}
-        showPalette={true}
-        showTimer={test?.config?.duration ? true : false}
-        duration={test?.config?.duration ? test.config.duration * 60 : 0}
-        allowReviewMarking={true}
-        config={{
-          showExplanations: false,
-          showDifficulty: false,
-          showMarks: false,
-        }}
-      />
-
-      <BottomNav />
-    </div>
+    <NTATestPlayer
+      questions={questions}
+      title={test?.title || 'Mock Test'}
+      duration={duration}
+      onSubmit={handleSubmit}
+      onAnswerChange={handleAnswerChange}
+      initialMeta={initialMeta}
+    />
   );
 }
