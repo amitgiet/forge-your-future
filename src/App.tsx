@@ -40,6 +40,7 @@ import MockPdfViewer from "./pages/MockPdfViewer";
 import TestSession from "./pages/TestSession";
 import TestReport from "./pages/TestReport";
 import CustomTestCreate from "./pages/CustomTestCreate";
+import CustomTestSession from "./pages/CustomTestSession";
 import DailyChallenge from "./pages/DailyChallenge";
 import Leaderboard from "./pages/Leaderboard";
 import AIAssistant from "./pages/AIAssistant";
