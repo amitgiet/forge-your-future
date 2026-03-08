@@ -115,6 +115,9 @@ const App = () => (
                     <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                     <Route path="/doubts" element={<ProtectedRoute><DoubtForum /></ProtectedRoute>} />
                     <Route path="/doubts/:id" element={<ProtectedRoute><DoubtDetail /></ProtectedRoute>} />
+                    <Route path="/formula-cards" element={<ProtectedRoute><FormulaCards /></ProtectedRoute>} />
+                    <Route path="/formula-cards/:chapterId" element={<ProtectedRoute><FormulaChapterDetail /></ProtectedRoute>} />
+                    <Route path="/formula-cards/viewer" element={<ProtectedRoute><FormulaCardViewer /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </TooltipProvider>
