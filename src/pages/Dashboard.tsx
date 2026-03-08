@@ -11,6 +11,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import DailyChallengeCard from '@/components/DailyChallengeCard';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loadDueQuestions } from '@/store/slices/neuronzSlice';
+import DashboardSkeleton from '@/components/DashboardSkeleton';
 
 const stagger = {
   hidden: {},
@@ -95,7 +96,9 @@ const Dashboard = () => {
       accuracy: 0,
     },
   });
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [progressLoaded, setProgressLoaded] = useState(false);
+  const [questLoaded, setQuestLoaded] = useState(false);
 
   useEffect(() => {
     fetchUserRank();
@@ -127,6 +130,8 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching today progress:', error);
+    } finally {
+      setProgressLoaded(true);
     }
   };
 
@@ -138,6 +143,8 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching today quest:', error);
+    } finally {
+      setQuestLoaded(true);
     }
   };
 
@@ -185,6 +192,26 @@ const Dashboard = () => {
       <div className="glow-orb glow-orb-accent w-[250px] h-[250px] bottom-32 right-0 animate-glow-pulse" style={{ animationDelay: '3s' }} />
 
       <div className="nf-safe-area p-4 max-w-md mx-auto relative z-10">
+        {/* Show skeleton while initial data loads */}
+        {loading && !progressLoaded && !questLoaded ? (
+          <>
+            {/* Header always shows */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h1 className="nf-heading text-2xl nf-gradient-text tracking-tighter">NEETFORGE</h1>
+                  <p className="text-sm text-muted-foreground mt-0.5">Let's crush today's goals 💪</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
+                  <div className="w-10 h-10 rounded-2xl bg-muted animate-pulse" />
+                </div>
+              </div>
+            </div>
+            <DashboardSkeleton />
+          </>
+        ) : (
+        <>
         {/* Header */}
         <motion.div initial="hidden" animate="show" variants={stagger} className="mb-6">
           <motion.div variants={fadeUp} className="flex items-center justify-between mb-5">
@@ -408,6 +435,8 @@ const Dashboard = () => {
 
         {/* Revision Widget */}
         <RevisionWidget />
+      </>
+        )}
       </div>
 
       <BottomNav />
