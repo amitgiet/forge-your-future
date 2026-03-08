@@ -301,16 +301,16 @@ const CurriculumBrowser = () => {
           },
         });
       } else {
-        navigate('/quiz-session', {
+        navigate('/test/custom-session', {
           state: {
-            mode,
             questions: rawQuestions,
-            questionCount: rawQuestions.length,
-            topic: subTopic.subTopic,
+            title: `${subTopic.subTopic} – Practice`,
+            duration: Math.max(Math.ceil(rawQuestions.length * 3), 10),
             subject,
-            curriculumRun,
+            topic: subTopic.subTopic,
             curriculumRestore: restoreState,
             curriculumContext,
+            curriculumRun,
           },
         });
       }
