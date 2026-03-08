@@ -497,51 +497,90 @@ export default function CustomTestCreate() {
                       const allInTopic = tg.sub_topics.every((st) =>
                         selectedSubTopics.has(`${tg.topic}|||${st.subTopic}`)
                       );
+                      const isExpanded = selectedTopic === tg.topic;
+                      const selectedCount = tg.sub_topics.filter((st) =>
+                        selectedSubTopics.has(`${tg.topic}|||${st.subTopic}`)
+                      ).length;
+                      const totalQs = tg.sub_topics.reduce((sum, st) => sum + st.uid_count, 0);
+
                       return (
                         <div key={tg.topic} className="bg-card border border-border rounded-2xl overflow-hidden">
-                          {/* Topic header */}
-                          <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30">
-                            <button
-                              onClick={() => setSelectedTopic(selectedTopic === tg.topic ? null : tg.topic)}
-                              className="font-semibold text-sm text-foreground text-left flex-1"
-                            >
-                              {tg.topic}
-                            </button>
-                            <button
-                              onClick={() => selectAllSubTopicsInTopic(tg.topic, tg)}
-                              className={`text-xs px-3 py-1 rounded-full font-medium transition-all ${
-                                allInTopic
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-card border border-border text-muted-foreground hover:border-primary/40'
-                              }`}
-                            >
-                              {allInTopic ? '✓ All' : 'Select All'}
-                            </button>
-                          </div>
+                          {/* Topic header — tap to expand/collapse */}
+                          <button
+                            onClick={() => setSelectedTopic(isExpanded ? null : tg.topic)}
+                            className="w-full flex items-center justify-between p-3 bg-muted/30 text-left"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-sm text-foreground truncate">{tg.topic}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {tg.sub_topics.length} subtopics · {totalQs}Q
+                                {selectedCount > 0 && (
+                                  <span className="text-primary font-medium"> · {selectedCount} selected</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 ml-2">
+                              {selectedCount > 0 && (
+                                <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                                  {selectedCount}
+                                </span>
+                              )}
+                              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            </div>
+                          </button>
 
-                          <div className="p-2 space-y-1">
-                            {tg.sub_topics.map((st) => {
-                              const key = `${tg.topic}|||${st.subTopic}`;
-                              const selected = selectedSubTopics.has(key);
-                              return (
-                                <button
-                                  key={st.subTopic}
-                                  onClick={() => toggleSubTopic(tg.topic, st.subTopic)}
-                                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm transition-all ${
-                                    selected
-                                      ? 'bg-primary/10 text-foreground'
-                                      : 'text-muted-foreground hover:bg-muted/50'
-                                  }`}
-                                >
-                                  <span className="text-left leading-tight text-xs">{st.subTopic}</span>
-                                  <div className="flex items-center gap-2 shrink-0 ml-2">
-                                    <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{st.uid_count}Q</span>
-                                    {selected && <CheckCircle2 className="w-4 h-4 text-primary" />}
+                          {/* Collapsible subtopics */}
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="border-t border-border">
+                                  {/* Select All button */}
+                                  <div className="px-3 pt-2 pb-1 flex justify-end">
+                                    <button
+                                      onClick={() => selectAllSubTopicsInTopic(tg.topic, tg)}
+                                      className={`text-xs px-3 py-1 rounded-full font-medium transition-all ${
+                                        allInTopic
+                                          ? 'bg-primary text-primary-foreground'
+                                          : 'bg-card border border-border text-muted-foreground hover:border-primary/40'
+                                      }`}
+                                    >
+                                      {allInTopic ? '✓ Deselect All' : 'Select All'}
+                                    </button>
                                   </div>
-                                </button>
-                              );
-                            })}
-                          </div>
+
+                                  <div className="p-2 space-y-1">
+                                    {tg.sub_topics.map((st) => {
+                                      const key = `${tg.topic}|||${st.subTopic}`;
+                                      const selected = selectedSubTopics.has(key);
+                                      return (
+                                        <button
+                                          key={st.subTopic}
+                                          onClick={() => toggleSubTopic(tg.topic, st.subTopic)}
+                                          className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm transition-all ${
+                                            selected
+                                              ? 'bg-primary/10 text-foreground'
+                                              : 'text-muted-foreground hover:bg-muted/50'
+                                          }`}
+                                        >
+                                          <span className="text-left leading-tight text-xs">{st.subTopic}</span>
+                                          <div className="flex items-center gap-2 shrink-0 ml-2">
+                                            <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{st.uid_count}Q</span>
+                                            {selected && <CheckCircle2 className="w-4 h-4 text-primary" />}
+                                          </div>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       );
                     })}
