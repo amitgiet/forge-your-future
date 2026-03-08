@@ -241,15 +241,28 @@ export default function CustomTestCreate() {
         return;
       }
 
-      navigate('/quiz-session', {
-        state: {
-          questions,
-          mode,
-          topic: meta?.filters?.subTopic || meta?.filters?.chapterId || 'Custom Test',
-          subject,
-          questionCount: questions.length,
-        },
-      });
+      if (mode === 'test') {
+        // Use NTA-style exam UI for test mode
+        navigate('/test/custom-session', {
+          state: {
+            questions,
+            title: `${subject} - Custom Test`,
+            duration: duration || 60,
+            subject,
+            topic: meta?.filters?.subTopic || meta?.filters?.chapterId || 'Custom Test',
+          },
+        });
+      } else {
+        navigate('/quiz-session', {
+          state: {
+            questions,
+            mode,
+            topic: meta?.filters?.subTopic || meta?.filters?.chapterId || 'Custom Test',
+            subject,
+            questionCount: questions.length,
+          },
+        });
+      }
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setError(message || 'Failed to generate test. Please try again.');
