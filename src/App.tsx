@@ -99,6 +99,7 @@ const App = () => (
                     <Route path="/tests/:seriesKey/:typeKey" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
                     <Route path="/tests/pdf-viewer" element={<ProtectedRoute><MockPdfViewer /></ProtectedRoute>} />
                     <Route path="/test/custom/create" element={<ProtectedRoute><CustomTestCreate /></ProtectedRoute>} />
+                    <Route path="/test/custom-session" element={<ProtectedRoute><CustomTestSession /></ProtectedRoute>} />
                     <Route path="/test/session/:attemptId" element={<ProtectedRoute><TestSession /></ProtectedRoute>} />
                     <Route path="/test/report/:attemptId" element={<ProtectedRoute><TestReport /></ProtectedRoute>} />
                     <Route path="/daily-challenge" element={<ProtectedRoute><DailyChallenge /></ProtectedRoute>} />
