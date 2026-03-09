@@ -33,7 +33,13 @@ export default function TestReport() {
   const totalTimeTaken: number = (location.state as any)?.timeTaken ?? 0;
 
   useEffect(() => {
-    loadReport();
+    const attemptData = (location.state as any)?.attemptData;
+    if (attemptData) {
+      setAttempt(attemptData);
+      setLoading(false);
+    } else {
+      loadReport();
+    }
   }, []);
 
   const loadReport = async () => {
@@ -92,8 +98,8 @@ export default function TestReport() {
     scorePercent >= 80
       ? 'text-emerald-600 dark:text-emerald-400'
       : scorePercent >= 50
-      ? 'text-amber-600 dark:text-amber-400'
-      : 'text-destructive';
+        ? 'text-amber-600 dark:text-amber-400'
+        : 'text-destructive';
 
   const anim = (delay: number) => ({
     initial: { opacity: 0, y: 16 },
@@ -322,8 +328,8 @@ export default function TestReport() {
                       ch.accuracy >= 80
                         ? 'text-emerald-600'
                         : ch.accuracy >= 50
-                        ? 'text-amber-600'
-                        : 'text-destructive';
+                          ? 'text-amber-600'
+                          : 'text-destructive';
                     return (
                       <div key={idx} className="bg-muted/50 rounded-xl p-3">
                         <p className="text-xs font-semibold text-foreground truncate">{ch.chapter}</p>
@@ -345,16 +351,18 @@ export default function TestReport() {
 
         {/* ═══ ACTIONS ═══ */}
         <motion.div {...anim(0.35)} className="flex gap-3">
-          <Button variant="outline" className="flex-1 h-11" onClick={() => navigate('/tests')}>
-            Back to Tests
+          <Button variant="outline" className="flex-1 h-11" onClick={() => navigate(-1)}>
+            Back
           </Button>
-          <Button
-            className="flex-1 h-11"
-            onClick={() => navigate(`/test/${testId?._id}/solutions/${attemptId}`)}
-          >
-            <Eye className="w-4 h-4 mr-1.5" />
-            View Solutions
-          </Button>
+          {(attemptId !== 'curriculum' && attemptId !== 'custom') && (
+            <Button
+              className="flex-1 h-11"
+              onClick={() => navigate(`/test/${testId?._id}/solutions/${attemptId}`)}
+            >
+              <Eye className="w-4 h-4 mr-1.5" />
+              View Solutions
+            </Button>
+          )}
         </motion.div>
       </div>
 

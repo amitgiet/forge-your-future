@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, TrendingUp, Target, Home, RotateCcw, BookOpen, ArrowLeft } from 'lucide-react';
+import { Trophy, TrendingUp, Target, Home, RotateCcw, BookOpen, ArrowLeft, Eye } from 'lucide-react';
 import { trackQuizAttempt } from '@/lib/quizTracking';
 import apiService from '@/lib/apiService';
+import NTATestPlayer from '@/components/NTATestPlayer';
 
 type SummaryState = {
   score: number;
@@ -35,6 +36,7 @@ const QuizResults = () => {
   } = (location.state || {}) as any;
 
   const [submittedSummary, setSubmittedSummary] = useState<SummaryState | null>(null);
+  const [showReview, setShowReview] = useState(false);
   const hasTrackedRef = useRef(false);
   const hasSubmittedRunRef = useRef(false);
 
@@ -52,14 +54,14 @@ const QuizResults = () => {
   const incomingSummary: SummaryState | null =
     summary && typeof summary === 'object'
       ? {
-          score: Number(summary.score || 0),
-          total: Number(summary.total || 0),
-          percentage: Number(summary.percentage || 0),
-          subject: String(summary.subject || subject || 'General'),
-          topic: String(summary.topic || topic || 'General'),
-          chapterLabel: summary.chapterLabel ? String(summary.chapterLabel) : undefined,
-          attemptedAt: summary.attemptedAt ? String(summary.attemptedAt) : undefined,
-        }
+        score: Number(summary.score || 0),
+        total: Number(summary.total || 0),
+        percentage: Number(summary.percentage || 0),
+        subject: String(summary.subject || subject || 'General'),
+        topic: String(summary.topic || topic || 'General'),
+        chapterLabel: summary.chapterLabel ? String(summary.chapterLabel) : undefined,
+        attemptedAt: summary.attemptedAt ? String(summary.attemptedAt) : undefined,
+      }
       : null;
 
   const summaryState = submittedSummary || incomingSummary;
@@ -89,14 +91,14 @@ const QuizResults = () => {
 
   const chapterStats = hasAnswerDetails
     ? answers?.reduce((acc: any, answer: any) => {
-        const chapterKey = formatChapterLabel(answer.chapter);
-        if (!acc[chapterKey]) {
-          acc[chapterKey] = { correct: 0, total: 0 };
-        }
-        acc[chapterKey].total += 1;
-        if (answer.correct) acc[chapterKey].correct += 1;
-        return acc;
-      }, {})
+      const chapterKey = formatChapterLabel(answer.chapter);
+      if (!acc[chapterKey]) {
+        acc[chapterKey] = { correct: 0, total: 0 };
+      }
+      acc[chapterKey].total += 1;
+      if (answer.correct) acc[chapterKey].correct += 1;
+      return acc;
+    }, {})
     : effectiveChapterLabel
       ? { [effectiveChapterLabel]: { correct: correctCount, total: safeTotalQuestions } }
       : {};
@@ -186,6 +188,22 @@ const QuizResults = () => {
     );
   }
 
+  if (showReview && location.state?.questions) {
+    return (
+      <NTATestPlayer
+        questions={location.state.questions.map((q: any) => ({
+          ...q,
+          correctAnswer: q.correctAnswer ?? null
+        }))}
+        title={(effectiveSubject || 'Quiz') + ' Review'}
+        duration={location.state.timeTaken || 0}
+        onSubmit={() => setShowReview(false)}
+        readOnly={true}
+        initialMeta={location.state.meta}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="nf-safe-area p-4 max-w-md mx-auto">
@@ -193,7 +211,7 @@ const QuizResults = () => {
           <div className="text-6xl mb-4">{getMedal()}</div>
           <h1 className="text-3xl font-black text-foreground mb-2">{correctCount}/{safeTotalQuestions}</h1>
           <p className="text-xl font-bold text-primary mb-1">{percentage}% Score</p>
-          <p className="text-sm text-muted-foreground">{effectiveSubject} � {effectiveTopic}</p>
+          <p className="text-sm text-muted-foreground">{effectiveSubject} • {effectiveTopic}</p>
           {!hasAnswerDetails && summaryState?.attemptedAt && (
             <p className="text-xs text-muted-foreground mt-1">Last attempt: {new Date(summaryState.attemptedAt).toLocaleString()}</p>
           )}
@@ -336,6 +354,16 @@ const QuizResults = () => {
             Home
           </button>
         </div>
+
+        {location.state?.questions && (
+          <button
+            onClick={() => setShowReview(true)}
+            className="w-full mt-3 py-3 rounded-xl bg-violet-600/10 text-violet-600 font-bold flex items-center justify-center gap-2 hover:bg-violet-600/20 transition-colors"
+          >
+            <Eye className="w-5 h-5" />
+            Review Answers
+          </button>
+        )}
       </div>
     </div>
   );
