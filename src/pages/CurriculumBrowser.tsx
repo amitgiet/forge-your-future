@@ -268,33 +268,52 @@ const CurriculumBrowser = () => {
         return;
       }
 
-      navigate('/quiz-session', {
-        state: {
-          mode,
-          questions: rawQuestions,
-          questionCount: rawQuestions.length,
-          topic: subTopic.subTopic,
-          subject,
-          curriculumRun,
-          curriculumRestore: {
-            panel,
+      const restoreState = {
+        panel,
+        subject,
+        chapters,
+        selectedChapter,
+        topicsLite,
+        selectedTopic,
+        topicFlows,
+      } as CurriculumRestoreState;
+
+      const curriculumContext = {
+        subject,
+        chapterId: selectedChapter._id,
+        topic: topicName,
+        subTopic: subTopic.subTopic,
+        uids: subTopic.uids,
+        mode,
+      };
+
+      if (mode === 'test') {
+        navigate('/test/custom-session', {
+          state: {
+            questions: rawQuestions,
+            title: `${subTopic.subTopic} – Test`,
+            duration: Math.max(Math.ceil(rawQuestions.length * 1.5), 5),
             subject,
-            chapters,
-            selectedChapter,
-            topicsLite,
-            selectedTopic,
-            topicFlows,
-          } as CurriculumRestoreState,
-          curriculumContext: {
-            subject,
-            chapterId: selectedChapter._id,
-            topic: topicName,
-            subTopic: subTopic.subTopic,
-            uids: subTopic.uids,
-            mode,
+            topic: subTopic.subTopic,
+            curriculumRestore: restoreState,
+            curriculumContext,
+            curriculumRun,
           },
-        },
-      });
+        });
+      } else {
+        navigate('/test/custom-session', {
+          state: {
+            questions: rawQuestions,
+            title: `${subTopic.subTopic} – Practice`,
+            duration: Math.max(Math.ceil(rawQuestions.length * 3), 10),
+            subject,
+            topic: subTopic.subTopic,
+            curriculumRestore: restoreState,
+            curriculumContext,
+            curriculumRun,
+          },
+        });
+      }
     } catch {
       setError('Could not load questions. Please try again.');
     } finally {

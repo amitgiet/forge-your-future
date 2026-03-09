@@ -1,27 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, Clock, BookOpen, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Sparkles, BookOpen, Loader2, AlertCircle, Trophy, Clock, ChevronRight, RotateCcw, Target } from 'lucide-react';
 import { apiService } from '@/lib/apiService';
 import BottomNav from '@/components/BottomNav';
 import QuizPlayer, { QuizQuestion } from '@/components/QuizPlayer';
 
 const QuizGenerator = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState('form'); // 'form', 'generating', 'quiz', 'results'
+  const [step, setStep] = useState('form');
   
-  // Form state
   const [topic, setTopic] = useState('');
   const [level, setLevel] = useState(3);
   const [numberOfQuestions, setNumberOfQuestions] = useState(10);
   const [quizType, setQuizType] = useState('mcq');
   const [error, setError] = useState('');
   
-  // Quiz state
   const [quiz, setQuiz] = useState<any>(null);
   const [results, setResults] = useState<any>(null);
 
-  // My Quizzes state
   const [myQuizzes, setMyQuizzes] = useState<any[]>([]);
   const [showMyQuizzes, setShowMyQuizzes] = useState(false);
   const [quizPage, setQuizPage] = useState(1);
@@ -31,35 +28,14 @@ const QuizGenerator = () => {
   const handleGenerateQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    // Validation
-    if (!topic.trim()) {
-      setError('Please enter a topic');
-      return;
-    }
-
-    if (numberOfQuestions < 1 || numberOfQuestions > 50) {
-      setError('Number of questions must be between 1 and 50');
-      return;
-    }
+    if (!topic.trim()) { setError('Please enter a topic'); return; }
+    if (numberOfQuestions < 1 || numberOfQuestions > 50) { setError('Number of questions must be between 1 and 50'); return; }
 
     setStep('generating');
-
     try {
-      const response = await apiService.quizGenerator.generateQuiz({
-        topic,
-        level,
-        numberOfQuestions,
-        quizType
-      });
-
-      // Handle nested data structure: response.data contains { success, data: {...quiz} }
+      const response = await apiService.quizGenerator.generateQuiz({ topic, level, numberOfQuestions, quizType });
       const quizData = response.data.data || response.data;
-      
-      if (!quizData.questions || quizData.questions.length === 0) {
-        throw new Error('No questions received from AI');
-      }
-
+      if (!quizData.questions || quizData.questions.length === 0) throw new Error('No questions received from AI');
       setQuiz(quizData);
       setStep('quiz');
     } catch (err: any) {
@@ -70,13 +46,9 @@ const QuizGenerator = () => {
 
   const handleQuizSubmit = async (data: { answers: (number | number[] | null)[]; timeTaken: number }) => {
     try {
-      // Get quiz ID from either _id or quizId field
       const quizId = quiz._id || quiz.quizId;
-      if (!quizId) {
-        throw new Error('Quiz ID not found. Please try generating the quiz again.');
-      }
+      if (!quizId) throw new Error('Quiz ID not found.');
       const response = await apiService.quizGenerator.submitQuizAttempt(quizId, data);
-      // Response structure: { success: true, data: {quizId, score, totalMarks, evaluatedAnswers, ...} }
       const resultsData = response.data.data || response.data;
       setResults(resultsData);
       setStep('results');
@@ -87,29 +59,19 @@ const QuizGenerator = () => {
 
   const handleBackToForm = () => {
     setStep('form');
-    setTopic('');
-    setLevel(3);
-    setNumberOfQuestions(10);
-    setQuizType('mcq');
-    setError('');
-    setQuiz(null);
-    setResults(null);
+    setTopic(''); setLevel(3); setNumberOfQuestions(10); setQuizType('mcq');
+    setError(''); setQuiz(null); setResults(null);
   };
 
   const fetchMyQuizzes = async (page = 1) => {
     setLoadingQuizzes(true);
     try {
       const res = await apiService.quizGenerator.getUserQuizzes(page, 10);
-      console.log('[fetchMyQuizzes] Full response:', res);
-      console.log('[fetchMyQuizzes] res.data:', res.data);
-      // Response structure: { success: true, data: [...quizzes], pagination: {...} }
       const quizzesData = res.data.data || res.data;
-      console.log('[fetchMyQuizzes] Parsed quizzes:', quizzesData);
       setMyQuizzes(Array.isArray(quizzesData) ? quizzesData : []);
       setQuizTotalPages(res.data.pagination?.pages || 1);
       setQuizPage(page);
-    } catch (err) {
-      console.error('Failed to load quizzes:', err);
+    } catch {
       setError('Failed to load quizzes');
     } finally {
       setLoadingQuizzes(false);
@@ -118,37 +80,61 @@ const QuizGenerator = () => {
 
   useEffect(() => {
     if (showMyQuizzes) fetchMyQuizzes(quizPage);
-    // eslint-disable-next-line
   }, [showMyQuizzes, quizPage]);
 
+  // ── My Quizzes View ──────────────────────────────────────────────────
   if (showMyQuizzes) {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="nf-safe-area p-4 max-w-md mx-auto">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <BookOpen className="w-7 h-7 text-primary" /> My Quizzes
-            </h1>
+        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
+          <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
             <button
               onClick={() => setShowMyQuizzes(false)}
-              className="text-sm text-primary underline"
-            >Back</button>
+              className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center"
+            >
+              <ArrowLeft className="w-4 h-4 text-foreground" />
+            </button>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">My AI Quizzes</h1>
+              <p className="text-xs text-muted-foreground">{myQuizzes.length} quizzes</p>
+            </div>
           </div>
+        </div>
+        <div className="max-w-md mx-auto px-4 pt-4">
           {loadingQuizzes ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="flex items-center justify-center py-16 gap-3 text-muted-foreground">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <span className="text-sm">Loading quizzes…</span>
+            </div>
           ) : myQuizzes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No quizzes found.</div>
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
+                <BookOpen className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground text-sm">No quizzes yet. Generate your first one!</p>
+            </div>
           ) : (
-            <div className="space-y-4">
-              {myQuizzes.map((q) => (
-                <div key={q._id} className="nf-card p-4 flex flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-bold text-foreground">{q.topic}</div>
-                      <div className="text-xs text-muted-foreground">Quiz ID: {q._id}</div>
+            <div className="space-y-3">
+              {myQuizzes.map((q, idx) => (
+                <motion.div
+                  key={q._id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="bg-card border border-border rounded-2xl p-4 hover:shadow-sm transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-foreground truncate">{q.topic}</div>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">L{q.level}</span>
+                        <span className="text-xs text-muted-foreground">{q.totalQuestions} Qs</span>
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <span className="text-xs text-muted-foreground">{new Date(q.createdAt).toLocaleDateString()}</span>
+                      </div>
                     </div>
                     <button
-                      className="text-primary underline text-sm"
+                      className="ml-3 px-4 py-2 bg-primary/10 text-primary rounded-xl text-sm font-semibold hover:bg-primary/20 transition-colors flex items-center gap-1"
                       onClick={async () => {
                         try {
                           const res = await apiService.quizGenerator.getQuiz(q._id);
@@ -160,24 +146,24 @@ const QuizGenerator = () => {
                           setError('Failed to load quiz');
                         }
                       }}
-                    >View</button>
+                    >
+                      Play <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Level: L{q.level} | {q.totalQuestions} Qs | {new Date(q.createdAt).toLocaleString()}
-                  </div>
-                </div>
+                </motion.div>
               ))}
-              <div className="flex justify-between items-center mt-4">
+              {/* Pagination */}
+              <div className="flex justify-between items-center pt-2 pb-4">
                 <button
                   disabled={quizPage <= 1}
                   onClick={() => setQuizPage(quizPage - 1)}
-                  className="px-3 py-1 rounded bg-card border text-sm disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-card border border-border text-sm font-medium disabled:opacity-40"
                 >Prev</button>
-                <span className="text-xs">Page {quizPage} of {quizTotalPages}</span>
+                <span className="text-xs text-muted-foreground">Page {quizPage}/{quizTotalPages}</span>
                 <button
                   disabled={quizPage >= quizTotalPages}
                   onClick={() => setQuizPage(quizPage + 1)}
-                  className="px-3 py-1 rounded bg-card border text-sm disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-card border border-border text-sm font-medium disabled:opacity-40"
                 >Next</button>
               </div>
             </div>
@@ -188,90 +174,87 @@ const QuizGenerator = () => {
     );
   }
 
+  // ── Form View ──────────────────────────────────────────────────────────
   if (step === 'form') {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="nf-safe-area p-4 max-w-md mx-auto">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
+        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
+          <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
             <button
               onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
+              className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center"
             >
-              <ArrowLeft className="w-5 h-5" />
-              Back
+              <ArrowLeft className="w-4 h-4 text-foreground" />
             </button>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-              <Sparkles className="w-8 h-8 text-primary" />
-              AI Quiz Generator
-            </h1>
-            <p className="text-muted-foreground mt-2">Create custom quizzes on any topic</p>
-          </motion.div>
+            <div className="flex-1">
+              <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                AI Quiz Generator
+              </h1>
+              <p className="text-xs text-muted-foreground">Create custom quizzes on any topic</p>
+            </div>
+          </div>
+        </div>
 
-          {/* Add My Quizzes button */}
+        <div className="max-w-md mx-auto px-4 pt-4">
+          {/* My Quizzes */}
           <button
             onClick={() => setShowMyQuizzes(true)}
-            className="mb-4 w-full py-2 rounded-lg bg-primary/10 text-primary font-semibold border border-primary/20 hover:bg-primary/20 transition"
+            className="mb-4 w-full py-3 rounded-2xl bg-card border border-border text-foreground font-semibold flex items-center justify-center gap-2 hover:shadow-sm transition-shadow"
           >
+            <BookOpen className="w-4 h-4 text-primary" />
             My Quizzes
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
 
           {/* Form */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="nf-card mb-6"
+            className="space-y-4"
           >
-            <form onSubmit={handleGenerateQuiz} className="space-y-6">
+            <form onSubmit={handleGenerateQuiz} className="space-y-4">
               {/* Topic */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Topic
-                </label>
+              <div className="bg-card border border-border rounded-2xl p-4">
+                <label className="block text-sm font-bold text-foreground mb-2">Topic</label>
                 <input
                   type="text"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  placeholder="e.g., Photosynthesis, Newton's Laws, Organic Chemistry"
-                  className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary"
+                  placeholder="e.g., Photosynthesis, Newton's Laws"
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Be specific for better results</p>
+                <p className="text-xs text-muted-foreground mt-1.5">Be specific for better results</p>
               </div>
 
               {/* Level */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-3">
-                  Difficulty Level: <span className="text-primary">L{level}</span>
+              <div className="bg-card border border-border rounded-2xl p-4">
+                <label className="block text-sm font-bold text-foreground mb-3">
+                  Difficulty: <span className="text-primary">L{level}</span>
                 </label>
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-1.5">
                   {[1, 2, 3, 4, 5, 6, 7].map((l) => (
                     <button
                       key={l}
                       type="button"
                       onClick={() => setLevel(l)}
-                      className={`py-2 rounded-lg font-bold transition-all ${
+                      className={`py-2.5 rounded-xl font-bold text-sm transition-all ${
                         level === l
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-card border border-border text-foreground hover:border-primary'
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'bg-background border border-border text-foreground hover:border-primary/30'
                       }`}
                     >
                       {l}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  L7 = Expert/Competitive exam level
-                </p>
+                <p className="text-xs text-muted-foreground mt-2">L1 = Basic · L7 = Competitive</p>
               </div>
 
-              {/* Number of Questions */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Number of Questions: <span className="text-primary">{numberOfQuestions}</span>
+              {/* Question Count */}
+              <div className="bg-card border border-border rounded-2xl p-4">
+                <label className="block text-sm font-bold text-foreground mb-2">
+                  Questions: <span className="text-primary">{numberOfQuestions}</span>
                 </label>
                 <input
                   type="range"
@@ -279,32 +262,30 @@ const QuizGenerator = () => {
                   max="50"
                   value={numberOfQuestions}
                   onChange={(e) => setNumberOfQuestions(parseInt(e.target.value))}
-                  className="w-full"
+                  className="w-full accent-primary"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>1 Question</span>
-                  <span>50 Questions</span>
+                  <span>1</span>
+                  <span>50</span>
                 </div>
               </div>
 
               {/* Quiz Type */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-3">
-                  Quiz Type
-                </label>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="bg-card border border-border rounded-2xl p-4">
+                <label className="block text-sm font-bold text-foreground mb-3">Quiz Type</label>
+                <div className="grid grid-cols-2 gap-2">
                   {[
                     { value: 'mcq', label: 'MCQ', desc: 'Single answer' },
-                    { value: 'multiple_select', label: 'Multiple Select', desc: 'Multiple answers' }
+                    { value: 'multiple_select', label: 'Multi Select', desc: 'Multiple answers' }
                   ].map((type) => (
                     <button
                       key={type.value}
                       type="button"
                       onClick={() => setQuizType(type.value)}
-                      className={`p-3 rounded-lg border-2 text-left transition-all ${
+                      className={`p-3 rounded-xl border-2 text-left transition-all ${
                         quizType === type.value
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border bg-card hover:border-primary/50'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border bg-background hover:border-primary/30'
                       }`}
                     >
                       <div className="font-semibold text-foreground text-sm">{type.label}</div>
@@ -319,9 +300,9 @@ const QuizGenerator = () => {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 flex items-start gap-2"
+                  className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 flex items-start gap-2"
                 >
-                  <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
                   <span className="text-sm text-destructive">{error}</span>
                 </motion.div>
               )}
@@ -329,62 +310,59 @@ const QuizGenerator = () => {
               {/* Submit */}
               <motion.button
                 type="submit"
-                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full py-3 bg-gradient-to-r from-primary to-accent rounded-lg text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                className="w-full py-4 bg-primary rounded-2xl text-primary-foreground font-bold flex items-center justify-center gap-2 shadow-sm"
               >
                 <Sparkles className="w-5 h-5" />
                 Generate Quiz
               </motion.button>
             </form>
-          </motion.div>
 
-          {/* Info Box */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="nf-card"
-          >
-            <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
-              How it works
-            </h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>✨ AI generates unique questions based on your topic</li>
-              <li>🎯 Questions tailored to your selected difficulty level</li>
-              <li>💾 Quiz saved for future reference</li>
-              <li>📊 Track your performance across multiple attempts</li>
-            </ul>
+            {/* Info */}
+            <div className="bg-card border border-border rounded-2xl p-4">
+              <h3 className="font-bold text-foreground mb-3 flex items-center gap-2 text-sm">
+                <BookOpen className="w-4 h-4 text-primary" />
+                How it works
+              </h3>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                <li className="flex items-start gap-2"><span>✨</span> AI generates unique questions based on your topic</li>
+                <li className="flex items-start gap-2"><span>🎯</span> Questions tailored to your difficulty level</li>
+                <li className="flex items-start gap-2"><span>💾</span> Quiz saved for future reference</li>
+                <li className="flex items-start gap-2"><span>📊</span> Track performance across attempts</li>
+              </ul>
+            </div>
           </motion.div>
         </div>
-
         <BottomNav />
       </div>
     );
   }
 
+  // ── Generating View ────────────────────────────────────────────────────
   if (step === 'generating') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center pb-24">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
+          className="text-center px-6"
         >
-          <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
+            <Loader2 className="w-10 h-10 text-primary animate-spin" />
           </div>
-          <h2 className="text-xl font-bold text-foreground mb-2">Generating your quiz...</h2>
-          <p className="text-muted-foreground">
-            AI is creating {numberOfQuestions} custom questions on "{topic}"
+          <h2 className="text-xl font-bold text-foreground mb-2">Generating your quiz…</h2>
+          <p className="text-sm text-muted-foreground">
+            Creating {numberOfQuestions} questions on "{topic}"
           </p>
-          <p className="text-xs text-muted-foreground mt-4">This usually takes 10-30 seconds</p>
+          <p className="text-xs text-muted-foreground mt-4 bg-card border border-border rounded-xl px-4 py-2 inline-block">
+            ⏱️ Usually takes 10-30 seconds
+          </p>
         </motion.div>
       </div>
     );
   }
 
+  // ── Quiz View ──────────────────────────────────────────────────────────
   if (step === 'quiz' && quiz && quiz.questions && quiz.questions.length > 0) {
     return (
       <>
@@ -397,7 +375,6 @@ const QuizGenerator = () => {
             Back
           </motion.button>
         </div>
-
         <QuizPlayer
           questions={quiz.questions as QuizQuestion[]}
           title={`AI Quiz: ${quiz.topic}`}
@@ -405,54 +382,73 @@ const QuizGenerator = () => {
           showPalette={true}
           showTimer={false}
           allowReviewMarking={true}
-          config={{
-            showExplanations: false,
-            showDifficulty: true,
-            showMarks: false,
-          }}
+          config={{ showExplanations: false, showDifficulty: true, showMarks: false }}
         />
-
         <BottomNav />
       </>
     );
   }
 
+  // ── Results View ───────────────────────────────────────────────────────
   if (step === 'results' && results) {
     const percentage = results.percentage;
     const isGoodScore = percentage >= 70;
 
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="nf-safe-area p-4 max-w-md mx-auto">
-          {/* Results */}
+        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
+          <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
+            <button
+              onClick={handleBackToForm}
+              className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center"
+            >
+              <ArrowLeft className="w-4 h-4 text-foreground" />
+            </button>
+            <h1 className="text-lg font-bold text-foreground">Quiz Results</h1>
+          </div>
+        </div>
+
+        <div className="max-w-md mx-auto px-4 pt-6">
+          {/* Score */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="nf-card mb-6 text-center"
+            className="bg-card border border-border rounded-2xl p-6 text-center mb-4 shadow-sm"
           >
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${
-              isGoodScore ? 'bg-success/20' : 'bg-warning/20'
+            <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 border-4 ${
+              isGoodScore ? 'border-primary bg-primary/10' : 'border-destructive/50 bg-destructive/10'
             }`}>
-              <span className="text-4xl font-bold">{percentage}%</span>
+              <div>
+                <span className="text-3xl font-bold text-foreground">{percentage}</span>
+                <span className="text-lg text-muted-foreground">%</span>
+              </div>
             </div>
 
-            <h2 className="text-2xl font-bold text-foreground mb-2">
-              {results.message}
-            </h2>
+            <h2 className="text-xl font-bold text-foreground mb-1">{results.message}</h2>
+            <p className="text-sm text-muted-foreground">
+              {isGoodScore ? '🎉 Great performance!' : '💪 Keep practicing!'}
+            </p>
 
             <div className="grid grid-cols-3 gap-3 mt-6">
-              <div className="p-3 rounded-lg bg-card">
-                <div className="text-2xl font-bold text-primary">{results.score}</div>
+              <div className="bg-background rounded-xl p-3">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Trophy className="w-4 h-4 text-primary" />
+                </div>
+                <div className="text-xl font-bold text-foreground">{results.score}</div>
                 <div className="text-xs text-muted-foreground">Score</div>
               </div>
-              <div className="p-3 rounded-lg bg-card">
-                <div className="text-2xl font-bold text-primary">{results.totalMarks}</div>
+              <div className="bg-background rounded-xl p-3">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Target className="w-4 h-4 text-primary" />
+                </div>
+                <div className="text-xl font-bold text-foreground">{results.totalMarks}</div>
                 <div className="text-xs text-muted-foreground">Total</div>
               </div>
-              <div className="p-3 rounded-lg bg-card">
-                <div className="text-2xl font-bold text-primary">
-                  {Math.floor(results.timeTaken / 60)}m
+              <div className="bg-background rounded-xl p-3">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Clock className="w-4 h-4 text-primary" />
                 </div>
+                <div className="text-xl font-bold text-foreground">{Math.floor(results.timeTaken / 60)}m</div>
                 <div className="text-xs text-muted-foreground">Time</div>
               </div>
             </div>
@@ -463,23 +459,23 @@ const QuizGenerator = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="nf-card mb-6"
+            className="bg-card border border-border rounded-2xl p-4 mb-4"
           >
-            <h3 className="font-bold text-foreground mb-4">Question Review</h3>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
+            <h3 className="font-bold text-foreground mb-3 text-sm">Question Review</h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {results.evaluatedAnswers && Array.isArray(results.evaluatedAnswers) && results.evaluatedAnswers.map((evaluation: any, idx: number) => (
                 <div
                   key={idx}
-                  className={`p-3 rounded-lg border-l-4 ${
+                  className={`p-3 rounded-xl border-l-4 ${
                     evaluation.isCorrect
-                      ? 'border-success bg-success/10'
-                      : 'border-destructive bg-destructive/10'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-destructive bg-destructive/5'
                   }`}
                 >
-                  <div className="font-bold text-foreground text-sm">
+                  <div className="font-semibold text-foreground text-sm">
                     Q{evaluation.questionNumber}: {evaluation.isCorrect ? '✓ Correct' : '✗ Wrong'}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     Your answer: {evaluation.userAnswer !== null ? String(evaluation.userAnswer) : 'Not answered'}
                   </div>
                 </div>
@@ -488,27 +484,25 @@ const QuizGenerator = () => {
           </motion.div>
 
           {/* Actions */}
-          <div className="space-y-3">
+          <div className="space-y-3 pb-4">
             <motion.button
               onClick={handleBackToForm}
-              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-3 bg-gradient-to-r from-primary to-accent rounded-lg text-white font-bold"
+              className="w-full py-4 bg-primary rounded-2xl text-primary-foreground font-bold flex items-center justify-center gap-2 shadow-sm"
             >
+              <RotateCcw className="w-5 h-5" />
               Generate New Quiz
             </motion.button>
 
             <motion.button
               onClick={() => navigate('/dashboard')}
-              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-3 bg-card border-2 border-border rounded-lg text-foreground font-bold"
+              className="w-full py-3 bg-card border-2 border-border rounded-2xl text-foreground font-semibold"
             >
               Back to Dashboard
             </motion.button>
           </div>
         </div>
-
         <BottomNav />
       </div>
     );

@@ -40,6 +40,7 @@ import MockPdfViewer from "./pages/MockPdfViewer";
 import TestSession from "./pages/TestSession";
 import TestReport from "./pages/TestReport";
 import CustomTestCreate from "./pages/CustomTestCreate";
+import CustomTestSession from "./pages/CustomTestSession";
 import DailyChallenge from "./pages/DailyChallenge";
 import Leaderboard from "./pages/Leaderboard";
 import AIAssistant from "./pages/AIAssistant";
@@ -50,6 +51,9 @@ import CurriculumBrowser from "./pages/CurriculumBrowser";
 import Analytics from "./pages/Analytics";
 import DoubtForum from "./pages/DoubtForum";
 import DoubtDetail from "./pages/DoubtDetail";
+import FormulaCards from "./pages/FormulaCards";
+import FormulaChapterDetail from "./pages/FormulaChapterDetail";
+import FormulaCardViewer from "./pages/FormulaCardViewer";
 import StudyPlanner from "./pages/StudyPlanner";
 import NotFound from "./pages/NotFound";
 
@@ -99,6 +103,7 @@ const App = () => (
                     <Route path="/tests/:seriesKey/:typeKey" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
                     <Route path="/tests/pdf-viewer" element={<ProtectedRoute><MockPdfViewer /></ProtectedRoute>} />
                     <Route path="/test/custom/create" element={<ProtectedRoute><CustomTestCreate /></ProtectedRoute>} />
+                    <Route path="/test/custom-session" element={<ProtectedRoute><CustomTestSession /></ProtectedRoute>} />
                     <Route path="/test/session/:attemptId" element={<ProtectedRoute><TestSession /></ProtectedRoute>} />
                     <Route path="/test/report/:attemptId" element={<ProtectedRoute><TestReport /></ProtectedRoute>} />
                     <Route path="/daily-challenge" element={<ProtectedRoute><DailyChallenge /></ProtectedRoute>} />
@@ -112,6 +117,9 @@ const App = () => (
                     <Route path="/study-plan" element={<ProtectedRoute><StudyPlanner /></ProtectedRoute>} />
                     <Route path="/doubts" element={<ProtectedRoute><DoubtForum /></ProtectedRoute>} />
                     <Route path="/doubts/:id" element={<ProtectedRoute><DoubtDetail /></ProtectedRoute>} />
+                    <Route path="/formula-cards" element={<ProtectedRoute><FormulaCards /></ProtectedRoute>} />
+                    <Route path="/formula-cards/:chapterId" element={<ProtectedRoute><FormulaChapterDetail /></ProtectedRoute>} />
+                    <Route path="/formula-cards/viewer" element={<ProtectedRoute><FormulaCardViewer /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </TooltipProvider>
