@@ -30,7 +30,7 @@ const Leaderboard = () => {
     try {
       setLoading(true);
       let response;
-      
+
       if (tab === 'daily') {
         response = await apiService.leaderboard.getDailyLeaderboard(10);
       } else if (tab === 'weekly') {
@@ -52,7 +52,7 @@ const Leaderboard = () => {
           completedToday: entry.completedToday || false
         }));
         setLeaderboard(mapped);
-        
+
         // Get user's completion status from API response
         // Assumes API returns user data or current user flag
         const userEntry = response.data.currentUserEntry || response.data.userRank;
@@ -114,7 +114,7 @@ const Leaderboard = () => {
               <Trophy className="w-5 h-5 text-warning-foreground" />
               Leaderboard
             </h1>
-            <p className="text-xs text-muted-foreground">Daily Challenge Rankings</p>
+            <p className="text-xs text-muted-foreground">Daily DPP Rankings</p>
           </div>
         </div>
 
@@ -124,11 +124,10 @@ const Leaderboard = () => {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 py-2 px-3 rounded-xl text-sm font-bold transition-all ${
-                tab === t
+              className={`flex-1 py-2 px-3 rounded-xl text-sm font-bold transition-all ${tab === t
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
+                }`}
             >
               {t === 'daily' ? 'Today' : t === 'weekly' ? 'This Week' : 'All Time'}
             </button>
@@ -267,7 +266,7 @@ const Leaderboard = () => {
             whileTap={{ scale: 0.98 }}
           >
             <Target className="w-5 h-5" />
-            Take Today's Challenge
+            Take Today's DPP
           </motion.button>
         )}
       </div>

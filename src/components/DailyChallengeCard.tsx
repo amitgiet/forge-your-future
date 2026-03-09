@@ -24,7 +24,7 @@ const DailyChallengeCard = () => {
       if (response.data?.success) {
         const challengeData = response.data.data;
         setChallenge(challengeData);
-        
+
         // Check if user already completed from response
         if (challengeData.completed) {
           setHasCompleted(true);
@@ -83,7 +83,7 @@ const DailyChallengeCard = () => {
     >
       {/* Decorative background */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-      
+
       {/* Header */}
       <div className="flex items-center justify-between mb-3 relative">
         <div className="flex items-center gap-2">
@@ -91,7 +91,7 @@ const DailyChallengeCard = () => {
             <Target className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h3 className="font-bold text-foreground text-sm">Daily Challenge</h3>
+            <h3 className="font-bold text-foreground text-sm">Daily DPP</h3>
             <p className="text-xs text-muted-foreground">Same for everyone!</p>
           </div>
         </div>
@@ -143,7 +143,7 @@ const DailyChallengeCard = () => {
         whileTap={{ scale: 0.98 }}
       >
         <Target className="w-5 h-5" />
-        {hasCompleted ? 'View Details' : 'Start Challenge'}
+        {hasCompleted ? 'View Details' : 'Start DPP'}
         <ChevronRight className="w-5 h-5" />
       </motion.button>
       {hasCompleted && (

@@ -30,7 +30,7 @@ const DailyChallenge = () => {
       if (response.data?.success) {
         const challengeData = response.data.data;
         setChallenge(challengeData);
-        
+
         // Check if user already completed
         if (challengeData.completed) {
           setPhase('already-completed');
@@ -79,7 +79,7 @@ const DailyChallenge = () => {
 
   const handleSubmitAnswer = async () => {
     if (selectedAnswer === null) return;
-    
+
     setShowFeedback(true);
     const newAnswers = [...answers, selectedAnswer];
     setAnswers(newAnswers);
@@ -102,7 +102,7 @@ const DailyChallenge = () => {
         } catch (error) {
           console.error('Error submitting challenge:', error);
         }
-        
+
         setPhase('results');
       }
     }, 1500);
@@ -127,7 +127,7 @@ const DailyChallenge = () => {
     const leaderboard = JSON.parse(localStorage.getItem('leaderboard') || '[]');
     const userName = 'Demo User'; // Would come from auth
     const existing = leaderboard.findIndex((e: any) => e.name === userName);
-    
+
     const entry = {
       name: userName,
       score,
@@ -188,7 +188,7 @@ const DailyChallenge = () => {
 
             <h2 className="text-2xl font-bold text-foreground mb-2">Already Completed!</h2>
             <p className="text-muted-foreground mb-6">
-              You've already completed today's challenge. Here are your details:
+              You've already completed today's DPP. Here are your details:
             </p>
 
             <div className="nf-card bg-success/10 border-success/30 mb-6">
@@ -217,7 +217,7 @@ const DailyChallenge = () => {
                     .replace(/&gt;/g, '>')
                     .replace(/&#39;/g, "'")
                     .replace(/&apos;/g, "'");
-                  
+
                   // Convert LaTeX to readable format
                   let formattedLine = decodedLine
                     .replace(/\$([^$]+)\$/g, (_, math) => {
@@ -244,7 +244,7 @@ const DailyChallenge = () => {
                     .replace(/\\0\\/g, '{0}')
                     .replace(/\\\(/g, '(')
                     .replace(/\\\)/g, ')');
-                  
+
                   if (formattedLine.startsWith('## ')) {
                     return <h2 key={i} className="text-lg font-bold mt-4 mb-2 text-foreground">{formattedLine.replace('## ', '')}</h2>;
                   }
@@ -262,7 +262,7 @@ const DailyChallenge = () => {
                     const parts = formattedLine.split(/\*\*([^*]+)\*\*/g);
                     return (
                       <p key={i} className="text-muted-foreground my-1">
-                        {parts.map((part, idx) => 
+                        {parts.map((part, idx) =>
                           idx % 2 === 1 ? <strong key={idx} className="font-bold text-foreground">{part}</strong> : part
                         )}
                       </p>
@@ -283,17 +283,16 @@ const DailyChallenge = () => {
                     {q.options && q.options.map((opt: string, idx: number) => {
                       const isCorrect = idx === q.correctAnswer;
                       const isUserSelected = idx === challenge.userAnswers[i];
-                      
+
                       return (
                         <div
                           key={idx}
-                          className={`px-3 py-2 rounded text-sm transition-all ${
-                            isCorrect 
-                              ? 'bg-success/20 text-success font-bold border border-success/50' 
-                              : isUserSelected 
-                                ? 'bg-primary/10 text-primary border border-primary/50' 
-                                : 'text-muted-foreground'
-                          }`}
+                          className={`px-3 py-2 rounded text-sm transition-all ${isCorrect
+                            ? 'bg-success/20 text-success font-bold border border-success/50'
+                            : isUserSelected
+                              ? 'bg-primary/10 text-primary border border-primary/50'
+                              : 'text-muted-foreground'
+                            }`}
                         >
                           <div className="flex items-center justify-between">
                             <span>{String.fromCharCode(65 + idx)}. {opt}</span>
@@ -342,7 +341,7 @@ const DailyChallenge = () => {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </motion.button>
           <div className="flex-1">
-            <h1 className="font-bold text-foreground">Daily Challenge</h1>
+            <h1 className="font-bold text-foreground">Daily DPP</h1>
             <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
           </div>
           {phase === 'quiz' && (
@@ -367,7 +366,7 @@ const DailyChallenge = () => {
                 <span className="text-6xl mb-4 block">{challenge.icon}</span>
                 <h2 className="text-2xl font-black text-foreground mb-2">{challenge.topic}</h2>
                 <p className="text-muted-foreground mb-4">{challenge.subject}</p>
-                
+
                 <div className="flex justify-center gap-4 mb-6">
                   <div className="text-center">
                     <div className="text-2xl font-black text-primary">{challenge.timeLimit}</div>
@@ -431,7 +430,7 @@ const DailyChallenge = () => {
                   <span className="text-2xl">{challenge.icon}</span>
                   <h2 className="text-xl font-bold text-foreground">{challenge.topic}</h2>
                 </div>
-                
+
                 <div className="prose prose-sm max-w-none text-foreground">
                   {(challenge.content || '').split('\n').map((line, i) => {
                     // Decode HTML entities
@@ -442,7 +441,7 @@ const DailyChallenge = () => {
                       .replace(/&gt;/g, '>')
                       .replace(/&#39;/g, "'")
                       .replace(/&apos;/g, "'");
-                    
+
                     // Convert LaTeX to readable format
                     let formattedLine = decodedLine
                       .replace(/\$([^$]+)\$/g, (_, math) => {
@@ -469,7 +468,7 @@ const DailyChallenge = () => {
                       .replace(/\\0\\/g, '{0}')
                       .replace(/\\\(/g, '(')
                       .replace(/\\\)/g, ')');
-                    
+
                     if (formattedLine.startsWith('## ')) {
                       return <h2 key={i} className="text-lg font-bold mt-4 mb-2 text-foreground">{formattedLine.replace('## ', '')}</h2>;
                     }
@@ -487,7 +486,7 @@ const DailyChallenge = () => {
                       const parts = formattedLine.split(/\*\*([^*]+)\*\*/g);
                       return (
                         <p key={i} className="text-muted-foreground my-1">
-                          {parts.map((part, idx) => 
+                          {parts.map((part, idx) =>
                             idx % 2 === 1 ? <strong key={idx} className="font-bold text-foreground">{part}</strong> : part
                           )}
                         </p>
@@ -524,13 +523,12 @@ const DailyChallenge = () => {
                 {challenge.questions.map((_, i) => (
                   <div
                     key={i}
-                    className={`h-2 flex-1 rounded-full transition-colors ${
-                      i < currentQuestion
-                        ? 'bg-primary'
-                        : i === currentQuestion
+                    className={`h-2 flex-1 rounded-full transition-colors ${i < currentQuestion
+                      ? 'bg-primary'
+                      : i === currentQuestion
                         ? 'bg-primary/50'
                         : 'bg-muted'
-                    }`}
+                      }`}
                   />
                 ))}
               </div>
@@ -547,7 +545,7 @@ const DailyChallenge = () => {
                   {challenge.questions[currentQuestion].options.map((option, index) => {
                     const isCorrect = index === getCorrectAnswerIndex(challenge.questions[currentQuestion]);
                     const isSelected = selectedAnswer === index;
-                    
+
                     let optionClass = 'nf-option';
                     if (showFeedback) {
                       if (isCorrect) optionClass = 'nf-option nf-option-correct';
@@ -609,11 +607,11 @@ const DailyChallenge = () => {
                 >
                   {score >= 80 ? '🏆' : score >= 60 ? '⭐' : '💪'}
                 </motion.div>
-                
+
                 <h2 className="text-2xl font-black text-foreground mb-2">
                   {score >= 80 ? 'Excellent!' : score >= 60 ? 'Great Job!' : 'Keep Practicing!'}
                 </h2>
-                
+
                 <div className="text-5xl font-black nf-gradient-text mb-2">{score}%</div>
                 <p className="text-muted-foreground mb-4">
                   {correctCount} of {challenge.questions.length} correct
@@ -641,7 +639,7 @@ const DailyChallenge = () => {
                     <Trophy className="w-5 h-5" />
                     View Leaderboard
                   </motion.button>
-                  
+
                   <motion.button
                     onClick={() => navigate('/dashboard')}
                     className="nf-btn-outline w-full"

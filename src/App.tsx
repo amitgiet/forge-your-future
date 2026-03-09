@@ -50,6 +50,7 @@ import CurriculumBrowser from "./pages/CurriculumBrowser";
 import Analytics from "./pages/Analytics";
 import DoubtForum from "./pages/DoubtForum";
 import DoubtDetail from "./pages/DoubtDetail";
+import StudyPlanner from "./pages/StudyPlanner";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -108,6 +109,7 @@ const App = () => (
                     <Route path="/pyq-marked-ncert/:topicId" element={<ProtectedRoute><PYQTopicViewer /></ProtectedRoute>} />
                     <Route path="/curriculum-browser" element={<ProtectedRoute><CurriculumBrowser /></ProtectedRoute>} />
                     <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                    <Route path="/study-plan" element={<ProtectedRoute><StudyPlanner /></ProtectedRoute>} />
                     <Route path="/doubts" element={<ProtectedRoute><DoubtForum /></ProtectedRoute>} />
                     <Route path="/doubts/:id" element={<ProtectedRoute><DoubtDetail /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />

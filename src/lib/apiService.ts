@@ -124,9 +124,9 @@ export const apiService = {
   studyPlan: {
     getStudyPlan: () => api.get('/study-plan'),
 
-    createStudyPlan: (data: any) => api.post('/study-plan', data),
+    generateStudyPlan: (data: { targetDate: string }) => api.post('/study-plan/generate', data),
 
-    updateProgress: (data: any) => api.put('/study-plan/progress', data),
+    updateTaskStatus: (taskId: string, isCompleted: boolean) => api.put(`/study-plan/task/${taskId}`, { isCompleted }),
   },
 
   // Sessions APIs
