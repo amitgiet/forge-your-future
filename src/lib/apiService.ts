@@ -139,6 +139,19 @@ export const apiService = {
       api.put(`/sessions/${sessionId}/end`, data),
   },
 
+  // Formulas APIs
+  formulas: {
+    getSubjects: () => api.get('/formulas/subjects'),
+    getTopics: (chapterTitle: string) => api.get('/formulas/topics', { params: { chapterTitle } }),
+    getCards: (topicTitle: string) => api.get(`/formulas/topics/${encodeURIComponent(topicTitle)}/cards`),
+
+    // Progress
+    getChapterProgress: (chapterTitle: string) => api.get(`/formulas/progress/chapter/${encodeURIComponent(chapterTitle)}`),
+    getTopicProgress: (topicTitle: string) => api.get(`/formulas/progress/topic/${encodeURIComponent(topicTitle)}`),
+    updateCardProgress: (cardId: string, data: { status?: string; isBookmarked?: boolean; chapterTitle?: string; topicTitle?: string }) =>
+      api.post(`/formulas/progress/${cardId}`, data),
+  },
+
   // Learning Paths APIs
   learningPaths: {
     createPath: (data: { title: string; description?: string; goals: any[]; dailyGoal?: number }) =>
