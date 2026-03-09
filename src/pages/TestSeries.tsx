@@ -20,6 +20,7 @@ type MockItem = {
   config: { duration: number; totalQuestions: number };
   accessType: 'FREE' | 'PRO' | 'ULTIMATE';
   classCategory?: ClassCategory;
+  seriesType?: string;
   source?: { originalTestType?: string; testFor?: string[] };
   testType?: string;
   tags?: string[];
@@ -91,6 +92,8 @@ const inferCoaching = (item: MockItem): CoachingFilter => {
 };
 
 const getSeriesKey = (item: MockItem): string => {
+  const explicit = String(item.seriesType || '').trim();
+  if (explicit) return explicit;
   const id = String(item.testId || '').toUpperCase();
   if (!id) return 'OTHER';
   const btsYear = id.match(/^(BTS\d{4})_/);
@@ -103,14 +106,20 @@ const getSeriesKey = (item: MockItem): string => {
 };
 
 const prettySeriesLabel = (series: string): string => {
-  const s = String(series || '').toUpperCase();
+  const raw = String(series || '').trim();
+  if (!raw) return 'Other';
+  const lowered = raw.toLowerCase();
+  if (lowered === 'sigma') return 'Sigma';
+  if (lowered.startsWith('yakeen')) return raw; // keep "yakeen 3.0 (hindi)" etc as-is
+
+  const s = raw.toUpperCase();
   if (s === 'BPT') return 'Brahmastra Part Tests';
   if (s === 'BFLT') return 'Brahmastra FLT';
   if (s === 'DROPPER') return 'Dropper Series';
   if (s === 'BOOTCAMP') return 'Bootcamp Series';
   if (s === 'TEST') return 'Generic Tests';
   if (s === 'OTHER') return 'Other';
-  return s;
+  return raw;
 };
 
 const seriesIcons: Record<string, React.ReactNode> = {
@@ -120,7 +129,9 @@ const seriesIcons: Record<string, React.ReactNode> = {
   BOOTCAMP: <Layers className="w-5 h-5" />,
 };
 
-const normalizeSeriesParam = (value?: string) => String(value || '').trim().toUpperCase();
+// Keep seriesKey casing as-is because some series are stored as lowercase
+// (e.g. "yakeen 3.0 (english)") and we need exact matches.
+const normalizeSeriesParam = (value?: string) => String(value || '').trim();
 const normalizeTypeParam = (value?: string) => String(value || '').trim().toLowerCase();
 
 const TestSeries = () => {
