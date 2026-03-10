@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, BookOpen, CheckCircle2, ChevronRight, Clock, ExternalLink,
@@ -138,13 +138,15 @@ const seriesIcons: Record<string, React.ReactNode> = {
 // (e.g. "yakeen 3.0 (english)") and we need exact matches.
 const normalizeSeriesParam = (value?: string) => String(value || '').trim();
 const normalizeTypeParam = (value?: string) => String(value || '').trim().toLowerCase();
+const sortSeriesByLabelAsc = (a: string, b: string) =>
+  prettySeriesLabel(a).localeCompare(prettySeriesLabel(b), undefined, { sensitivity: 'base' });
 
 const TestSeries = () => {
   const navigate = useNavigate();
   const { seriesKey, typeKey } = useParams<{ seriesKey?: string; typeKey?: string }>();
   const [loading, setLoading] = useState(true);
   const [tests, setTests] = useState<MockItem[]>([]);
-  const [seriesCatalog, setSeriesCatalog] = useState<Array<{ seriesType: string; count: number }>>([]);
+  const [seriesCatalog, setSeriesCatalog] = useState<Array<{ seriesType: string; count: number; completedCount?: number }>>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
@@ -308,27 +310,39 @@ const TestSeries = () => {
           const label = prettySeriesLabel(series).toLowerCase();
           return label.includes(q) || series.toLowerCase().includes(q);
         })
-        .sort((a, b) => b[1] - a[1]);
+        .sort((a, b) => sortSeriesByLabelAsc(a[0], b[0]));
     }
 
-    return Object.entries(seriesCounts).sort((a, b) => b[1] - a[1]);
+    return Object.entries(seriesCounts).sort((a, b) => sortSeriesByLabelAsc(a[0], b[0]));
   }, [activeMainTab, pageLevel, search, seriesCatalog, seriesCounts]);
 
   const seriesMeta = useMemo(() => {
-    const meta: Record<string, { classes: string; modes: string }> = {};
+    const meta: Record<string, { classes: string; modes: string; completed: number; total: number }> = {};
     const classOrder: ClassCategory[] = ['11', '12', 'dropper', 'mixed', 'other'];
     const modeOrder: CoachingFilter[] = ['self', 'local', 'national', 'unknown'];
     for (const [series] of seriesOptions) {
       const rows = baseFiltered.filter((t) => getSeriesKey(t) === series);
       const cls = classOrder.filter((c) => rows.some((r) => inferClass(r) === c));
       const md = modeOrder.filter((m) => rows.some((r) => inferCoaching(r) === m));
+      const completed = rows.filter((r) => Boolean(r.progress?.completed)).length;
+      const total = rows.length;
       meta[series] = {
         classes: cls.map((c) => classLabel[c]).join(' · ') || 'All Classes',
         modes: md.map((m) => coachingLabel[m]).join(' · ') || 'All Modes',
+        completed,
+        total
       };
     }
     return meta;
   }, [seriesOptions, baseFiltered]);
+
+  const seriesCatalogCompletionMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const row of seriesCatalog) {
+      map[String(row.seriesType || '')] = Number(row.completedCount || 0);
+    }
+    return map;
+  }, [seriesCatalog]);
 
   const inSeries = useMemo(
     () => baseFiltered.filter((t) => !activeSeries || getSeriesKey(t) === activeSeries),
@@ -388,7 +402,7 @@ const TestSeries = () => {
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-bold text-foreground nf-heading truncate">
                 {pageLevel === 'series'
-                  ? '📝 Test Series'
+                  ? 'Test Series'
                   : pageLevel === 'types'
                     ? prettySeriesLabel(activeSeries)
                     : typeLabel[activeType] || activeType}
@@ -515,6 +529,9 @@ const TestSeries = () => {
                                           <div className="flex-1 min-w-0">
                                             <p className="text-xs font-bold text-foreground truncate">{prettySeriesLabel(series)}</p>
                                             <p className="text-[10px] text-muted-foreground truncate">{seriesMeta[series]?.classes}</p>
+                                            <p className="text-[10px] text-success font-medium truncate">
+                                              Completed {seriesMeta[series]?.completed || 0}/{seriesMeta[series]?.total || count}
+                                            </p>
                                           </div>
                                           <span className="text-[10px] text-primary font-semibold">{count} tests</span>
                                         </div>
@@ -623,7 +640,7 @@ const TestSeries = () => {
           <div className="space-y-2.5">
 
             {activeMainTab === 'all' && (
-              /* ── Custom Test Generator entry point ── */
+              /* â”€â”€ Custom Test Generator entry point â”€â”€ */
               <motion.button
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -681,6 +698,9 @@ const TestSeries = () => {
                     <div className="flex items-center gap-2 mt-1">
                       <span className="inline-flex items-center gap-1 text-[11px] text-primary font-semibold">
                         <FileText className="w-3 h-3" /> {count} tests
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] text-success font-semibold">
+                        <CheckCircle2 className="w-3 h-3" /> Completed {activeMainTab === 'all' ? (seriesCatalogCompletionMap[series] || 0) : (seriesMeta[series]?.completed || 0)}/{count}
                       </span>
                     </div>
                   </div>
@@ -834,7 +854,7 @@ const TestSeries = () => {
                           }`}
                         style={!completed ? { background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-glow-primary)' } : undefined}
                       >
-                        {completed ? 'Undo Completion' : '✓ Mark Complete'}
+                        {completed ? 'Undo Completion' : 'Mark Complete'}
                       </button>
                       <button
                         onClick={() => openPdf(item.resources?.questionPdf || item.resources?.answerPdf, `${title}`)}
@@ -857,4 +877,6 @@ const TestSeries = () => {
 };
 
 export default TestSeries;
+
+
 
