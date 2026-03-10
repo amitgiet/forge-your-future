@@ -31,6 +31,11 @@ type MockItem = {
     hindiAnswerPdf?: string;
   };
   progress?: { completed: boolean; completedAt: string | null };
+  testSeriesDetails?: {
+    subjectIds?: string[];
+    chapterIds?: string[];
+    topicIds?: string[];
+  };
 };
 
 const classLabel: Record<ClassCategory, string> = {
@@ -139,6 +144,7 @@ const TestSeries = () => {
   const { seriesKey, typeKey } = useParams<{ seriesKey?: string; typeKey?: string }>();
   const [loading, setLoading] = useState(true);
   const [tests, setTests] = useState<MockItem[]>([]);
+  const [seriesCatalog, setSeriesCatalog] = useState<Array<{ seriesType: string; count: number }>>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
@@ -148,6 +154,14 @@ const TestSeries = () => {
   const [showCompletedOnly, setShowCompletedOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
+  // New states for hierarchical filtering
+  const [activeMainTab, setActiveMainTab] = useState<'all' | 'curriculum'>('all');
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  const [loadingHierarchy, setLoadingHierarchy] = useState(false);
+
   const activeSeries = normalizeSeriesParam(seriesKey);
   const activeType = normalizeTypeParam(typeKey) as TypeFilter;
   const pageLevel: 'series' | 'types' | 'tests' = activeSeries ? (activeType ? 'tests' : 'types') : 'series';
@@ -156,9 +170,31 @@ const TestSeries = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiService.mocks.getMockTests();
-      const items = Array.isArray(res.data?.data) ? res.data.data : [];
-      setTests(items);
+      if (activeMainTab === 'curriculum' && pageLevel === 'series' && !selectedChapterId) {
+        setTests([]);
+        setSeriesCatalog([]);
+        return;
+      }
+
+      const params = { page: 1, limit: 500 };
+      let res;
+      if (activeMainTab === 'curriculum' && selectedChapterId) {
+        res = await apiService.testSeries.getTestsByChapter(selectedChapterId, params);
+        const items = Array.isArray(res.data?.data) ? res.data.data : [];
+        setTests(items);
+        setSeriesCatalog([]);
+      } else if (activeSeries) {
+        res = await apiService.testSeries.getTestsBySeriesType(activeSeries, params);
+        const items = Array.isArray(res.data?.data) ? res.data.data : [];
+        setTests(items);
+        setSeriesCatalog([]);
+      } else {
+        // All Series page: load lightweight grouped catalog only.
+        const catalogRes = await apiService.testSeries.getSeriesCatalog();
+        const rows = Array.isArray(catalogRes.data?.data) ? catalogRes.data.data : [];
+        setSeriesCatalog(rows);
+        setTests([]);
+      }
     } catch (e) {
       console.error('Failed to load mock tests:', e);
       setError('Failed to load test series.');
@@ -167,13 +203,76 @@ const TestSeries = () => {
     }
   };
 
-  useEffect(() => { loadTests(); }, []);
+  const loadSubjects = async () => {
+    try {
+      setLoadingHierarchy(true);
+      const res = await apiService.testSeries.getHierarchySubjects();
+      if (res.data?.success) {
+        setSubjects(res.data.data);
+        if (res.data.data.length > 0 && !selectedSubjectId) {
+          setSelectedSubjectId(res.data.data[0]._id);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load subjects:', e);
+    } finally {
+      setLoadingHierarchy(false);
+    }
+  };
+
+  const loadChapters = async (subId: string) => {
+    try {
+      setLoadingHierarchy(true);
+      const res = await apiService.testSeries.getHierarchyChapters(subId);
+      if (res.data?.success) {
+        setChapters(res.data.data);
+      }
+    } catch (e) {
+      console.error('Failed to load chapters:', e);
+    } finally {
+      setLoadingHierarchy(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSubjects();
+  }, []);
+
+  useEffect(() => {
+    loadTests();
+  }, [activeSeries, activeMainTab, selectedChapterId, pageLevel]);
+
+  useEffect(() => {
+    if (selectedSubjectId) {
+      loadChapters(selectedSubjectId);
+    }
+  }, [selectedSubjectId]);
+
+  const handleSubjectToggle = (subjectId: string) => {
+    if (selectedSubjectId === subjectId) {
+      setSelectedSubjectId(null);
+      setSelectedChapterId(null);
+      setChapters([]);
+      return;
+    }
+    setSelectedSubjectId(subjectId);
+    setSelectedChapterId(null);
+  };
+
+  const handleChapterToggle = (chapterId: string) => {
+    setSelectedChapterId((prev) => (prev === chapterId ? null : chapterId));
+  };
 
   const coachingCounts = useMemo(() => {
     const counts: Record<CoachingFilter, number> = { all: tests.length, self: 0, local: 0, national: 0, unknown: 0 };
     for (const t of tests) counts[inferCoaching(t)] += 1;
     return counts;
   }, [tests]);
+
+  const catalogTotalTests = useMemo(
+    () => seriesCatalog.reduce((sum, row) => sum + Number(row.count || 0), 0),
+    [seriesCatalog]
+  );
 
   const baseFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -187,6 +286,7 @@ const TestSeries = () => {
       if (selectedCoaching !== 'all' && inferCoaching(t) !== selectedCoaching) return false;
       if (showFreeOnly && t.accessType !== 'FREE') return false;
       if (showCompletedOnly && !t.progress?.completed) return false;
+
       return true;
     });
   }, [tests, search, selectedClass, selectedCoaching, showFreeOnly, showCompletedOnly]);
@@ -197,7 +297,22 @@ const TestSeries = () => {
     return counts;
   }, [baseFiltered]);
 
-  const seriesOptions = useMemo(() => Object.entries(seriesCounts).sort((a, b) => b[1] - a[1]), [seriesCounts]);
+  const seriesOptions = useMemo(() => {
+    if (activeMainTab === 'all' && pageLevel === 'series') {
+      const q = search.trim().toLowerCase();
+      return seriesCatalog
+        .map((row) => [String(row.seriesType || ''), Number(row.count || 0)] as [string, number])
+        .filter(([series, count]) => {
+          if (!series && count <= 0) return false;
+          if (!q) return true;
+          const label = prettySeriesLabel(series).toLowerCase();
+          return label.includes(q) || series.toLowerCase().includes(q);
+        })
+        .sort((a, b) => b[1] - a[1]);
+    }
+
+    return Object.entries(seriesCounts).sort((a, b) => b[1] - a[1]);
+  }, [activeMainTab, pageLevel, search, seriesCatalog, seriesCounts]);
 
   const seriesMeta = useMemo(() => {
     const meta: Record<string, { classes: string; modes: string }> = {};
@@ -280,7 +395,7 @@ const TestSeries = () => {
               </h1>
               <p className="text-xs text-muted-foreground">
                 {pageLevel === 'series'
-                  ? `${tests.length} tests available`
+                  ? `${activeMainTab === 'all' && seriesCatalog.length ? catalogTotalTests : tests.length} tests available`
                   : pageLevel === 'types'
                     ? `${inSeries.length} tests · Choose type`
                     : `${finalTests.length} tests`}
@@ -317,6 +432,122 @@ const TestSeries = () => {
             </button>
           )}
         </div>
+
+        {/* Main Tab Switcher */}
+        {pageLevel === 'series' && (
+          <div className="flex p-1 bg-muted rounded-xl mb-4 border border-border/50">
+            <button
+              onClick={() => setActiveMainTab('all')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeMainTab === 'all' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground'}`}
+            >
+              All Series
+            </button>
+            <button
+              onClick={() => setActiveMainTab('curriculum')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeMainTab === 'curriculum' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground'}`}
+            >
+              Chapter Series
+            </button>
+          </div>
+        )}
+
+        {/* Hierarchical Controls (only for curriculum tab) */}
+        {activeMainTab === 'curriculum' && pageLevel === 'series' && (
+          <div className="space-y-3 mb-5">
+            {/* Subject tabs (old style) */}
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
+              {subjects.map((sub) => (
+                <button
+                  key={sub._id}
+                  onClick={() => handleSubjectToggle(sub._id)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${selectedSubjectId === sub._id ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20' : 'bg-card border border-border text-muted-foreground hover:bg-muted/50'}`}
+                >
+                  {sub.name}
+                </button>
+              ))}
+            </div>
+
+            {/* Chapter drawer style list for selected subject */}
+            {selectedSubjectId && (
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="px-3 py-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border bg-muted/30">
+                  Chapters
+                </div>
+                <div className="p-2 space-y-2">
+                  {loadingHierarchy ? (
+                    <div className="py-2 px-1 text-xs text-muted-foreground">Loading chapters...</div>
+                  ) : chapters.length > 0 ? (
+                    chapters.map((ch) => {
+                      const chapterSelected = selectedChapterId === ch._id;
+                      return (
+                        <div key={ch._id} className="rounded-lg border border-border overflow-hidden">
+                          <button
+                            onClick={() => handleChapterToggle(ch._id)}
+                            className={`w-full px-3 py-2 text-left text-xs font-semibold flex items-center justify-between transition-colors ${chapterSelected ? 'bg-secondary text-secondary-foreground' : 'bg-card text-foreground hover:bg-muted'}`}
+                          >
+                            <span className="pr-2">{ch.name}</span>
+                            <ChevronRight className={`w-4 h-4 transition-transform ${chapterSelected ? 'rotate-90' : ''}`} />
+                          </button>
+                          <AnimatePresence>
+                            {chapterSelected && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden border-t border-border bg-muted/20"
+                              >
+                                <div className="p-2 space-y-2">
+                                  {loading ? (
+                                    <div className="py-2 px-1 text-xs text-muted-foreground">Loading series...</div>
+                                  ) : seriesOptions.length === 0 ? (
+                                    <div className="py-2 px-1 text-[10px] text-muted-foreground italic">No series for this chapter</div>
+                                  ) : (
+                                    seriesOptions.map(([series, count]) => (
+                                      <button
+                                        key={`${ch._id}-${series}`}
+                                        onClick={() => navigate(`/tests/${encodeURIComponent(series)}`)}
+                                        className="w-full rounded-lg border border-border bg-card p-3 text-left hover:border-primary/40 transition-all"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                                            {seriesIcons[series] || <FileText className="w-4 h-4" />}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-bold text-foreground truncate">{prettySeriesLabel(series)}</p>
+                                            <p className="text-[10px] text-muted-foreground truncate">{seriesMeta[series]?.classes}</p>
+                                          </div>
+                                          <span className="text-[10px] text-primary font-semibold">{count} tests</span>
+                                        </div>
+                                      </button>
+                                    ))
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="py-2 px-1 text-[10px] text-muted-foreground italic">No chapters found</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {selectedChapterId && (
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Results for chapter</span>
+                <button
+                  onClick={() => setSelectedChapterId(null)}
+                  className="text-[10px] text-primary font-bold hover:underline"
+                >
+                  Clear Selection
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Collapsible Filters */}
         <AnimatePresence>
@@ -388,35 +619,48 @@ const TestSeries = () => {
         )}
 
         {/* ========= SERIES LIST ========= */}
-        {!loading && !error && pageLevel === 'series' && (
+        {!loading && !error && pageLevel === 'series' && activeMainTab === 'all' && (
           <div className="space-y-2.5">
 
-            {/* ── Custom Test Generator entry point ── */}
-            <motion.button
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              onClick={() => navigate('/test/custom/create')}
-              className="w-full rounded-xl border-2 border-primary/40 bg-primary/5 p-4 text-left hover:bg-primary/10 transition-all group"
-              style={{ boxShadow: 'var(--shadow-card)' }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center flex-shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <Zap className="w-5 h-5" />
+            {activeMainTab === 'all' && (
+              /* ── Custom Test Generator entry point ── */
+              <motion.button
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={() => navigate('/test/custom/create')}
+                className="w-full rounded-xl border-2 border-primary/40 bg-primary/5 p-4 text-left hover:bg-primary/10 transition-all group"
+                style={{ boxShadow: 'var(--shadow-card)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center flex-shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground">Custom Test Generator</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Pick any chapter & subtopics from 34K+ questions</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-primary flex-shrink-0" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-foreground">Custom Test Generator</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Pick any chapter & subtopics from 34K+ questions</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-primary flex-shrink-0" />
-              </div>
-            </motion.button>
+              </motion.button>
+            )}
 
-            {seriesOptions.length === 0 && (
+            {activeMainTab === 'curriculum' && !selectedChapterId && (
               <div className="rounded-xl bg-card border border-border p-8 text-center">
                 <BookOpen className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">No series found</p>
+                <p className="text-sm text-muted-foreground">Select a chapter to see series</p>
               </div>
             )}
+
+            {(seriesOptions.length === 0 && (
+              activeMainTab === 'all' || (activeMainTab === 'curriculum' && selectedChapterId)
+            )) && (
+                <div className="rounded-xl bg-card border border-border p-8 text-center">
+                  <BookOpen className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    {activeMainTab === 'curriculum' ? 'No series found for this chapter' : 'No series found'}
+                  </p>
+                </div>
+              )}
             {seriesOptions.map(([series, count], idx) => (
               <motion.button
                 key={series}
@@ -585,8 +829,8 @@ const TestSeries = () => {
                       <button
                         onClick={() => toggleCompleted(item)}
                         className={`h-9 flex-1 rounded-xl text-xs font-semibold transition-all ${completed
-                            ? 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            : 'text-primary-foreground hover:opacity-90'
+                          ? 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          : 'text-primary-foreground hover:opacity-90'
                           }`}
                         style={!completed ? { background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-glow-primary)' } : undefined}
                       >
@@ -613,3 +857,4 @@ const TestSeries = () => {
 };
 
 export default TestSeries;
+

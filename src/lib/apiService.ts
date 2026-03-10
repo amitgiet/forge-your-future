@@ -400,6 +400,31 @@ export const apiService = {
         params: { uids: uids.join(','), page, limit },
       }),
   },
+
+  // Test Series Hierarchy APIs
+  testSeries: {
+    getSeriesCatalog: (params?: { examType?: string; testType?: string; classCategory?: string; institution?: string; freeOnly?: boolean; provider?: string; search?: string }) =>
+      api.get('/test-series/series', { params }),
+
+    getTests: (params?: { page?: number; limit?: number; examType?: string; testType?: string; classCategory?: string; institution?: string; freeOnly?: boolean; provider?: string; seriesType?: string; search?: string }) =>
+      api.get('/test-series/tests', { params }),
+
+    getTestsBySeriesType: (seriesType: string, params?: { page?: number; limit?: number; examType?: string; testType?: string; classCategory?: string; institution?: string; freeOnly?: boolean; provider?: string; search?: string }) =>
+      api.get(`/test-series/series/${encodeURIComponent(seriesType)}/tests`, { params }),
+
+    getTestsBySubject: (subjectId: string, params?: { page?: number; limit?: number; examType?: string; testType?: string; classCategory?: string; institution?: string; freeOnly?: boolean; provider?: string; search?: string }) =>
+      api.get(`/test-series/subject/${subjectId}/tests`, { params }),
+
+    getTestsByChapter: (chapterId: string, params?: { page?: number; limit?: number; examType?: string; testType?: string; classCategory?: string; institution?: string; freeOnly?: boolean; provider?: string; search?: string }) =>
+      api.get(`/test-series/chapter/${chapterId}/tests`, { params }),
+
+    getTestsByTopic: (topicId: string, params?: { page?: number; limit?: number; examType?: string; testType?: string; classCategory?: string; institution?: string; freeOnly?: boolean; provider?: string; search?: string }) =>
+      api.get(`/test-series/topic/${topicId}/tests`, { params }),
+
+    getHierarchySubjects: () => api.get('/test-series/hierarchy/subjects'),
+    getHierarchyChapters: (subjectId: string) => api.get(`/test-series/hierarchy/subjects/${subjectId}/chapters`),
+    getHierarchyTopics: (chapterId: string) => api.get(`/test-series/hierarchy/chapters/${chapterId}/topics`),
+  },
 };
 
 export default apiService;
