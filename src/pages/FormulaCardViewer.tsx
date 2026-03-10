@@ -20,6 +20,45 @@ interface CardProgress {
 
 const SWIPE_THRESHOLD = 60;
 
+const extractDriveFileId = (urlValue: string): string | null => {
+  const url = String(urlValue || '').trim();
+  if (!url) return null;
+
+  const fromQuery = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (fromQuery?.[1]) return fromQuery[1];
+
+  const fromPath = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (fromPath?.[1]) return fromPath[1];
+
+  return null;
+};
+
+const toDirectFormulaImageUrl = (urlValue: string): string => {
+  const raw = String(urlValue || '').trim();
+  if (!raw) return raw;
+
+  // If backend sent proxy URL, unwrap the original target URL first.
+  if (raw.includes('/formulas/image-proxy?')) {
+    try {
+      const parsed = new URL(raw, window.location.origin);
+      const wrapped = parsed.searchParams.get('url');
+      if (wrapped) return toDirectFormulaImageUrl(decodeURIComponent(wrapped));
+    } catch (_) {
+      // ignore and fall through
+    }
+  }
+
+  // Normalize Google Drive URLs to browser-friendly thumbnail endpoint.
+  if (/drive\.google\.com|googleusercontent\.com/i.test(raw)) {
+    const fileId = extractDriveFileId(raw);
+    if (fileId) {
+      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w2000`;
+    }
+  }
+
+  return raw;
+};
+
 const FormulaCardViewer: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,7 +70,9 @@ const FormulaCardViewer: React.FC = () => {
     startIndex?: number;
   };
 
-  const [cards, setCards] = useState<Card[]>(stateCards);
+  const [cards, setCards] = useState<Card[]>(
+    (stateCards || []).map((card) => ({ ...card, imgUrl: toDirectFormulaImageUrl(card.imgUrl) }))
+  );
   const [loading, setLoading] = useState(!stateCards.length);
   const [current, setCurrent] = useState(startIndex);
   const [direction, setDirection] = useState(0);
@@ -49,7 +90,10 @@ const FormulaCardViewer: React.FC = () => {
         try {
           const res = await apiService.formulas.getCards(stateTopicTitle);
           if (res.data?.success) {
-            activeCards = res.data.data;
+            activeCards = (res.data.data || []).map((card: Card) => ({
+              ...card,
+              imgUrl: toDirectFormulaImageUrl(card.imgUrl)
+            }));
             setCards(activeCards);
           }
         } catch (error) {

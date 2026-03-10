@@ -1,7 +1,32 @@
-import { useMemo } from 'react';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { API_BASE_URL } from '@/lib/api';
+
+const extractDriveFileId = (urlValue: string): string | null => {
+  const url = String(urlValue || '').trim();
+  if (!url) return null;
+
+  const byQuery = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (byQuery?.[1]) return byQuery[1];
+
+  const byPath = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (byPath?.[1]) return byPath[1];
+
+  return null;
+};
+
+const toEmbedPdfUrl = (urlValue: string): string => {
+  const raw = String(urlValue || '').trim();
+  if (!raw) return raw;
+
+  if (/drive\.google\.com|googleusercontent\.com/i.test(raw)) {
+    const fileId = extractDriveFileId(raw);
+    if (fileId) {
+      return `https://drive.google.com/file/d/${fileId}/preview`;
+    }
+  }
+
+  return raw;
+};
 
 const MockPdfViewer = () => {
   const navigate = useNavigate();
@@ -9,11 +34,7 @@ const MockPdfViewer = () => {
 
   const rawUrl = searchParams.get('url') || '';
   const title = searchParams.get('title') || 'Mock PDF';
-
-  const proxyPdfUrl = useMemo(() => {
-    if (!rawUrl) return '';
-    return `${API_BASE_URL}/api/v1/mocks/pdf-proxy?url=${encodeURIComponent(rawUrl)}`;
-  }, [rawUrl]);
+  const embedUrl = toEmbedPdfUrl(rawUrl);
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,7 +67,7 @@ const MockPdfViewer = () => {
         ) : (
           <div className="rounded-xl border border-border overflow-hidden bg-card">
             <iframe
-              src={proxyPdfUrl}
+              src={embedUrl}
               title={title}
               className="w-full h-[calc(100vh-140px)]"
             />
@@ -58,4 +79,3 @@ const MockPdfViewer = () => {
 };
 
 export default MockPdfViewer;
-
