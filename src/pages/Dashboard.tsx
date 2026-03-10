@@ -77,6 +77,7 @@ const Dashboard = () => {
     : (dueQuestions?.byLevel?.L2?.length || 0);
 
   const [userRank, setUserRank] = useState<any>(null);
+  const [userStreak, setUserStreak] = useState<number>(0);
   const [todayProgress, setTodayProgress] = useState<TodayProgressStats>({
     studyTimeMinutes: 0,
     questionsAttempted: 0,
@@ -102,6 +103,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchUserRank();
+    fetchUserProfile();
     fetchTodayProgress();
     fetchTodayQuest();
     fetchTopicSummary();
@@ -119,6 +121,17 @@ const Dashboard = () => {
       console.error('Error fetching user rank:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await apiService.auth.getProfile();
+      if (response.data?.success && response.data?.data) {
+        setUserStreak(Number(response.data.data?.gamification?.currentStreak || 0));
+      }
+    } catch (error) {
+      console.error('Error fetching user profile streak:', error);
     }
   };
 
@@ -236,7 +249,7 @@ const Dashboard = () => {
               {/* Stats Row */}
               <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3">
                 {[
-                  { icon: Flame, value: userRank?.streak || 0, label: t('dashboard.streak'), color: 'warning' },
+                  { icon: Flame, value: userStreak || userRank?.streak || 0, label: t('dashboard.streak'), color: 'warning' },
                   { icon: Star, value: userRank?.totalXP || 0, label: t('dashboard.score'), color: 'secondary' },
                   { icon: Trophy, value: `#${userRank?.rank || '—'}`, label: 'Rank', color: 'primary' },
                 ].map((stat, i) => (
