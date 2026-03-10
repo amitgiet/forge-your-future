@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// const baseURL = "https://backend-forge-neet.onrender.com";
-//newsa
-const baseURL = "http://localhost:5002";
+const baseURL = "https://backend-forge-neet.onrender.com";
+//new
+// const baseURL = "http://localhost:5002";
 export const API_BASE_URL = baseURL;
 const api = axios.create({
   baseURL: `${baseURL}/api/v1`,
