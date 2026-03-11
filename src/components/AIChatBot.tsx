@@ -322,10 +322,13 @@ export default function AIChatBot() {
 
   const renderChart = (chartData: any) => {
     if (!chartData || !chartData.data) return null;
+    const title = chartData.message ? undefined : undefined; // message used below
     return (
       <div className="mt-3 p-3 bg-muted/50 rounded-xl border border-border">
-        {chartData.chartType === 'bar' && <BarChartComponent data={chartData.data} />}
-        {chartData.chartType === 'pie' && <PieChartComponent data={chartData.data} />}
+        {chartData.chartType === 'bar' && <BarChartComponent data={chartData.data} title={chartData.title} message={chartData.message} />}
+        {chartData.chartType === 'pie' && <PieChartComponent data={chartData.data} title={chartData.title} message={chartData.message} />}
+        {/* fallback: if no chartType specified, use bar */}
+        {!chartData.chartType && <BarChartComponent data={chartData.data} title={chartData.title} message={chartData.message} />}
       </div>
     );
   };
