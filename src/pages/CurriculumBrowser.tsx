@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
@@ -8,19 +8,34 @@ import {
   BookMarked,
   BookOpen,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   CircleDashed,
   Clock3,
+  ExternalLink,
+  FileText,
   FlaskConical,
   GraduationCap,
   Hash,
+  Headphones,
+  Info,
+  ImageIcon,
   Leaf,
   Loader2,
+  Map,
+  Pause,
   Play,
+  RotateCcw,
+  RotateCw,
+  Star,
+  ThumbsDown,
+  ThumbsUp,
   Trophy,
+  X,
 } from 'lucide-react';
 import apiService from '@/lib/apiService';
 import BottomNav from '@/components/BottomNav';
+import MindMapViewer from '@/components/MindMapViewer';
 
 type Subject = 'biology' | 'chemistry' | 'physics';
 type Panel = 'subjects' | 'chapters' | 'topics' | 'roadmap';
@@ -92,6 +107,20 @@ type TopicLite = {
   sub_topics: { subTopic: string }[];
 };
 
+type ToppersVideo = { title?: string | null; url?: string | null; time?: string | null };
+type ToppersSlidesdeck = { title?: string | null; url?: string | null };
+type ToppersEssentials = {
+  video?: ToppersVideo | null;
+  mindmap?: Record<string, unknown> | null;
+  audio?: string | null;
+  slidesdeck?: ToppersSlidesdeck | null;
+  report?: string | null;
+  flashcards?: string | null;
+  infographic?: string | null;
+};
+
+type ResourceKey = 'video' | 'audio' | 'slides' | 'mindmap' | 'infographic' | 'report' | 'flashcards';
+
 type CurriculumRestoreState = {
   panel: Panel;
   subject: Subject | null;
@@ -101,6 +130,8 @@ type CurriculumRestoreState = {
   selectedTopic: string | null;
   topicFlows: TopicWithSubs[];
 };
+
+type ResourceReactions = Record<string, { likes: number; dislikes: number; userReaction: 'like' | 'dislike' | 'none' }>;
 
 const SUBJECT_META: Record<Subject, { label: string; icon: typeof Leaf; color: string; gradFrom: string; gradTo: string }> = {
   biology: { label: 'Biology', icon: Leaf, color: 'text-success', gradFrom: 'from-success/20', gradTo: 'to-success/5' },
@@ -117,9 +148,397 @@ const emptyProgress: SubTopicProgress = {
   completed: false,
 };
 
+const TOPPER_RESOURCES: { key: ResourceKey; label: string; icon: typeof Play }[] = [
+  { key: 'video', label: 'Video', icon: Play },
+  { key: 'report', label: 'Quick Revision', icon: BarChart3 },
+  { key: 'slides', label: 'Slides', icon: FileText },
+  { key: 'audio', label: 'Podcast', icon: Headphones },
+  { key: 'infographic', label: 'Infographic', icon: ImageIcon },
+  { key: 'mindmap', label: 'Mind Map', icon: Map },
+  { key: 'flashcards', label: 'Flashcards', icon: BookOpen },
+];
+
+const hasResource = (te: ToppersEssentials, key: ResourceKey): boolean => {
+  if (key === 'video') return !!(te.video?.url);
+  if (key === 'audio') return !!te.audio;
+  if (key === 'slides') return !!(te.slidesdeck?.url);
+  if (key === 'mindmap') return !!te.mindmap;
+  if (key === 'infographic') return !!te.infographic;
+  if (key === 'report') return !!te.report;
+  if (key === 'flashcards') return !!te.flashcards;
+  return false;
+};
+
+const hasAnyEssential = (te: ToppersEssentials): boolean =>
+  TOPPER_RESOURCES.some((r) => hasResource(te, r.key));
+
+const getYouTubeEmbedUrl = (url: string): string | null => {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s?#]+)/);
+  return m ? `https://www.youtube.com/embed/${m[1]}?rel=0` : null;
+};
+
+const extractDriveFileId = (urlValue: string): string | null => {
+  const url = String(urlValue || '').trim();
+  if (!url) return null;
+  const byQuery = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (byQuery?.[1]) return byQuery[1];
+  const byPath = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (byPath?.[1]) return byPath[1];
+  return null;
+};
+
+const toEmbedDriveUrl = (urlValue: string): string => {
+  const raw = String(urlValue || '').trim();
+  if (!raw) return raw;
+  // Catch all Google Drive / usercontent URLs
+  if (/google\.com/i.test(raw)) {
+    const fileId = extractDriveFileId(raw);
+    if (fileId) {
+      return `https://drive.google.com/file/d/${fileId}/preview?rm=minimal`;
+    }
+  }
+  return raw;
+};
+
+const renderResourceContent = (
+  key: ResourceKey,
+  te: ToppersEssentials,
+  chapterReactions: ResourceReactions,
+  onToggleReaction: (rt: ResourceKey, r: 'like' | 'dislike') => void
+) => {
+  const reaction = chapterReactions[key] || { likes: 0, dislikes: 0, userReaction: 'none' };
+  const toggleLike = () => onToggleReaction(key, 'like');
+  const toggleDislike = () => onToggleReaction(key, 'dislike');
+
+  if (key === 'video' && te.video?.url) {
+    const ytEmbedUrl = getYouTubeEmbedUrl(te.video.url);
+    const driveEmbedUrl = ytEmbedUrl ? null : toEmbedDriveUrl(te.video.url);
+    const embedUrl = ytEmbedUrl || driveEmbedUrl;
+    return (
+      <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 0px)', background: '#1c1c1e' }}>
+        <div className="w-full bg-black" style={{ aspectRatio: '16/9' }}>
+          {embedUrl ? (
+            <iframe src={embedUrl} className="w-full h-full" style={{ display: 'block' }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen title={te.video.title || 'Video'} />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-white/30 text-sm">No video available</div>
+          )}
+        </div>
+        <div className="px-5 pt-5 pb-8 space-y-4">
+          <div>
+            <p className="text-lg font-bold text-white leading-snug">{te.video.title || 'Video Lecture'}</p>
+            {te.video.time && <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.45)' }}>{te.video.time}</p>}
+          </div>
+          <div className="flex items-center gap-6">
+            <button onClick={toggleLike} className="flex items-center gap-2 transition-transform hover:scale-105" style={{ color: reaction.userReaction === 'like' ? '#6a7ef5' : 'rgba(255,255,255,0.4)' }}>
+              <ThumbsUp className="w-6 h-6" fill={reaction.userReaction === 'like' ? '#6a7ef5' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.likes}</span>
+            </button>
+            <button onClick={toggleDislike} className="flex items-center gap-2 transition-transform hover:scale-105" style={{ color: reaction.userReaction === 'dislike' ? '#fb7185' : 'rgba(255,255,255,0.4)' }}>
+              <ThumbsDown className="w-6 h-6" fill={reaction.userReaction === 'dislike' ? '#fb7185' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.dislikes}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (key === 'audio' && te.audio) {
+    const embedUrl = toEmbedDriveUrl(te.audio);
+    return (
+      <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 0px)', background: '#1c1c1e' }}>
+        <div className="flex-1 relative bg-black overflow-hidden flex flex-col justify-center items-center">
+          <div className="w-full max-w-md h-32 relative rounded-2xl overflow-hidden shadow-2xl bg-white/5 border border-white/10">
+            <iframe src={embedUrl} className="w-full h-full border-0 absolute inset-0"
+              allow="autoplay" title="Podcast" />
+            {/* Mask to hide Google Drive pop-out button */}
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 backdrop-blur-sm z-10 pointer-events-none" />
+          </div>
+          <div className="mt-8 text-center px-4">
+            <div className="inline-flex items-center justify-center p-4 rounded-full bg-indigo-500/20 mb-4">
+              <Headphones className="w-8 h-8 text-indigo-400" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Podcast Episode</h3>
+            <p className="text-sm text-white/50 max-w-sm mx-auto">Listen to the chapter summary. Make sure to click play in the embed above.</p>
+          </div>
+        </div>
+        <div className="px-5 pt-4 pb-8 border-t border-white/5 bg-black/50">
+          <div className="flex items-center gap-6 justify-center">
+            <button onClick={toggleLike} className="flex items-center gap-2 transition-transform hover:scale-105" style={{ color: reaction.userReaction === 'like' ? '#6a7ef5' : 'rgba(255,255,255,0.4)' }}>
+              <ThumbsUp className="w-6 h-6" fill={reaction.userReaction === 'like' ? '#6a7ef5' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.likes}</span>
+            </button>
+            <button onClick={toggleDislike} className="flex items-center gap-2 transition-transform hover:scale-105" style={{ color: reaction.userReaction === 'dislike' ? '#fb7185' : 'rgba(255,255,255,0.4)' }}>
+              <ThumbsDown className="w-6 h-6" fill={reaction.userReaction === 'dislike' ? '#fb7185' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.dislikes}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (key === 'slides' && te.slidesdeck?.url) {
+    const embedUrl = toEmbedDriveUrl(te.slidesdeck.url);
+    return (
+      <div className="flex flex-col" style={{ height: 'calc(100vh - 65px)' }}>
+        <div className="flex-1 relative bg-[#f5f0e8] overflow-hidden">
+          <iframe
+            src={embedUrl}
+            title={te.slidesdeck.title || 'Slides'}
+            className="w-full h-full border-0 absolute inset-0"
+          />
+          {/* Mask to hide Google Drive pop-out button */}
+          <div className="absolute top-0 right-0 w-16 h-16 bg-[#f5f0e8] z-10" />
+        </div>
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-background flex-shrink-0">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">{te.slidesdeck.title || 'Slides'}</p>
+            <p className="text-[10px] text-muted-foreground">Presentation</p>
+          </div>
+          <div className="flex items-center gap-5 flex-shrink-0">
+            <button onClick={toggleLike} className="flex items-center gap-2 transition-transform hover:scale-105 text-muted-foreground" style={{ color: reaction.userReaction === 'like' ? '#6a7ef5' : undefined }}>
+              <ThumbsUp className="w-5 h-5" fill={reaction.userReaction === 'like' ? '#6a7ef5' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.likes}</span>
+            </button>
+            <button onClick={toggleDislike} className="flex items-center gap-2 transition-transform hover:scale-105 text-muted-foreground" style={{ color: reaction.userReaction === 'dislike' ? '#fb7185' : undefined }}>
+              <ThumbsDown className="w-5 h-5" fill={reaction.userReaction === 'dislike' ? '#fb7185' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.dislikes}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (key === 'mindmap' && te.mindmap) {
+    return (
+      <div className="flex flex-col" style={{ height: 'calc(100vh - 65px)' }}>
+        <div className="flex-1 relative bg-background overflow-hidden">
+          <MindMapViewer data={te.mindmap as any} />
+        </div>
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-background flex-shrink-0">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Mind Map</p>
+            <p className="text-[10px] text-muted-foreground">Visual summary</p>
+          </div>
+          <div className="flex items-center gap-5 flex-shrink-0">
+            <button onClick={toggleLike} className="flex items-center gap-2 transition-transform hover:scale-105 text-muted-foreground" style={{ color: reaction.userReaction === 'like' ? '#6a7ef5' : undefined }}>
+              <ThumbsUp className="w-5 h-5" fill={reaction.userReaction === 'like' ? '#6a7ef5' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.likes}</span>
+            </button>
+            <button onClick={toggleDislike} className="flex items-center gap-2 transition-transform hover:scale-105 text-muted-foreground" style={{ color: reaction.userReaction === 'dislike' ? '#fb7185' : undefined }}>
+              <ThumbsDown className="w-5 h-5" fill={reaction.userReaction === 'dislike' ? '#fb7185' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.dislikes}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (key === 'infographic' && te.infographic) {
+    const embedUrl = toEmbedDriveUrl(te.infographic);
+    return (
+      <div className="flex flex-col" style={{ height: 'calc(100vh - 65px)' }}>
+        <div className="flex-1 relative bg-background overflow-hidden">
+          <iframe src={embedUrl} title="Infographic" className="w-full h-full border-0 absolute inset-0" />
+          <div className="absolute top-0 right-0 w-16 h-16 bg-background z-10" />
+        </div>
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-background flex-shrink-0">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Infographic</p>
+            <p className="text-[10px] text-muted-foreground">Chapter visual</p>
+          </div>
+          <div className="flex items-center gap-5">
+            <button onClick={toggleLike} className="flex items-center gap-2 transition-transform hover:scale-105 text-muted-foreground" style={{ color: reaction.userReaction === 'like' ? '#6a7ef5' : undefined }}>
+              <ThumbsUp className="w-5 h-5" fill={reaction.userReaction === 'like' ? '#6a7ef5' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.likes}</span>
+            </button>
+            <button onClick={toggleDislike} className="flex items-center gap-2 transition-transform hover:scale-105 text-muted-foreground" style={{ color: reaction.userReaction === 'dislike' ? '#fb7185' : undefined }}>
+              <ThumbsDown className="w-5 h-5" fill={reaction.userReaction === 'dislike' ? '#fb7185' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.dislikes}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (key === 'report' && te.report) {
+    const embedUrl = toEmbedDriveUrl(te.report);
+    return (
+      <div className="flex flex-col" style={{ height: 'calc(100vh - 65px)' }}>
+        <div className="flex-1 relative bg-background overflow-hidden">
+          <iframe src={embedUrl} title="Report" className="w-full h-full border-0 absolute inset-0" />
+          {/* Mask to hide Google Drive pop-out button */}
+          <div className="absolute top-0 right-0 w-16 h-16 bg-background z-10" />
+        </div>
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-background flex-shrink-0">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Quick Revision</p>
+            <p className="text-[10px] text-muted-foreground">Chapter Report</p>
+          </div>
+          <div className="flex items-center gap-5">
+            <button onClick={toggleLike} className="flex items-center gap-2 transition-transform hover:scale-105 text-muted-foreground" style={{ color: reaction.userReaction === 'like' ? '#6a7ef5' : undefined }}>
+              <ThumbsUp className="w-5 h-5" fill={reaction.userReaction === 'like' ? '#6a7ef5' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.likes}</span>
+            </button>
+            <button onClick={toggleDislike} className="flex items-center gap-2 transition-transform hover:scale-105 text-muted-foreground" style={{ color: reaction.userReaction === 'dislike' ? '#fb7185' : undefined }}>
+              <ThumbsDown className="w-5 h-5" fill={reaction.userReaction === 'dislike' ? '#fb7185' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.dislikes}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (key === 'flashcards' && te.flashcards) {
+    const embedUrl = toEmbedDriveUrl(te.flashcards);
+    return (
+      <div className="flex flex-col" style={{ height: 'calc(100vh - 65px)' }}>
+        <div className="flex-1 relative bg-background overflow-hidden">
+          <iframe src={embedUrl} title="Flashcards" className="w-full h-full border-0 absolute inset-0" />
+          {/* Mask to hide Google Drive pop-out button */}
+          <div className="absolute top-0 right-0 w-16 h-16 bg-background z-10" />
+        </div>
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-background flex-shrink-0">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Flashcards</p>
+            <p className="text-[10px] text-muted-foreground">Study cards</p>
+          </div>
+          <div className="flex items-center gap-5">
+            <button onClick={toggleLike} className="flex items-center gap-2 transition-transform hover:scale-105 text-muted-foreground" style={{ color: reaction.userReaction === 'like' ? '#6a7ef5' : undefined }}>
+              <ThumbsUp className="w-5 h-5" fill={reaction.userReaction === 'like' ? '#6a7ef5' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.likes}</span>
+            </button>
+            <button onClick={toggleDislike} className="flex items-center gap-2 transition-transform hover:scale-105 text-muted-foreground" style={{ color: reaction.userReaction === 'dislike' ? '#fb7185' : undefined }}>
+              <ThumbsDown className="w-5 h-5" fill={reaction.userReaction === 'dislike' ? '#fb7185' : 'none'} />
+              <span className="text-sm font-semibold">{reaction.dislikes}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return <p className="text-sm text-muted-foreground">This resource is not available yet.</p>;
+};
+
+const AudioPlayer: React.FC<{ src: string }> = ({ src }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) { audioRef.current.pause(); } else { audioRef.current.play(); }
+    setIsPlaying(!isPlaying);
+  };
+  const seekBy = (s: number) => {
+    if (!audioRef.current) return;
+    audioRef.current.currentTime = Math.max(0, Math.min(duration, currentTime + s));
+  };
+  const cycleRate = () => {
+    const rates = [1, 1.25, 1.5, 2];
+    const next = rates[(rates.indexOf(playbackRate) + 1) % rates.length];
+    setPlaybackRate(next);
+    if (audioRef.current) audioRef.current.playbackRate = next;
+  };
+  const fmt = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+
+  const wavePaused = !isPlaying ? 'paused' : '';
+
+  return (
+    <div className="flex flex-col h-full" style={{ background: '#0d0d1e' }}>
+      <style>{`
+        @keyframes tc-wave { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .tc-w1 { animation: tc-wave 4s linear infinite; }
+        .tc-w2 { animation: tc-wave 6.5s linear infinite reverse; }
+        .tc-w3 { animation: tc-wave 5.2s linear infinite; }
+        .tc-w1.paused, .tc-w2.paused, .tc-w3.paused { animation-play-state: paused; }
+      `}</style>
+
+      {/* Waveform */}
+      <div className="flex-1 flex items-center justify-center overflow-hidden px-4">
+        <div className="w-full h-24 relative overflow-hidden">
+          {/* Wave 1 – indigo */}
+          <div className={`tc-w1 ${wavePaused} absolute inset-0 w-[200%] flex`}>
+            {[0, 1].map(i => (
+              <svg key={i} viewBox="0 0 300 64" preserveAspectRatio="none" className="w-1/2 h-full">
+                <path d="M0,32 C15,12 30,52 45,32 C60,12 75,52 90,32 C105,12 120,52 135,32 C150,12 165,52 180,32 C195,12 210,52 225,32 C240,12 255,52 270,32 C285,12 300,52 315,32"
+                  fill="none" stroke="#6a7ef5" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            ))}
+          </div>
+          {/* Wave 2 – green */}
+          <div className={`tc-w2 ${wavePaused} absolute inset-0 w-[200%] flex`}>
+            {[0, 1].map(i => (
+              <svg key={i} viewBox="0 0 300 64" preserveAspectRatio="none" className="w-1/2 h-full">
+                <path d="M0,32 C20,6 40,58 60,32 C80,6 100,58 120,32 C140,6 160,58 180,32 C200,6 220,58 240,32 C260,6 280,58 300,32"
+                  fill="none" stroke="#00c896" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            ))}
+          </div>
+          {/* Wave 3 – light blue */}
+          <div className={`tc-w3 ${wavePaused} absolute inset-0 w-[200%] flex opacity-50`}>
+            {[0, 1].map(i => (
+              <svg key={i} viewBox="0 0 300 64" preserveAspectRatio="none" className="w-1/2 h-full">
+                <path d="M0,32 C30,20 60,44 90,32 C120,20 150,44 180,32 C210,20 240,44 270,32 C300,20 330,44 315,32"
+                  fill="none" stroke="#9bb0ff" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="px-6 mb-4">
+        <div className="relative w-full h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}
+          onClick={e => {
+            const r = e.currentTarget.getBoundingClientRect();
+            if (audioRef.current && duration) audioRef.current.currentTime = ((e.clientX - r.left) / r.width) * duration;
+          }}>
+          <div className="h-full bg-primary rounded-full" style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }} />
+        </div>
+        <div className="flex justify-between mt-1" style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)' }}>
+          <span>{fmt(currentTime)}</span><span>{fmt(duration)}</span>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="px-6 pb-20 space-y-4">
+        <div className="flex items-center justify-center gap-10">
+          <button onClick={cycleRate} className="text-xs font-bold w-10 text-center" style={{ color: 'rgba(255,255,255,0.55)' }}>{playbackRate}x</button>
+          <div />
+          <div /> {/* placeholders for missing thumb buttons in local audio layout */}
+        </div>
+        <div className="flex items-center justify-center gap-8">
+          <button onClick={() => seekBy(-10)} className="flex flex-col items-center gap-0.5">
+            <RotateCcw className="w-6 h-6 text-primary" />
+            <span className="text-[9px] text-primary font-bold">10</span>
+          </button>
+          <button onClick={togglePlay} className="w-16 h-16 rounded-full bg-primary flex items-center justify-center" style={{ boxShadow: '0 0 30px rgba(var(--primary-rgb),0.4)' }}>
+            {isPlaying ? <Pause className="w-7 h-7 text-white" fill="white" /> : <Play className="w-7 h-7 text-white ml-1" fill="white" />}
+          </button>
+          <button onClick={() => seekBy(10)} className="flex flex-col items-center gap-0.5">
+            <RotateCw className="w-6 h-6 text-primary" />
+            <span className="text-[9px] text-primary font-bold">10</span>
+          </button>
+        </div>
+      </div>
+
+      <audio ref={audioRef} src={src}
+        onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
+        onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
+        onEnded={() => setIsPlaying(false)} />
+    </div>
+  );
+};
+
 const CurriculumBrowser = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [panel, setPanel] = useState<Panel>('subjects');
   const [subject, setSubject] = useState<Subject | null>(null);
@@ -131,24 +550,103 @@ const CurriculumBrowser = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasRestored, setHasRestored] = useState(false);
+  const [toppersEssentials, setToppersEssentials] = useState<ToppersEssentials | null>(null);
+  const [toppersOpen, setToppersOpen] = useState(false);
+  const [toppersPreviewResource, setToppersPreviewResource] = useState<ResourceKey | null>(null);
+  const [chapterReactions, setChapterReactions] = useState<ResourceReactions>({});
+  const resourceOpenedAtRef = useRef<number | null>(null);
+
+  // Log resource view when user navigates away from a resource
+  const openResource = (key: ResourceKey) => {
+    resourceOpenedAtRef.current = Date.now();
+    setToppersPreviewResource(key);
+  };
+
+  const closeResource = () => {
+    if (toppersPreviewResource && selectedChapter && resourceOpenedAtRef.current) {
+      const durationSeconds = Math.round((Date.now() - resourceOpenedAtRef.current) / 1000);
+      if (durationSeconds > 3) {
+        apiService.curriculum.logResource({
+          chapterId: selectedChapter._id,
+          subject: subject || undefined,
+          resourceType: toppersPreviewResource,
+          durationSeconds,
+        }).catch(() => { }); // fire-and-forget
+      }
+      resourceOpenedAtRef.current = null;
+    }
+    setToppersPreviewResource(null);
+  };
 
   useEffect(() => {
     if (hasRestored) return;
     const incoming = (location.state as { curriculumRestore?: CurriculumRestoreState } | null)?.curriculumRestore;
-    if (!incoming) {
+    if (incoming) {
+      setSubject(incoming.subject);
+      setChapters(Array.isArray(incoming.chapters) ? incoming.chapters : []);
+      setSelectedChapter(incoming.selectedChapter || null);
+      setTopicsLite(Array.isArray(incoming.topicsLite) ? incoming.topicsLite : []);
+      setSelectedTopic(incoming.selectedTopic || null);
+      setTopicFlows(Array.isArray(incoming.topicFlows) ? incoming.topicFlows : []);
+      setPanel(incoming.panel || 'subjects');
       setHasRestored(true);
       return;
     }
 
-    setSubject(incoming.subject);
-    setChapters(Array.isArray(incoming.chapters) ? incoming.chapters : []);
-    setSelectedChapter(incoming.selectedChapter || null);
-    setTopicsLite(Array.isArray(incoming.topicsLite) ? incoming.topicsLite : []);
-    setSelectedTopic(incoming.selectedTopic || null);
-    setTopicFlows(Array.isArray(incoming.topicFlows) ? incoming.topicFlows : []);
-    setPanel(incoming.panel || 'subjects');
-    setHasRestored(true);
-  }, [hasRestored, location.state]);
+    // Try to restore from URL params instead
+    const urlSubject = searchParams.get('s') as Subject | null;
+    const urlChapterId = searchParams.get('c');
+    const urlTopic = searchParams.get('t');
+    const urlPanel = (searchParams.get('p') as Panel | null) || 'subjects';
+
+    if (!urlSubject) {
+      setHasRestored(true);
+      return;
+    }
+
+    const restoreFromUrl = async () => {
+      setLoading(true);
+      setSubject(urlSubject);
+      setPanel(urlPanel);
+      try {
+        if (urlPanel === 'chapters' || urlPanel === 'topics' || urlPanel === 'roadmap') {
+          const chapRes = await apiService.curriculum.getChapters(urlSubject);
+          const loadedChapters = (chapRes.data?.data || []).filter((c: Chapter) => !c.isHidden);
+          setChapters(loadedChapters);
+
+          if (urlChapterId) {
+            const chap = loadedChapters.find((c: Chapter) => c._id === urlChapterId);
+            if (chap) {
+              setSelectedChapter(chap);
+              if (urlPanel === 'topics' || urlPanel === 'roadmap') {
+                const topicRes = await apiService.curriculum.getTopics(urlSubject, urlChapterId);
+                setTopicsLite(topicRes.data?.data || []);
+                setToppersEssentials(topicRes.data?.toppersEssentials || null);
+                const reactionsRes = await apiService.curriculum.getResourceReactions(urlChapterId).catch(() => ({ data: { data: {} } }));
+                setChapterReactions(reactionsRes.data?.data || {});
+
+                if (urlTopic) {
+                  setSelectedTopic(urlTopic);
+                  if (urlPanel === 'roadmap') {
+                    const roadRes = await apiService.curriculum.getSubTopics(urlSubject, urlChapterId, urlTopic);
+                    setTopicFlows(roadRes.data?.data || []);
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        setError('Failed to restore session. Redirecting to subjects.');
+        setPanel('subjects');
+      } finally {
+        setLoading(false);
+        setHasRestored(true);
+      }
+    };
+
+    restoreFromUrl();
+  }, [hasRestored, location.state, searchParams]);
 
   const loadChapters = async (sub: Subject) => {
     setLoading(true);
@@ -167,8 +665,13 @@ const CurriculumBrowser = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiService.curriculum.getTopics(sub, chapterId);
+      const [res, reactionsRes] = await Promise.all([
+        apiService.curriculum.getTopics(sub, chapterId),
+        apiService.curriculum.getResourceReactions(chapterId).catch(() => ({ data: { data: {} } }))
+      ]);
       setTopicsLite(res.data?.data || []);
+      setToppersEssentials(res.data?.toppersEssentials || null);
+      setChapterReactions(reactionsRes.data?.data || {});
     } catch {
       setError('Failed to load topics.');
     } finally {
@@ -196,6 +699,7 @@ const CurriculumBrowser = () => {
     setTopicsLite([]);
     setTopicFlows([]);
     setPanel('chapters');
+    setSearchParams({ s: sub, p: 'chapters' }, { replace: true });
     loadChapters(sub);
   };
 
@@ -204,6 +708,7 @@ const CurriculumBrowser = () => {
     setSelectedTopic(null);
     setTopicFlows([]);
     setPanel('topics');
+    if (subject) setSearchParams({ s: subject, c: chapter._id, p: 'topics' }, { replace: true });
     loadTopics(chapter.subject, chapter._id);
   };
 
@@ -211,6 +716,46 @@ const CurriculumBrowser = () => {
     if (!selectedChapter || !subject) return;
     setSelectedTopic(topicName);
     setPanel('roadmap');
+    setSearchParams({ s: subject, c: selectedChapter._id, t: topicName, p: 'roadmap' }, { replace: true });
+  };
+
+  const handleToggleReaction = async (resourceType: ResourceKey, reactionType: 'like' | 'dislike') => {
+    if (!selectedChapter) return;
+
+    // Optimistic update
+    setChapterReactions(prev => {
+      const current = prev[resourceType] || { likes: 0, dislikes: 0, userReaction: 'none' };
+      const next = { ...current };
+
+      if (current.userReaction === reactionType) {
+        // Toggle off
+        next.userReaction = 'none';
+        if (reactionType === 'like') next.likes = Math.max(0, next.likes - 1);
+        if (reactionType === 'dislike') next.dislikes = Math.max(0, next.dislikes - 1);
+      } else {
+        // Toggle on (and potentially switch from the other)
+        if (current.userReaction === 'like') next.likes = Math.max(0, next.likes - 1);
+        if (current.userReaction === 'dislike') next.dislikes = Math.max(0, next.dislikes - 1);
+        
+        next.userReaction = reactionType;
+        if (reactionType === 'like') next.likes += 1;
+        if (reactionType === 'dislike') next.dislikes += 1;
+      }
+
+      return { ...prev, [resourceType]: next };
+    });
+
+    try {
+      const reaction = chapterReactions[resourceType]?.userReaction === reactionType ? 'none' : reactionType;
+      await apiService.curriculum.toggleResourceReaction({
+        chapterId: selectedChapter._id,
+        resourceType,
+        reaction
+      });
+    } catch (err) {
+      // Background revert on failure (not strictly necessary but good practice)
+      console.error('Failed to toggle reaction', err);
+    }
   };
 
   useEffect(() => {
@@ -224,6 +769,7 @@ const CurriculumBrowser = () => {
       setPanel('topics');
       setTopicFlows([]);
       setSelectedTopic(null);
+      if (subject && selectedChapter) setSearchParams({ s: subject, c: selectedChapter._id, p: 'topics' }, { replace: true });
       return;
     }
     if (panel === 'topics') {
@@ -231,6 +777,7 @@ const CurriculumBrowser = () => {
       setTopicsLite([]);
       setSelectedTopic(null);
       setSelectedChapter(null);
+      if (subject) setSearchParams({ s: subject, p: 'chapters' }, { replace: true });
       return;
     }
     if (panel === 'chapters') {
@@ -241,6 +788,7 @@ const CurriculumBrowser = () => {
       setSelectedTopic(null);
       setTopicFlows([]);
       setSubject(null);
+      setSearchParams({}, { replace: true });
       return;
     }
     navigate(-1);
@@ -428,6 +976,27 @@ const CurriculumBrowser = () => {
 
   const renderTopics = () => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
+      {toppersEssentials && hasAnyEssential(toppersEssentials) && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => setToppersOpen(true)}
+          className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/15 to-yellow-400/5 p-4 flex items-center justify-between cursor-pointer active:scale-[0.99] transition-transform"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-amber-500/20">
+              <Star className="w-4 h-4 text-amber-400" fill="currentColor" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">Toppers Corner</p>
+              <p className="text-[10px] text-muted-foreground">{TOPPER_RESOURCES.filter(r => hasResource(toppersEssentials!, r.key)).length} resources curated</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-[11px] text-amber-400 font-semibold">
+            View All <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </motion.div>
+      )}
       {topicsLite.map((topic, index) => (
         <motion.button
           key={topic.topic}
@@ -436,7 +1005,7 @@ const CurriculumBrowser = () => {
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
         >
-          <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center flex-shrink-0 text-warning font-bold text-sm">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-bold text-sm">
             {index + 1}
           </div>
           <div className="flex-1 min-w-0">
@@ -638,6 +1207,87 @@ const CurriculumBrowser = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Toppers Corner Modal */}
+      <AnimatePresence>
+        {toppersOpen && toppersEssentials && (
+          <motion.div
+            key="toppers-modal"
+            initial={{ opacity: 0, y: '100%' }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+            className={`fixed inset-0 z-[100] flex flex-col ${toppersPreviewResource === 'video' ? 'bg-[#1c1c1e]' :
+                toppersPreviewResource === 'audio' ? 'bg-[#0d0d1e]' :
+                  'bg-background'
+              }`}
+          >
+            {/* Header – transparent overlay for dark resources, bordered strip for others */}
+            {(() => {
+              const isDark = toppersPreviewResource === 'video' || toppersPreviewResource === 'audio';
+              return (
+                <div
+                  className={`flex items-center p-3 flex-shrink-0 w-full ${isDark ? 'bg-[#1c1c1e]' : 'border-b border-border bg-background'
+                    }`}
+                >
+                  {toppersPreviewResource ? (
+                    <button
+                      onClick={closeResource}
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isDark ? '' : 'bg-card border border-border'
+                        }`}
+                    >
+                      <ChevronLeft className={`w-5 h-5 ${isDark ? 'text-white' : 'text-foreground'}`} />
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => { setToppersOpen(false); setToppersPreviewResource(null); }}
+                        className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center flex-shrink-0"
+                      >
+                        <X className="w-4 h-4 text-foreground" />
+                      </button>
+                      <div className="flex items-center gap-2 flex-1 min-w-0 ml-2">
+                        <div className="p-1 rounded-md bg-amber-500/20 flex-shrink-0">
+                          <Star className="w-3.5 h-3.5 text-amber-400" fill="currentColor" />
+                        </div>
+                        <p className="font-bold text-foreground text-sm truncate">Toppers Corner</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Grid View */}
+            {!toppersPreviewResource && (
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {TOPPER_RESOURCES.filter(r => hasResource(toppersEssentials!, r.key)).map(r => (
+                    <button
+                      key={r.key}
+                      onClick={() => openResource(r.key)}
+                      className="flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border border-border bg-card hover:bg-amber-500/5 hover:border-amber-500/30 transition-colors"
+                      style={{ minHeight: '130px' }}
+                    >
+                      <div className="p-3 rounded-xl bg-amber-500/15">
+                        <r.icon className="w-7 h-7 text-amber-400" />
+                      </div>
+                      <p className="text-sm font-bold text-foreground">{r.label}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Resource Preview */}
+            {toppersPreviewResource && (
+              <div className="flex-1 overflow-y-auto">
+                {renderResourceContent(toppersPreviewResource, toppersEssentials, chapterReactions, handleToggleReaction)}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <BottomNav />
     </div>

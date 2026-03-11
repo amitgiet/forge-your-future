@@ -27,6 +27,10 @@ interface TodayProgressStats {
   questionsAttempted: number;
   accuracy: number;
   formattedStudyTime?: string;
+  chaptersCovered?: number;
+  subjectBreakdown?: { biology: number; chemistry: number; physics: number };
+  resourcesViewedToday?: number;
+  topperStudyMinutes?: number;
 }
 
 interface TodayQuestStats {
@@ -275,7 +279,8 @@ const Dashboard = () => {
                 <Zap className="w-4 h-4 text-warning" />
                 Today's Progress
               </h3>
-              <div className="grid grid-cols-3 gap-3">
+              {/* Primary stats row */}
+              <div className="grid grid-cols-3 gap-3 mb-3">
                 {[
                   { value: todayProgress?.formattedStudyTime || `${todayProgress.studyTimeMinutes}m`, label: 'Study Time', color: 'primary' },
                   { value: String(todayProgress.questionsAttempted || 0), label: 'Questions', color: 'success' },
@@ -288,6 +293,38 @@ const Dashboard = () => {
                   </div>
                 ))}
               </div>
+              {/* Secondary stats row – chapters + resources */}
+              {((todayProgress.chaptersCovered ?? 0) > 0 || (todayProgress.resourcesViewedToday ?? 0) > 0) && (
+                <div className="flex gap-2 pt-3 border-t border-border">
+                  {(todayProgress.chaptersCovered ?? 0) > 0 && (
+                    <div className="flex-1 flex items-center gap-2 bg-primary/8 rounded-xl px-3 py-2">
+                      <BookOpen className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-bold text-primary">{todayProgress.chaptersCovered}</p>
+                        <p className="text-[10px] text-muted-foreground">chapters</p>
+                      </div>
+                    </div>
+                  )}
+                  {(todayProgress.resourcesViewedToday ?? 0) > 0 && (
+                    <div className="flex-1 flex items-center gap-2 bg-warning/8 rounded-xl px-3 py-2">
+                      <Crown className="w-3.5 h-3.5 text-warning flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-bold text-warning">{todayProgress.resourcesViewedToday}</p>
+                        <p className="text-[10px] text-muted-foreground">resources</p>
+                      </div>
+                    </div>
+                  )}
+                  {(todayProgress.topperStudyMinutes ?? 0) > 0 && (
+                    <div className="flex-1 flex items-center gap-2 bg-success/8 rounded-xl px-3 py-2">
+                      <Star className="w-3.5 h-3.5 text-success flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-bold text-success">{todayProgress.topperStudyMinutes}m</p>
+                        <p className="text-[10px] text-muted-foreground">toppers</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
 
             {/* Daily Challenge */}

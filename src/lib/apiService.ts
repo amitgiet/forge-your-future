@@ -395,10 +395,217 @@ export const apiService = {
         params: topic ? { topic } : {},
       }),
 
+    getFriendsLeaderboard: () => api.get('/social/friends/leaderboard'),
+
+    createDirectChat: (friendId: string) => api.post('/social/chats/direct', { friendId }),
+
+    createGroupChat: (data: { name: string; participants: string[] }) =>
+      api.post('/social/chats/group', data),
+
+    getChats: () => api.get('/social/chats'),
+
+    sendMessage: (data: { chatId: string; text: string }) => api.post('/social/messages', data),
+
+    getMessages: (chatId: string, limit?: number, skip?: number) =>
+      api.get(`/social/messages/${chatId}?limit=${limit || 50}&skip=${skip || 0}`),
+  },
+
+  // Revision APIs (7-Level System)
+  revisions: {
+    startRevision: (data: { subject: string; chapter: string; topic: string }) =>
+      api.post('/revisions/start', data),
+
+    completeRevision: (revisionId: string, data: { score: number; timeSpent?: number; confidence?: string }) =>
+      api.post(`/revisions/${revisionId}/complete`, data),
+
+    getDueRevisions: () => api.get('/revisions/due'),
+
+    getRevisions: (filters?: any) => api.get('/revisions', { params: filters }),
+
+    getAnalytics: () => api.get('/revisions/analytics'),
+
+    setExamDates: (data: { preExamDate: string; finalBoostDate: string }) =>
+      api.post('/revisions/exam-dates', data),
+  },
+
+  // Test Series APIs
+  tests: {
+    getTests: (filters?: any) => api.get('/tests', { params: filters }),
+
+    getTestById: (testId: string) => api.get(`/tests/${testId}`),
+
+    startTest: (testId: string) => api.post(`/tests/${testId}/start`),
+
+    saveAnswer: (attemptId: string, data: { questionId: string; selectedOption: string; timeSpent: number; isMarkedForReview: boolean }) =>
+      api.post(`/tests/attempts/${attemptId}/answer`, data),
+
+    submitTest: (attemptId: string) => api.post(`/tests/attempts/${attemptId}/submit`),
+
+    getAttempt: (attemptId: string) => api.get(`/tests/attempts/${attemptId}`),
+
+    getUserAttempts: (status?: string) => api.get('/tests/my-attempts', { params: { status } }),
+
+    createCustomTest: (data: any) => api.post('/tests/custom', data),
+  },
+
+  // Quiz Generator APIs (AI-powered)
+  quizGenerator: {
+    generateQuiz: (data: { topic: string; level: number; numberOfQuestions: number; quizType?: string }) =>
+      api.post('/quiz-generator/generate', data),
+
+    getQuiz: (quizId: string) => api.get(`/quiz-generator/${quizId}`),
+
+    getUserQuizzes: (page?: number, limit?: number) =>
+      api.get('/quiz-generator/quizzes/list', { params: { page: page || 1, limit: limit || 10 } }),
+
+    submitQuizAttempt: (quizId: string, data: { answers: (number | number[] | null)[]; timeTaken: number }) =>
+      api.post(`/quiz-generator/${quizId}/submit`, data),
+
+    getQuizStats: (quizId: string) => api.get(`/quiz-generator/${quizId}/stats`),
+
+    deleteQuiz: (quizId: string) => api.delete(`/quiz-generator/${quizId}`),
+  },
+
+  // Daily Challenge APIs
+  dailyChallenge: {
+    getTodaysChallenge: () => api.get('/daily-challenge'),
+
+    submitChallenge: (data: { answers: number[]; challengeId: string }) =>
+      api.post('/daily-challenge/submit', data),
+
+    hasCompletedToday: () => api.get('/daily-challenge/completed'),
+  },
+
+  // NCERT Search + Topic Quiz APIs
+  ncertSearch: {
+    getSubjects: () => api.get('/ncert-search/subjects'),
+
+    getChapters: (subject?: string, lang?: 'en' | 'hi', ncertClass?: 11 | 12) =>
+      api.get('/ncert-search/chapters', { params: { subject, lang, class: ncertClass } }),
+
+    getTopics: (params?: { subject?: string; chapterId?: string; query?: string; limit?: number; lang?: 'en' | 'hi'; class?: 11 | 12 }) =>
+      api.get('/ncert-search/topics', { params }),
+
+    getTopicQuiz: (topicObjectId: string, limit?: number) =>
+      api.get(`/ncert-search/topics/${topicObjectId}/quiz`, { params: { limit: limit || 10 } }),
+
+    submitTopicQuiz: (
+      topicObjectId: string,
+      data: {
+        questionIds: string[];
+        answers: Array<{ questionId: string; selectedOption: string | null }>;
+        timeTaken?: number;
+      }
+    ) => api.post(`/ncert-search/topics/${topicObjectId}/quiz/submit`, data),
+  },
+
+  // Leaderboard APIs
+  leaderboard: {
+    getLeaderboard: (limit?: number) =>
+      api.get('/daily-challenge/leaderboard', { params: { limit: limit || 10 } }),
+
+    getUserStats: () => api.get('/daily-challenge/leaderboard/user-stats'),
+
+    getDailyLeaderboard: (limit?: number) =>
+      api.get('/daily-challenge/leaderboard/daily', { params: { limit: limit || 10 } }),
+
+    getWeeklyLeaderboard: (limit?: number) =>
+      api.get('/daily-challenge/leaderboard/weekly', { params: { limit: limit || 10 } }),
+
+    getUserRank: () => api.get('/daily-challenge/leaderboard/user-rank'),
+  },
+
+  // PYQ Marked NCERT APIs
+  pyqMarkedNCERT: {
+    getAllPYQData: () => api.get('/pyq-marked-ncert/all'),
+
+    getTopicsBySubject: (subject: string, stream?: string) =>
+      api.get('/pyq-marked-ncert/topics', { params: { subject, stream } }),
+
+    getTopicById: (topicId: string) =>
+      api.get(`/pyq-marked-ncert/${topicId}`),
+  },
+
+  // Curriculum Browser APIs (ImportedCurriculum)
+  curriculum: {
+    startRun: (data: {
+      subject: 'biology' | 'chemistry' | 'physics';
+      chapterId: string;
+      topic: string;
+      subTopic: string;
+      mode: 'practice' | 'test';
+      uids: number[];
+    }) => api.post('/curriculum/runs/start', data),
+
+    getRun: (runId: string) =>
+      api.get(`/curriculum/runs/${runId}`),
+
+    saveRunProgress: (
+      runId: string,
+      data: {
+        currentIndex?: number;
+        answers?: Array<number | null>;
+        questionTimes?: number[];
+        elapsedSeconds?: number;
+        remainingSeconds?: number | null;
+      }
+    ) => api.put(`/curriculum/runs/${runId}/progress`, data),
+
+    abandonRun: (runId: string) =>
+      api.post(`/curriculum/runs/${runId}/abandon`),
+
+    submitRun: (
+      runId: string,
+      data: {
+        answers?: Array<number | null>;
+        questionTimes?: number[];
+        elapsedSeconds?: number;
+        remainingSeconds?: number | null;
+      }
+    ) => api.post(`/curriculum/runs/${runId}/submit`, data),
+
+    trackAttempt: (data: {
+      subject: 'biology' | 'chemistry' | 'physics';
+      chapterId: string;
+      topic: string;
+      subTopic: string;
+      mode: 'practice' | 'test';
+      totalQuestions: number;
+      correctAnswers: number;
+      timeTaken?: number;
+      uids?: number[];
+    }) => api.post('/curriculum/attempts', data),
+
+    getSubjects: () => api.get('/curriculum/subjects'),
+
+    getChapters: (subject: string) =>
+      api.get(`/curriculum/${subject}/chapters`),
+
+    getTopics: (subject: string, chapterId: string) =>
+      api.get(`/curriculum/${subject}/chapters/${encodeURIComponent(chapterId)}/topics`),
+
+    getSubTopics: (subject: string, chapterId: string, topic?: string) =>
+      api.get(`/curriculum/${subject}/chapters/${encodeURIComponent(chapterId)}/subtopics`, {
+        params: topic ? { topic } : {},
+      }),
+
     getQuestionsByUIDs: (uids: number[], page = 1, limit = 20) =>
       api.get(`/curriculum/questions`, {
         params: { uids: uids.join(','), page, limit },
       }),
+
+    logResource: (data: {
+      chapterId: string;
+      subject?: string;
+      resourceType: string;
+      durationSeconds?: number;
+    }) => api.post('/curriculum/log-resource', data),
+
+    toggleResourceReaction: (data: { chapterId: string; resourceType: string; reaction: 'like' | 'dislike' | 'none' }) =>
+      api.post('/curriculum/toggle-reaction', data),
+
+    getResourceReactions: (chapterId: string) =>
+      api.get(`/curriculum/reactions/${encodeURIComponent(chapterId)}`),
   },
 
   // Test Series Hierarchy APIs
