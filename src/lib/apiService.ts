@@ -23,6 +23,22 @@ export const apiService = {
       api.put('/auth/onboarding', data),
   },
 
+  billing: {
+    initiateCheckout: (data: { planCode: 'PRO_MONTHLY'; couponCode?: string; referralCode?: string }) =>
+      api.post('/billing/checkout/initiate', data),
+
+    verifyCheckout: (data: {
+      razorpay_order_id: string;
+      razorpay_payment_id: string;
+      razorpay_signature: string;
+    }) => api.post('/billing/checkout/verify', data),
+
+    validateCoupon: (data: { code: string; planCode: 'PRO_MONTHLY' }) =>
+      api.post('/billing/coupons/validate', data),
+
+    getSubscriptionStatus: () => api.get('/billing/subscription/status'),
+  },
+
   // NeuronZ APIs
   neuronz: {
     getDueQuestions: () => api.get('/neuronz/due'),

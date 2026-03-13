@@ -2,10 +2,16 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Flame, Target, BookOpen, Award, Globe, Crown, Zap, LogOut, Edit2, Save, ChevronLeft, Shield } from 'lucide-react';
+import { User, Flame, Target, BookOpen, Award, Globe, Crown, Zap, LogOut, Edit2, Save, ChevronLeft, Shield, X, Loader2, Copy, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
 import { apiService } from '@/lib/apiService';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 const Profile = () => {
   const { t, language, setLanguage } = useLanguage();
@@ -22,6 +28,20 @@ const Profile = () => {
     mockScore: '',
     weakSubjects: [] as string[]
   });
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [referralCode, setReferralCode] = useState('');
+  const [pricing, setPricing] = useState({
+    baseAmountPaise: 14900,
+    discountAmountPaise: 0,
+    finalAmountPaise: 14900,
+    couponApplied: null as string | null
+  });
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState('');
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [copiedReferral, setCopiedReferral] = useState(false);
 
   const achievements = [
     { icon: '🔥', label: '7 Day Streak', unlocked: true },
@@ -89,6 +109,160 @@ const Profile = () => {
   };
 
   const xpProgress = ((profileData?.gamification?.totalXP || 0) % 1000) / 10;
+
+  const formatRupees = (paise: number) => `₹${(paise / 100).toFixed(0)}`;
+
+  const copyReferralCode = async () => {
+    const code = profileData?.referralCode;
+    if (!code) return;
+
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedReferral(true);
+      setTimeout(() => setCopiedReferral(false), 1500);
+    } catch (error) {
+      console.error('Failed to copy referral code:', error);
+    }
+  };
+
+  const loadRazorpayScript = async () => {
+    if (window.Razorpay) return true;
+
+    return new Promise<boolean>((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const pollSubscriptionActivation = async () => {
+    const start = Date.now();
+    const timeoutMs = 60000;
+    const intervalMs = 3000;
+
+    while (Date.now() - start < timeoutMs) {
+      const res = await apiService.billing.getSubscriptionStatus();
+      const active = Boolean(res?.data?.data?.isActive);
+      if (active) {
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+
+    return false;
+  };
+
+  const applyCoupon = async () => {
+    setUpgradeError('');
+    setUpgradeMessage('');
+    if (!couponCode.trim()) {
+      setPricing({
+        baseAmountPaise: 14900,
+        discountAmountPaise: 0,
+        finalAmountPaise: 14900,
+        couponApplied: null
+      });
+      return;
+    }
+
+    setCouponLoading(true);
+    try {
+      const response = await apiService.billing.validateCoupon({
+        code: couponCode.trim().toUpperCase(),
+        planCode: 'PRO_MONTHLY'
+      });
+
+      if (response.data?.success) {
+        setPricing(response.data.pricing);
+        setUpgradeMessage(`Coupon applied: ${response.data.pricing?.couponApplied}`);
+      }
+    } catch (error: any) {
+      setUpgradeError(error?.response?.data?.message || 'Invalid coupon');
+      setPricing({
+        baseAmountPaise: 14900,
+        discountAmountPaise: 0,
+        finalAmountPaise: 14900,
+        couponApplied: null
+      });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const startPremiumCheckout = async () => {
+    setUpgradeError('');
+    setUpgradeMessage('');
+    setUpgradeLoading(true);
+
+    try {
+      const razorpayLoaded = await loadRazorpayScript();
+      if (!razorpayLoaded) {
+        throw new Error('Razorpay SDK failed to load');
+      }
+
+      const initResponse = await apiService.billing.initiateCheckout({
+        planCode: 'PRO_MONTHLY',
+        couponCode: couponCode.trim() || undefined,
+        referralCode: referralCode.trim() || undefined
+      });
+
+      const checkout = initResponse?.data?.checkout;
+      const serverPricing = initResponse?.data?.pricing;
+      if (!checkout?.orderId) {
+        throw new Error('Failed to initialize checkout');
+      }
+
+      if (serverPricing) {
+        setPricing(serverPricing);
+      }
+
+      const options = {
+        key: checkout.keyId,
+        amount: checkout.amountPaise,
+        currency: checkout.currency,
+        name: 'NEETForge',
+        description: 'Pro Monthly Subscription',
+        order_id: checkout.orderId,
+        prefill: {
+          name: profileData?.name || user?.name || '',
+          email: user?.email || ''
+        },
+        theme: { color: '#1D4ED8' },
+        handler: async (response: any) => {
+          try {
+            await apiService.billing.verifyCheckout(response);
+            setUpgradeMessage('Payment received. Activating premium...');
+            const activated = await pollSubscriptionActivation();
+            if (activated) {
+              await loadProfile();
+              setShowUpgradeModal(false);
+              setCouponCode('');
+              setReferralCode('');
+              setUpgradeMessage('');
+            } else {
+              setUpgradeMessage('Payment is processing. Premium will reflect shortly.');
+            }
+          } catch (err: any) {
+            setUpgradeError(err?.response?.data?.message || 'Payment verification failed');
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setUpgradeMessage('');
+          }
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error: any) {
+      setUpgradeError(error?.response?.data?.message || error?.message || 'Checkout failed');
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -158,6 +332,11 @@ const Profile = () => {
           <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
             <span className="text-xs font-semibold text-primary capitalize">{profileData?.subscription?.plan || 'Free'} Plan</span>
           </div>
+          {profileData?.subscription?.currentPeriodEnd && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Valid till {new Date(profileData.subscription.currentPeriodEnd).toLocaleDateString()}
+            </p>
+          )}
         </motion.div>
 
         {/* XP Progress */}
@@ -347,11 +526,46 @@ const Profile = () => {
                 <p className="text-xs text-muted-foreground">Unlimited revisions & features</p>
               </div>
             </div>
-            <button className="w-full py-2.5 rounded-xl text-sm font-semibold text-primary-foreground" style={{ background: 'var(--gradient-primary)' }}>
-              <Crown className="w-4 h-4 inline mr-1.5" /> Upgrade — ₹149/mo
+            <button
+              onClick={() => {
+                setUpgradeError('');
+                setUpgradeMessage('');
+                setShowUpgradeModal(true);
+              }}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold text-primary-foreground"
+              style={{ background: 'var(--gradient-primary)' }}
+            >
+              <Crown className="w-4 h-4 inline mr-1.5" /> Upgrade - Rs 149/mo
             </button>
           </motion.div>
         )}
+
+        {/* Referral Code */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.33 }}
+          className="bg-card border border-border rounded-2xl p-4"
+          style={{ boxShadow: 'var(--shadow-sm)' }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-bold text-foreground text-sm">Referral Code</h3>
+            <span className="text-[11px] text-muted-foreground">Invite friends, earn premium days</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 px-3 py-2.5 rounded-xl bg-muted border border-border text-sm font-mono font-semibold text-foreground">
+              {profileData?.referralCode || 'Loading...'}
+            </div>
+            <button
+              onClick={copyReferralCode}
+              disabled={!profileData?.referralCode}
+              className="px-3 py-2.5 rounded-xl border border-primary/20 bg-primary/10 text-primary text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              {copiedReferral ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copiedReferral ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+        </motion.div>
 
         {/* Language Toggle */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
@@ -386,9 +600,104 @@ const Profile = () => {
         </motion.div>
       </div>
 
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-md rounded-2xl bg-card border border-border p-4 space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-foreground">Upgrade to Pro</h3>
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center"
+              >
+                <X className="w-4 h-4 text-foreground" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Coupon Code</label>
+              <div className="flex gap-2">
+                <input
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Enter coupon"
+                  className="flex-1 px-3 py-2 rounded-xl bg-muted border border-border text-sm text-foreground"
+                />
+                <button
+                  onClick={applyCoupon}
+                  disabled={couponLoading}
+                  className="px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm font-semibold"
+                >
+                  {couponLoading ? '...' : 'Apply'}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Referral Code (Optional)</label>
+              <input
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                placeholder="Enter referral"
+                className="w-full px-3 py-2 rounded-xl bg-muted border border-border text-sm text-foreground"
+              />
+            </div>
+
+            <div className="rounded-xl bg-muted/50 border border-border p-3 space-y-1.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Base price</span>
+                <span className="text-foreground font-semibold">{formatRupees(pricing.baseAmountPaise)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Discount</span>
+                <span className="text-success font-semibold">- {formatRupees(pricing.discountAmountPaise)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-bold pt-1 border-t border-border">
+                <span className="text-foreground">Payable</span>
+                <span className="text-foreground">{formatRupees(pricing.finalAmountPaise)}</span>
+              </div>
+            </div>
+
+            {upgradeError && (
+              <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
+                {upgradeError}
+              </div>
+            )}
+            {upgradeMessage && (
+              <div className="text-sm text-primary bg-primary/10 border border-primary/20 rounded-xl px-3 py-2">
+                {upgradeMessage}
+              </div>
+            )}
+
+            <button
+              onClick={startPremiumCheckout}
+              disabled={upgradeLoading}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold text-primary-foreground flex items-center justify-center gap-2"
+              style={{ background: 'var(--gradient-primary)' }}
+            >
+              {upgradeLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Crown className="w-4 h-4" />
+                  Pay {formatRupees(pricing.finalAmountPaise)}
+                </>
+              )}
+            </button>
+          </motion.div>
+        </div>
+      )}
+
       <BottomNav />
     </div>
   );
 };
 
 export default Profile;
+
