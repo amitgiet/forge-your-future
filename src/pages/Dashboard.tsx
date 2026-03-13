@@ -33,21 +33,6 @@ interface TodayProgressStats {
   topperStudyMinutes?: number;
 }
 
-interface TodayQuestStats {
-  hasQuest: boolean;
-  challengeId?: string;
-  title: string;
-  xpReward: number;
-  completedQuizzes: number;
-  targetQuizzes: number;
-  progressPercentage: number;
-  stats: {
-    minutesStudied: number;
-    questions: number;
-    accuracy: number;
-  };
-}
-
 interface TopicSummary {
   topicId: string;
   topic: string;
@@ -88,28 +73,13 @@ const Dashboard = () => {
     accuracy: 0,
     formattedStudyTime: '0m',
   });
-  const [todayQuest, setTodayQuest] = useState<TodayQuestStats>({
-    hasQuest: false,
-    title: "Today's Quest",
-    xpReward: 0,
-    completedQuizzes: 0,
-    targetQuizzes: 0,
-    progressPercentage: 0,
-    stats: {
-      minutesStudied: 0,
-      questions: 0,
-      accuracy: 0,
-    },
-  });
   const [loading, setLoading] = useState(true);
   const [progressLoaded, setProgressLoaded] = useState(false);
-  const [questLoaded, setQuestLoaded] = useState(false);
 
   useEffect(() => {
     fetchUserRank();
     fetchUserProfile();
     fetchTodayProgress();
-    fetchTodayQuest();
     fetchTopicSummary();
     dispatch(loadDueQuestions());
   }, [dispatch]);
@@ -152,19 +122,6 @@ const Dashboard = () => {
     }
   };
 
-  const fetchTodayQuest = async () => {
-    try {
-      const response = await apiService.auth.getTodayQuest();
-      if (response.data?.success && response.data?.data) {
-        setTodayQuest(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching today quest:', error);
-    } finally {
-      setQuestLoaded(true);
-    }
-  };
-
   const fetchTopicSummary = async () => {
     try {
       const response = await apiService.neuronz.getTopicSummary();
@@ -177,20 +134,20 @@ const Dashboard = () => {
   };
 
   const quickActions = [
+    { icon: BookMarked, label: 'Formulas', sub: 'Cards', path: '/formula-cards', color: 'primary' },
+    { icon: FileText, label: 'Mock Test', sub: 'Series', path: '/tests', color: 'warning' },
     {
       icon: Brain,
-      label: 'Revise',
+      label: 'Revision',
       sub: dueCount > 0 ? `${dueCount} due (L2: ${l2Count})` : 'Spaced',
       path: '/revision',
       color: 'success'
     },
-    { icon: Sparkles, label: 'Learn', sub: 'AI Path', path: '/my-learning-paths', color: 'warning' },
-    { icon: Upload, label: 'Mock', sub: 'Analyze', path: '/mock-analyzer', color: 'secondary' },
-    { icon: BookOpen, label: 'NCERT', sub: 'Search', path: '/ncert-search', color: 'primary' },
-    { icon: FileText, label: 'Mock Tests', sub: 'Series', path: '/tests', color: 'warning' },
     { icon: Wand2, label: 'AI Quiz', sub: 'Generate', path: '/quiz-generator', color: 'primary' },
     { icon: Target, label: 'Analytics', sub: 'My Stats', path: '/analytics', color: 'secondary' },
-    { icon: BookMarked, label: 'Formulas', sub: 'Cards', path: '/formula-cards', color: 'primary' },
+    { icon: BookOpen, label: 'NCERT', sub: 'Search', path: '/ncert-search', color: 'primary' },
+    { icon: Upload, label: 'Mock', sub: 'Analyze', path: '/mock-analyzer', color: 'secondary' },
+    { icon: Sparkles, label: 'Learn', sub: 'AI Path', path: '/my-learning-paths', color: 'warning' },
     { icon: Star, label: 'Doubts', sub: 'Forum', path: '/doubts', color: 'success' },
   ];
 
@@ -210,7 +167,7 @@ const Dashboard = () => {
 
       <div className="nf-safe-area p-4 max-w-md mx-auto relative z-10">
         {/* Show skeleton while initial data loads */}
-        {loading && !progressLoaded && !questLoaded ? (
+        {loading && !progressLoaded ? (
           <>
             {/* Header always shows */}
             <div className="mb-6">
@@ -363,51 +320,6 @@ const Dashboard = () => {
               </div>
             </motion.div>
 
-            {/* Today's Quest */}
-            <motion.div
-              className="mt-6 glass-card"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="nf-heading text-foreground flex items-center gap-2">
-                  <Target className="w-5 h-5 text-primary" />
-                  {todayQuest.title || "Today's Quest"}
-                </h3>
-                <span className="nf-badge nf-badge-primary">+{todayQuest.xpReward || 0} XP</span>
-              </div>
-
-              <div className="nf-progress-bar mb-3">
-                <motion.div
-                  className="nf-progress-fill"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${todayQuest.progressPercentage || 0}%` }}
-                  transition={{ duration: 1.2, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                />
-              </div>
-
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {todayQuest.completedQuizzes || 0}/{todayQuest.targetQuizzes || 0} quizzes completed
-                </span>
-                <span className="font-bold nf-gradient-text">{todayQuest.progressPercentage || 0}%</span>
-              </div>
-
-              <div className="flex gap-2 mt-4 pt-4 border-t border-border">
-                {[
-                  { val: String(todayQuest.stats?.minutesStudied || 0), label: 'mins studied' },
-                  { val: String(todayQuest.stats?.questions || 0), label: 'questions' },
-                  { val: `${todayQuest.stats?.accuracy || 0}%`, label: 'accuracy', highlight: true },
-                ].map((item, i) => (
-                  <div key={i} className="flex-1 text-center">
-                    <div className={`text-lg font-extrabold ${item.highlight ? 'text-success' : 'text-foreground'}`}>{item.val}</div>
-                    <div className="text-[10px] text-muted-foreground">{item.label}</div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
             {/* Study Resources Cards */}
             <motion.div
               className="mt-6"
@@ -435,18 +347,18 @@ const Dashboard = () => {
                     color: 'primary',
                     path: '/pyq-marked-ncert',
                   },
-                  {
-                    icon: Lightbulb,
-                    title: 'Important Topics',
-                    description: 'Chapter-wise essentials',
-                    color: 'warning',
-                    path: '#',
-                  },
+                  // {
+                  //   icon: Lightbulb,
+                  //   title: 'Important Topics',
+                  //   description: 'Chapter-wise essentials',
+                  //   color: 'warning',
+                  //   path: '#',
+                  // },
                   {
                     icon: Crown,
                     title: "Toppers' Essentials",
                     description: 'Expert study guides',
-                    color: 'success',
+                    color: 'warning',
                     path: '#',
                   },
                 ].map((resource, index) => (

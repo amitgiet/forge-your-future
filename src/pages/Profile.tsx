@@ -565,6 +565,10 @@ const Profile = () => {
               {copiedReferral ? 'Copied' : 'Copy'}
             </button>
           </div>
+          <div className="mt-3 rounded-xl bg-muted/40 border border-border px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
+            Share this code with friends. They can enter it while upgrading to Pro.
+            You get referral premium reward after their first successful paid activation.
+          </div>
         </motion.div>
 
         {/* Language Toggle */}
@@ -644,6 +648,9 @@ const Profile = () => {
                 placeholder="Enter referral"
                 className="w-full px-3 py-2 rounded-xl bg-muted border border-border text-sm text-foreground"
               />
+              <p className="text-[11px] text-muted-foreground">
+                Use a friend&apos;s code before payment. Referral is locked to your account once applied.
+              </p>
             </div>
 
             <div className="rounded-xl bg-muted/50 border border-border p-3 space-y-1.5">

@@ -13,12 +13,27 @@ interface LocationState {
   subject?: string;
   topic?: string;
   curriculumRun?: { runId: string };
+  curriculumContext?: {
+    subject: string;
+    chapterId: string;
+    topic: string;
+    subTopic: string;
+    mode: 'practice' | 'test';
+  };
 }
 
 export default function CustomTestSession() {
   const location = useLocation();
   const navigate = useNavigate();
   const state = (location.state as LocationState) || {};
+
+  const curriculumReturnTo = useMemo(() => {
+    const ctx = state.curriculumContext;
+    if (!ctx?.subject || !ctx?.chapterId || !ctx?.topic) return null;
+    return `/curriculum-browser?s=${encodeURIComponent(ctx.subject)}&c=${encodeURIComponent(
+      ctx.chapterId
+    )}&t=${encodeURIComponent(ctx.topic)}&p=roadmap`;
+  }, [state.curriculumContext]);
 
   const questions: NTAQuestion[] = useMemo(() => {
     if (!state.questions) return [];
@@ -140,6 +155,9 @@ export default function CustomTestSession() {
           ...q,
           userAnswer: data.answers[i],
         })),
+        returnTo: curriculumReturnTo,
+        returnLabel: 'Back to Roadmap',
+        retryTo: curriculumReturnTo,
       },
     });
   };
