@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, Eye, EyeOff, UserPlus } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, UserPlus, Phone } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Signup = () => {
@@ -9,6 +9,7 @@ const Signup = () => {
   const { signup } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +33,7 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      await signup(name, email, password);
+      await signup(name, email, password, phone.trim() || undefined);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Signup failed');
     } finally {
@@ -95,6 +96,23 @@ const Signup = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   required
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            {/* Phone (Optional) */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Phone (Optional)
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="10-digit phone number"
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
