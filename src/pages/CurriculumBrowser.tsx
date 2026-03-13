@@ -836,7 +836,7 @@ const CurriculumBrowser = () => {
       };
 
       if (mode === 'test') {
-        navigate('/test/custom-session', {
+        navigate('/curriculum-quiz-instructions', {
           state: {
             questions: rawQuestions,
             title: `${subTopic.subTopic} – Test`,
@@ -849,7 +849,7 @@ const CurriculumBrowser = () => {
           },
         });
       } else {
-        navigate('/test/custom-session', {
+        navigate('/curriculum-quiz-instructions', {
           state: {
             questions: rawQuestions,
             title: `${subTopic.subTopic} – Practice`,
@@ -1066,10 +1066,11 @@ const CurriculumBrowser = () => {
                 const progress = sub.progress || emptyProgress;
                 const status = getStatus(progress, sub.activeRun);
                 const alignRight = index % 2 === 1;
-                const practiceRun = sub.activeRuns?.practice || (sub.activeRun?.mode === 'practice' ? sub.activeRun : null);
                 const testRun = sub.activeRuns?.test || (sub.activeRun?.mode === 'test' ? sub.activeRun : null);
-                const hasPracticeResume = Boolean(practiceRun);
                 const hasTestResume = Boolean(testRun);
+                const showResume = hasTestResume || (progress.hasTaken && !progress.completed);
+                const buttonLabel = progress.completed ? 'Retake Test' : showResume ? 'Resume Test' : 'Start Test';
+                const ButtonIcon = progress.completed ? RotateCcw : showResume ? Play : GraduationCap;
 
                 return (
                   <motion.div
@@ -1103,11 +1104,9 @@ const CurriculumBrowser = () => {
                               <span>Attempts: {progress.attempts}</span>
                               <span>Best: {progress.bestScore}%</span>
                               {progress.hasTaken && <span>Last: {progress.lastScore}%</span>}
-                              {(testRun || practiceRun) && (
+                              {testRun && (
                                 <span className="text-primary font-semibold">
-                                  {testRun
-                                    ? `Resume Test (${testRun.attemptedQuestions}/${testRun.totalQuestions})`
-                                    : `Resume Practice (${practiceRun?.attemptedQuestions || 0}/${practiceRun?.totalQuestions || 0})`}
+                                  {`Resume Test (${testRun.attemptedQuestions}/${testRun.totalQuestions})`}
                                 </span>
                               )}
                               {progress.lastAttemptAt && (
@@ -1115,22 +1114,14 @@ const CurriculumBrowser = () => {
                               )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                              <button
-                                onClick={() => startQuiz(topicFlow.topic, sub, 'practice')}
-                                disabled={loading}
-                                className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-success/15 text-success border border-success/30 text-xs font-semibold hover:bg-success/25 transition-colors disabled:opacity-50"
-                              >
-                                <Play className="w-3.5 h-3.5" />
-                                {hasPracticeResume ? 'Resume' : 'Practice'}
-                              </button>
+                            <div className="flex justify-start">
                               <button
                                 onClick={() => startQuiz(topicFlow.topic, sub, 'test')}
                                 disabled={loading}
-                                className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/15 text-primary border border-primary/30 text-xs font-semibold hover:bg-primary/25 transition-colors disabled:opacity-50"
+                                className="w-[40%] flex items-center justify-center gap-1.5 py-2 rounded-xl bg-success/15 text-success border border-success/30 text-xs font-semibold hover:bg-success/25 transition-colors disabled:opacity-50"
                               >
-                                <GraduationCap className="w-3.5 h-3.5" />
-                                {hasTestResume ? 'Resume Test' : 'Test'}
+                                <ButtonIcon className="w-3.5 h-3.5" />
+                                {buttonLabel}
                               </button>
                             </div>
                           </div>
