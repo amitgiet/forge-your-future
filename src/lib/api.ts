@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// const baseURL = "https://backend-forge-neet.onrender.com";
-const baseURL = "http://100.56.20.190:5002";
+const baseURL = "https://backend-forge-neet.onrender.com";
+// const baseURL = "http://100.56.20.190:5002";
 //ne5sa
 // const baseURL = "http://localhost:5002";
 export const API_BASE_URL = baseURL;
