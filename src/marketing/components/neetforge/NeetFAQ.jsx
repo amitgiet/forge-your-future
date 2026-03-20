@@ -1,0 +1,112 @@
+import React from "react";
+import { ChevronDown } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
+const faqs = [
+  {
+    question: "What is NEETFORGE?",
+    answer:
+      "NEETFORGE is an AI-powered NEET preparation platform that combines daily practice, mock test analysis, revision tracking, and targeted weak-area improvement in one place.",
+  },
+  {
+    question: "How does NEETFORGE help improve NEET scores?",
+    answer:
+      "It closes the loop between practice, analysis, revision, and reattempts. Instead of only solving questions, students can identify weak chapters, revise at the right time, and train with structured NEET-style practice.",
+  },
+  {
+    question: "Does NEETFORGE support NEET mock tests and daily practice?",
+    answer:
+      "Yes. The platform is designed around NEET-style practice, daily DPP sessions, mock tests, analytics, revision tools, and AI-guided follow-up based on performance.",
+  },
+  {
+    question: "Is NEETFORGE useful for weak chapters and revision?",
+    answer:
+      "Yes. NEETFORGE is built to surface weak areas, organize revision, and help students repeatedly revisit topics until they become retention-friendly and exam ready.",
+  },
+  {
+    question: "Who should use NEETFORGE?",
+    answer:
+      "It is useful for NEET aspirants who want a more structured preparation system, including droppers, class 11 students, class 12 students, and learners who want better feedback after practice.",
+  },
+];
+
+export const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+};
+
+export default function NeetFAQ() {
+  return (
+    <section id="faq" className="py-24 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_40%,#eef5ff_100%)]">
+      <div className="max-w-5xl mx-auto px-5">
+        <div className="grid gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:items-start">
+          <div className="max-w-2xl">
+            <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-[#2563EB] shadow-sm">
+              FAQ
+            </p>
+            <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl md:leading-[1.05]">
+              Questions Students Ask Before Choosing a NEET Prep Platform
+            </h2>
+            <p className="mt-5 text-base leading-relaxed text-slate-600 md:text-lg">
+              We kept this section expandable so the page feels cleaner, but the full FAQ content still
+              stays crawlable for search engines. It helps explain how NEETFORGE supports NEET mock
+              tests, revision, weak-area analysis, and daily practice.
+            </p>
+
+            {/* <div className="mt-8 rounded-[2rem] border border-blue-100 bg-white/80 p-6 shadow-[0_18px_50px_-30px_rgba(37,99,235,0.35)] backdrop-blur">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2563EB] text-lg text-white shadow-lg shadow-blue-200">
+                  ?
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Built for clarity</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Instead of stuffing the section with heavy cards, each answer opens only when needed,
+                    which keeps the homepage lighter and easier to scan.
+                  </p>
+                </div>
+              </div>
+            </div> */}
+          </div>
+
+          <div className="rounded-[2rem] border border-slate-200 bg-white/90 p-3 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.3)] backdrop-blur-sm">
+            <Accordion type="single" collapsible defaultValue="faq-0" className="space-y-3">
+              {faqs.map((faq, index) => (
+                <AccordionItem
+                  key={faq.question}
+                  value={`faq-${index}`}
+                  className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-0 shadow-sm transition-colors data-[state=open]:border-blue-200 data-[state=open]:bg-blue-50/40"
+                >
+                  <AccordionTrigger className="group px-6 py-5 text-left text-base font-bold text-slate-900 hover:no-underline [&>svg]:hidden">
+                    <div className="flex w-full items-center justify-between gap-4">
+                      <span className="leading-snug">{faq.question}</span>
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500 transition-all group-data-[state=open]:rotate-180 group-data-[state=open]:border-blue-200 group-data-[state=open]:bg-white group-data-[state=open]:text-[#2563EB]">
+                        <ChevronDown className="h-4 w-4" />
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6 pt-0 text-[15px] leading-7 text-slate-600">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
