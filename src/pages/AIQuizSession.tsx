@@ -94,7 +94,7 @@ export default function AIQuizSession() {
         }
       }
 
-      navigate('/quiz-results', {
+      navigate('/app/quiz-results', {
         state: {
           mode: 'practice',
           answers: sessionAnswers,

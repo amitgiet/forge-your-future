@@ -253,7 +253,7 @@ const QuizSession = () => {
 
   const navigateBackToOrigin = () => {
     if (curriculumRestore) {
-      navigate('/curriculum-browser', { state: { curriculumRestore, refreshRoadmap: true } });
+      navigate('/app/curriculum-browser', { state: { curriculumRestore, refreshRoadmap: true } });
       return;
     }
     navigate(-1);
@@ -467,7 +467,7 @@ const QuizSession = () => {
 
     await saveProgress({ force: true });
 
-    navigate('/quiz-results', {
+    navigate('/app/quiz-results', {
       state: {
         mode,
         answers: finalizedAnswers,
@@ -545,7 +545,7 @@ const QuizSession = () => {
         <div className="nf-card text-center max-w-md">
           <h2 className="text-xl font-bold text-foreground mb-2">No quiz questions available</h2>
           <p className="text-sm text-muted-foreground mb-4">Please start a new quiz from the quiz setup page.</p>
-          <button onClick={() => navigate('/quiz-start')} className="nf-btn-primary w-full">Go to Quiz Start</button>
+          <button onClick={() => navigate('/app/quiz-start')} className="nf-btn-primary w-full">Go to Quiz Start</button>
         </div>
       </div>
     );

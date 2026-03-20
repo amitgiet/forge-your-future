@@ -59,7 +59,7 @@ const MyLearningPaths = () => {
               <p className="text-sm text-muted-foreground">Custom AI-powered learning journeys</p>
             </div>
             <button
-              onClick={() => navigate('/create-learning-path')}
+              onClick={() => navigate('/app/create-learning-path')}
               className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-6 h-6" />
@@ -82,7 +82,7 @@ const MyLearningPaths = () => {
               Create your first custom learning path and let AI generate personalized content
             </p>
             <button
-              onClick={() => navigate('/create-learning-path')}
+              onClick={() => navigate('/app/create-learning-path')}
               className="nf-btn-primary !w-auto px-8 mx-auto"
             >
               Create Learning Path
@@ -97,7 +97,7 @@ const MyLearningPaths = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className="nf-card hover:border-primary/50 transition-colors cursor-pointer"
-                onClick={() => navigate(`/learning-path/${path._id}`)}
+                onClick={() => navigate(`/app/learning-path/${path._id}`)}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">

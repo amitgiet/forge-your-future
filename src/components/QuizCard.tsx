@@ -69,7 +69,7 @@ const QuizCard = ({ topic, duration, questionsCount, difficulty = 'medium' }: Qu
       </div>
       
       <motion.button
-        onClick={() => navigate('/quiz')}
+        onClick={() => navigate('/app/quiz')}
         className="nf-btn-primary"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}

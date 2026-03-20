@@ -57,7 +57,7 @@ const FormulaChapterDetail: React.FC = () => {
     try {
       const res = await apiService.formulas.getCards(topicTitle);
       if (res.data?.success && res.data.data.length > 0) {
-        navigate('/formula-cards/viewer', {
+        navigate('/app/formula-cards/viewer', {
           state: {
             subjectTitle,
             chapterTitle,

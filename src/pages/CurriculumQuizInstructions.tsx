@@ -38,7 +38,7 @@ export default function CurriculumQuizInstructions() {
       navigate(-1);
       return;
     }
-    navigate('/test/custom-session', { state });
+    navigate('/app/test/custom-session', { state });
   };
 
   if (!totalQuestions) {
@@ -49,7 +49,7 @@ export default function CurriculumQuizInstructions() {
           <h1 className="text-xl font-semibold text-foreground">Quiz data not found</h1>
           <p className="mt-2 text-sm text-muted-foreground">Please start the quiz again from the curriculum roadmap.</p>
           <button
-            onClick={() => navigate('/curriculum-browser')}
+            onClick={() => navigate('/app/curriculum-browser')}
             className="mt-5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
           >
             Back to Curriculum

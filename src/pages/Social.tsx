@@ -57,9 +57,9 @@ const Social = () => {
   const loadChats = async () => { try { const r = await apiService.social.getChats(); setChats(r.data.data || []); } catch (e) { console.error(e); } };
   const loadLeaderboard = async () => { try { const r = await apiService.social.getFriendsLeaderboard(); setLeaderboard(r.data.data || []); } catch (e) { console.error(e); } };
 
-  const handleChatClick = (chatId: string) => navigate(`/chat/${chatId}`);
+  const handleChatClick = (chatId: string) => navigate(`/app/chat/${chatId}`);
   const handleStartChat = async (friendId: string) => {
-    try { const r = await apiService.social.createDirectChat(friendId); navigate(`/chat/${r.data.data._id}`); } catch (e) { console.error(e); }
+    try { const r = await apiService.social.createDirectChat(friendId); navigate(`/app/chat/${r.data.data._id}`); } catch (e) { console.error(e); }
   };
 
   const handleAcceptRequest = async (friendId: string) => {
@@ -102,7 +102,7 @@ const Social = () => {
               <p className="text-xs text-muted-foreground">Connect & compete with friends</p>
             </div>
             <button
-              onClick={() => navigate('/add-friend')}
+              onClick={() => navigate('/app/add-friend')}
               className="h-9 px-3 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90"
               style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-glow-primary)' }}
             >
@@ -163,7 +163,7 @@ const Social = () => {
             <p className="text-xs text-muted-foreground mt-1">{emptyMessages[activeTab].action}</p>
             {activeTab === 'friends' && (
               <button
-                onClick={() => navigate('/add-friend')}
+                onClick={() => navigate('/app/add-friend')}
                 className="mt-4 h-9 px-5 rounded-xl text-xs font-semibold text-primary-foreground"
                 style={{ background: 'var(--gradient-primary)' }}
               >

@@ -38,7 +38,7 @@ const TestStart = () => {
     try {
       const res = await apiService.tests.startTest(testId);
       const attemptId = res.data.data.attemptId;
-      navigate(`/test/session/${attemptId}`);
+      navigate(`/app/test/session/${attemptId}`);
     } catch (error: any) {
       console.error('Failed to start test:', error);
       alert(error.response?.data?.message || 'Failed to start the test session.');

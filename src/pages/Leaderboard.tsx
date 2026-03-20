@@ -260,7 +260,7 @@ const Leaderboard = () => {
         {/* CTA */}
         {!userCompletedToday && (
           <motion.button
-            onClick={() => navigate('/daily-challenge')}
+            onClick={() => navigate('/app/daily-challenge')}
             className="nf-btn-primary w-full mt-6"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

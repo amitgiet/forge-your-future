@@ -155,7 +155,7 @@ const Revision = () => {
               </div>
             </div>
             <button
-              onClick={() => navigate('/revision')}
+              onClick={() => navigate('/app/revision')}
               className="w-full py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold shadow-sm"
             >
               Back to NeuronZ
@@ -180,7 +180,7 @@ const Revision = () => {
     return (
       <div className="min-h-screen bg-background">
         <div className="nf-safe-area p-4 max-w-lg mx-auto">
-          <button onClick={() => navigate('/revision')} className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-4">
+          <button onClick={() => navigate('/app/revision')} className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-4">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-destructive text-sm">{error}</div>
@@ -194,7 +194,7 @@ const Revision = () => {
     return (
       <div className="min-h-screen bg-background">
         <div className="nf-safe-area p-4 max-w-lg mx-auto">
-          <button onClick={() => navigate('/revision')} className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-4">
+          <button onClick={() => navigate('/app/revision')} className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-4">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <div className="bg-card rounded-2xl border border-border p-6 text-center shadow-sm">

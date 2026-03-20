@@ -33,7 +33,7 @@ const FormulaCards: React.FC = () => {
   }, []);
 
   const openChapter = (subjectTitle: string, chapter: any) => {
-    navigate(`/formula-cards/${encodeURIComponent(chapter.title)}`, {
+    navigate(`/app/formula-cards/${encodeURIComponent(chapter.title)}`, {
       state: { subjectTitle, chapterTitle: chapter.title, chapterColor: chapter.color },
     });
   };

@@ -59,7 +59,7 @@ const MyChallenges = () => {
               <p className="text-sm text-muted-foreground">30-day NeuronZ practice journeys</p>
             </div>
             <button
-              onClick={() => navigate('/start-practice')}
+              onClick={() => navigate('/app/start-practice')}
               className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-6 h-6" />
@@ -82,7 +82,7 @@ const MyChallenges = () => {
               Start your first 30-day challenge and enter NeuronZ Level 1
             </p>
             <button
-              onClick={() => navigate('/start-practice')}
+              onClick={() => navigate('/app/start-practice')}
               className="nf-btn-primary !w-auto px-8 mx-auto"
             >
               Start Challenge
@@ -155,7 +155,7 @@ const MyChallenges = () => {
                     <div className="flex gap-2">
                       {challenge.status === 'active' && (
                         <button
-                          onClick={() => navigate(`/practice-session/${challenge._id}`)}
+                          onClick={() => navigate(`/app/practice-session/${challenge._id}`)}
                           className="text-sm px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
                         >
                           Continue

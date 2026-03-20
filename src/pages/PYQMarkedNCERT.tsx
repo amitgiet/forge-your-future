@@ -71,7 +71,7 @@ const PYQMarkedNCERT = () => {
 
   const handleTopicClick = (topicId: string | undefined) => {
     if (topicId && topicId.trim()) {
-      navigate(`/pyq-marked-ncert/${topicId}`);
+      navigate(`/app/pyq-marked-ncert/${topicId}`);
     }
   };
 

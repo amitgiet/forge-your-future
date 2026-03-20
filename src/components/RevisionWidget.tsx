@@ -39,7 +39,7 @@ export default function RevisionWidget() {
           </div>
         </div>
         <button
-          onClick={() => navigate('/revision')}
+          onClick={() => navigate('/app/revision')}
           className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1"
         >
           View All
@@ -64,7 +64,7 @@ export default function RevisionWidget() {
 
       <motion.button
         whileTap={{ scale: 0.98 }}
-        onClick={() => navigate('/revision')}
+        onClick={() => navigate('/app/revision')}
         className="w-full py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold shadow-sm"
       >
         Start Revision ({total})

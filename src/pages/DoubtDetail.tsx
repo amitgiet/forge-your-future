@@ -140,7 +140,7 @@ export default function DoubtDetail() {
           <MessageSquare className="w-8 h-8 text-muted-foreground" />
         </div>
         <p className="text-foreground font-semibold">Doubt not found</p>
-        <button onClick={() => navigate('/doubts')} className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold shadow-sm">
+        <button onClick={() => navigate('/app/doubts')} className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold shadow-sm">
           Back to Forum
         </button>
       </div>
@@ -152,7 +152,7 @@ export default function DoubtDetail() {
       {/* Header */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={() => navigate('/doubts')} className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors">
+          <button onClick={() => navigate('/app/doubts')} className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors">
             <ArrowLeft className="w-4 h-4 text-foreground" />
           </button>
           <div className="flex-1 min-w-0">

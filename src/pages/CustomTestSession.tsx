@@ -142,7 +142,7 @@ export default function CustomTestSession() {
     };
 
     // Navigate to results
-    navigate('/test/report/curriculum', {
+    navigate('/app/test/report/curriculum', {
       state: {
         attemptData: {
           testId: { title: state.title || 'Custom Test' },
@@ -169,7 +169,7 @@ export default function CustomTestSession() {
         <h2 className="text-xl font-bold mb-2">No Questions Loaded</h2>
         <p className="text-muted-foreground mb-6">Please create a test first.</p>
         <motion.button
-          onClick={() => navigate('/test/custom/create')}
+          onClick={() => navigate('/app/test/custom/create')}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="px-6 py-2 bg-primary hover:bg-primary/90 rounded-lg font-bold text-primary-foreground"

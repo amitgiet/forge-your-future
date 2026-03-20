@@ -51,7 +51,7 @@ const CreateLearningPath = () => {
       });
 
       if (response.data.success) {
-        navigate(`/learning-path/${response.data.data._id}`);
+        navigate(`/app/learning-path/${response.data.data._id}`);
       }
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to create learning path');

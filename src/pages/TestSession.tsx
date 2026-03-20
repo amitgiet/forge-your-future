@@ -69,7 +69,7 @@ export default function TestSession() {
     try {
       await apiService.tests.submitTest(attemptId!);
       // Pass analytics meta through navigation state
-      navigate(`/test/report/${attemptId}`, {
+      navigate(`/app/test/report/${attemptId}`, {
         state: { meta: data.meta, timeTaken: data.timeTaken },
       });
     } catch (err) {

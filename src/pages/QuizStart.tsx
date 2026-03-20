@@ -12,7 +12,7 @@ const QuizStart = () => {
   const [questionCount, setQuestionCount] = useState(25);
 
   const handleStart = () => {
-    navigate('/quiz-session', {
+    navigate('/app/quiz-session', {
       state: {
         mode,
         questionCount,

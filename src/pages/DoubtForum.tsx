@@ -305,7 +305,7 @@ export default function DoubtForum() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.04 }}
             >
-              <DoubtCard doubt={d} onClick={() => navigate(`/doubts/${d._id}`)} />
+              <DoubtCard doubt={d} onClick={() => navigate(`/app/doubts/${d._id}`)} />
             </motion.div>
           ))}
         </div>

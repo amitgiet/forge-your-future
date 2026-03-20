@@ -53,7 +53,7 @@ const TrackTopic = () => {
       dispatch(loadDueLines());
       dispatch(getMasteryProgress());
       setSuccess(true);
-      setTimeout(() => navigate('/revision'), 2000);
+      setTimeout(() => navigate('/app/revision'), 2000);
     } catch (error) {
       console.error('Failed to track chapter:', error);
     } finally {

@@ -364,7 +364,7 @@ const TestSeries = () => {
 
   const openPdf = (url?: string, title?: string) => {
     if (!url) return;
-    navigate(`/tests/pdf-viewer?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title || 'Mock PDF')}`);
+    navigate(`/app/tests/pdf-viewer?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title || 'Mock PDF')}`);
   };
 
   const toggleCompleted = async (item: MockItem) => {
@@ -644,7 +644,7 @@ const TestSeries = () => {
               <motion.button
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                onClick={() => navigate('/test/custom/create')}
+                onClick={() => navigate('/app/test/custom/create')}
                 className="w-full rounded-xl border-2 border-primary/40 bg-primary/5 p-4 text-left hover:bg-primary/10 transition-all group"
                 style={{ boxShadow: 'var(--shadow-card)' }}
               >
@@ -684,7 +684,7 @@ const TestSeries = () => {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04 }}
-                onClick={() => navigate(`/tests/${encodeURIComponent(series)}`)}
+                onClick={() => navigate(`/app/tests/${encodeURIComponent(series)}`)}
                 className="w-full rounded-xl border border-border bg-card p-4 text-left hover:border-primary/40 transition-all group"
                 style={{ boxShadow: 'var(--shadow-card)' }}
               >
@@ -727,7 +727,7 @@ const TestSeries = () => {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04 }}
-                onClick={() => navigate(`/tests/${encodeURIComponent(activeSeries)}/${encodeURIComponent(tp)}`)}
+                onClick={() => navigate(`/app/tests/${encodeURIComponent(activeSeries)}/${encodeURIComponent(tp)}`)}
                 className="w-full rounded-xl border border-border bg-card p-4 text-left hover:border-primary/40 transition-all group"
                 style={{ boxShadow: 'var(--shadow-card)' }}
               >

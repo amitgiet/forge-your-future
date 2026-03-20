@@ -35,7 +35,7 @@ const NeuronzDashboard: React.FC = () => {
 
   const handleLevelClick = (level: number, totalQuestions: number) => {
     if (totalQuestions === 0 || level === 7) return;
-    navigate(`/revision?level=${level}`);
+    navigate(`/app/revision?level=${level}`);
   };
 
   const totalCompleted = dueQuestions?.masteredTotal || 0;

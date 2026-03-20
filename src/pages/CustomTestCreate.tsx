@@ -243,7 +243,7 @@ export default function CustomTestCreate() {
 
       if (mode === 'test') {
         // Use NTA-style exam UI for test mode
-        navigate('/test/custom-session', {
+        navigate('/app/test/custom-session', {
           state: {
             questions,
             title: `${subject} - Custom Test`,
@@ -253,7 +253,7 @@ export default function CustomTestCreate() {
           },
         });
       } else {
-        navigate('/quiz-session', {
+        navigate('/app/quiz-session', {
           state: {
             questions,
             mode,

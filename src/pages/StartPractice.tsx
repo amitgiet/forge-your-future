@@ -93,7 +93,7 @@ const StartPractice = () => {
 
       if (response.data.success) {
         // Auto-start first due revision line after tracking
-        navigate('/revision?autoStart=1');
+        navigate('/app/revision?autoStart=1');
       }
     } catch (error: any) {
       const backendMessage = error.response?.data?.error || error.response?.data?.message;

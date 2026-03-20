@@ -96,7 +96,7 @@ const DailyChallengeCard = () => {
           </div>
         </div>
         <motion.button
-          onClick={() => navigate('/leaderboard')}
+          onClick={() => navigate('/app/leaderboard')}
           className="flex items-center gap-1 text-xs text-secondary font-semibold"
           whileHover={{ x: 3 }}
         >
@@ -137,7 +137,7 @@ const DailyChallengeCard = () => {
 
       {/* Action Button */}
       <motion.button
-        onClick={() => navigate('/daily-challenge')}
+        onClick={() => navigate('/app/daily-challenge')}
         className="nf-btn-primary w-full"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
