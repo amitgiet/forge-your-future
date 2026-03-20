@@ -7,11 +7,11 @@ const BottomNav = () => {
   const location = useLocation();
 
   const navItems = [
-    { icon: Home, path: '/dashboard', label: 'Home' },
-    { icon: FileText, path: '/tests', label: 'Tests' },
-    { icon: Sparkles, path: '/ai-assistant', label: 'AI' },
-    { icon: MessageCircle, path: '/social', label: 'Social' },
-    { icon: User, path: '/profile', label: 'Profile' },
+    { icon: Home, path: '/app/dashboard', label: 'Home' },
+    { icon: FileText, path: '/app/tests', label: 'Tests' },
+    { icon: Sparkles, path: '/app/ai-assistant', label: 'AI' },
+    { icon: MessageCircle, path: '/app/social', label: 'Social' },
+    { icon: User, path: '/app/profile', label: 'Profile' },
   ];
 
   return (
@@ -55,3 +55,4 @@ const BottomNav = () => {
 };
 
 export default BottomNav;
+

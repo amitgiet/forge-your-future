@@ -37,7 +37,7 @@ const Onboarding = () => {
   };
 
   const handleStart = (isPro: boolean) => {
-    navigate('/dashboard');
+    navigate('/app/dashboard');
   };
 
   const step = steps[currentStep];
@@ -196,3 +196,4 @@ const Onboarding = () => {
 };
 
 export default Onboarding;
+

@@ -121,7 +121,7 @@ const ChatPage = () => {
       {/* Header */}
       <div className="bg-card border-b border-border p-4 flex items-center gap-3 sticky top-0">
         <button
-          onClick={() => navigate('/social')}
+          onClick={() => navigate('/app/social')}
           className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center"
         >
           <ArrowLeft className="w-5 h-5" />

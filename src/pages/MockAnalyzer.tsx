@@ -30,7 +30,7 @@ const MockAnalyzer = () => {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3 mb-6"
         >
-          <button onClick={() => navigate('/dashboard')} className="nf-btn-icon !w-10 !h-10">
+          <button onClick={() => navigate('/app/dashboard')} className="nf-btn-icon !w-10 !h-10">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
@@ -211,3 +211,4 @@ const MockAnalyzer = () => {
 };
 
 export default MockAnalyzer;
+

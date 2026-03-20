@@ -20,7 +20,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string, phone?: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   demoLogin: () => void;
   isAuthenticated: boolean;
 }
@@ -43,14 +43,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
     // Demo mode - bypass API call
+    const token = localStorage.getItem('token');
     if (token === 'demo-token-12345') {
       setUser({
         _id: 'demo-user',
@@ -82,16 +76,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const response = await apiService.auth.login({ email, password });
     
     if (response.data.success) {
-      localStorage.setItem('token', response.data.token);
+      if (response.data.token) {
+        // Compatibility token for legacy flows; cookie is the primary web auth session.
+        localStorage.setItem('token', response.data.token);
+      }
       setUser(response.data.user);
       syncPreferredLanguage(response.data.user?.profile?.preferredLanguage);
       
-      // Check onboarding status
-      if (response.data.user.onboardingCompleted === false) {
-        navigate('/onboarding');
-      } else {
-        navigate('/dashboard');
-      }
+      navigate('/app/dashboard');
     }
   };
 
@@ -99,18 +91,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const response = await apiService.auth.register({ name, email, password, phone });
     
     if (response.data.success) {
-      localStorage.setItem('token', response.data.token);
+      if (response.data.token) {
+        // Compatibility token for legacy flows; cookie is the primary web auth session.
+        localStorage.setItem('token', response.data.token);
+      }
       setUser(response.data.user);
       syncPreferredLanguage(response.data.user?.profile?.preferredLanguage);
-      navigate('/onboarding');
+      navigate('/app/dashboard');
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('preferredLanguage');
-    setUser(null);
-    navigate('/login');
+  const logout = async () => {
+    try {
+      await apiService.auth.logout();
+    } catch (error) {
+      // Even if the server call fails, clear local auth state.
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('preferredLanguage');
+      setUser(null);
+      navigate('/app/login');
+    }
   };
 
   const demoLogin = () => {
@@ -122,7 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       subscription: { plan: 'free' }
     };
     setUser(demoUser);
-    navigate('/dashboard');
+    navigate('/app/dashboard');
   };
 
   return (

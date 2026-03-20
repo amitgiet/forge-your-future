@@ -133,7 +133,7 @@ const PracticeSession = () => {
               Check back tomorrow for your next session!
             </p>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/app/dashboard')}
               className="nf-btn-primary !w-auto px-8 mx-auto"
             >
               Back to Dashboard
@@ -168,7 +168,7 @@ const PracticeSession = () => {
               </div>
             </div>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/app/dashboard')}
               className="nf-btn-primary !w-auto px-8 mx-auto"
             >
               Back to Dashboard
@@ -332,3 +332,4 @@ const PracticeSession = () => {
 };
 
 export default PracticeSession;
+

@@ -101,7 +101,7 @@ export default function AIQuizSession() {
           totalQuestions: questions.length,
           subject,
           topic,
-          returnTo: '/ai-assistant',
+          returnTo: '/app/ai-assistant',
           returnLabel: 'AI Assistant',
           prefillPrompt: `Give me another quiz on ${topic} and focus on my mistakes.`,
           retryTo: '/ai-quiz-session',
@@ -128,7 +128,7 @@ export default function AIQuizSession() {
           <p className="text-sm text-muted-foreground mb-5">
             Please go back to the AI Assistant and start a quiz again.
           </p>
-          <button onClick={() => navigate('/ai-assistant')} className="nf-btn-primary w-full">
+          <button onClick={() => navigate('/app/ai-assistant')} className="nf-btn-primary w-full">
             Back to AI Assistant
           </button>
         </div>
@@ -164,4 +164,3 @@ export default function AIQuizSession() {
     </>
   );
 }
-

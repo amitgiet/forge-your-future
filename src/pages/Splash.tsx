@@ -2,17 +2,20 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Zap } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Splash = () => {
   const navigate = useNavigate();
+  const { loading, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    if (loading) return;
+
     const timer = setTimeout(() => {
-      navigate(token ? '/dashboard' : '/login');
+      navigate(isAuthenticated ? '/app/dashboard' : '/app/login');
     }, 2000);
     return () => clearTimeout(timer);
-  }, [navigate]);
+  }, [isAuthenticated, loading, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center nf-safe-area relative overflow-hidden">

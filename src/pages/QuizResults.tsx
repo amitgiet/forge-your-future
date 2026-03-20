@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trophy, TrendingUp, Target, Home, RotateCcw, BookOpen, ArrowLeft, Eye } from 'lucide-react';
@@ -211,7 +211,7 @@ const QuizResults = () => {
           <div className="text-6xl mb-4">{getMedal()}</div>
           <h1 className="text-3xl font-black text-foreground mb-2">{correctCount}/{safeTotalQuestions}</h1>
           <p className="text-xl font-bold text-primary mb-1">{percentage}% Score</p>
-          <p className="text-sm text-muted-foreground">{effectiveSubject} • {effectiveTopic}</p>
+          <p className="text-sm text-muted-foreground">{effectiveSubject} � {effectiveTopic}</p>
           {!hasAnswerDetails && summaryState?.attemptedAt && (
             <p className="text-xs text-muted-foreground mt-1">Last attempt: {new Date(summaryState.attemptedAt).toLocaleString()}</p>
           )}
@@ -349,7 +349,7 @@ const QuizResults = () => {
             <RotateCcw className="w-5 h-5" />
             Retry
           </button>
-          <button onClick={() => navigate('/dashboard')} className="nf-btn-primary flex items-center justify-center gap-2">
+          <button onClick={() => navigate('/app/dashboard')} className="nf-btn-primary flex items-center justify-center gap-2">
             <Home className="w-5 h-5" />
             Home
           </button>
@@ -370,3 +370,4 @@ const QuizResults = () => {
 };
 
 export default QuizResults;
+

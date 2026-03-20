@@ -47,7 +47,7 @@ const Onboarding = () => {
         await apiService.auth.updateProfile({ name: formData.name });
       }
       
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     } catch (error) {
       console.error('Onboarding error:', error);
     } finally {
@@ -323,3 +323,4 @@ const Onboarding = () => {
 };
 
 export default Onboarding;
+

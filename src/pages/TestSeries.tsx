@@ -393,7 +393,7 @@ const TestSeries = () => {
           <div className="flex items-center gap-3">
             {pageLevel !== 'series' && (
               <button
-                onClick={() => pageLevel === 'tests' ? navigate(`/tests/${activeSeries}`) : navigate('/tests')}
+                onClick={() => pageLevel === 'tests' ? navigate(`/app/tests/${activeSeries}`) : navigate('/app/tests')}
                 className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 text-foreground" />

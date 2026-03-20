@@ -183,7 +183,7 @@ const Signup = () => {
             <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/app/login')}
                 className="text-primary font-semibold hover:underline"
               >
                 Login

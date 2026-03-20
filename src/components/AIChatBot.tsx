@@ -300,7 +300,7 @@ export default function AIChatBot() {
         navigate('/tests/pdf-viewer', { state: { url: payload.questionPdf, title: payload.title || 'Mock PDF' } });
         return;
       }
-      if (type === 'open_test_series') { navigate('/tests'); return; }
+      if (type === 'open_test_series') { navigate('/app/tests'); return; }
       if (type === 'take_quiz' || type === 'start_ai_quiz') { await startQuizFromAction(payload); return; }
     } catch (e) { console.error('Action execution failed:', e); }
   };
@@ -365,7 +365,7 @@ export default function AIChatBot() {
               state: {
                 mode: 'practice', subject: sumSubject, topic: sumTopic, totalQuestions: sumTotal,
                 summary: { score: sumScore, total: sumTotal, percentage: sumPct, subject: sumSubject, topic: sumTopic, chapterLabel: String(storedQuiz.chapterId || quiz.chapter || ''), attemptedAt: last?.attemptDate ? String(last.attemptDate) : undefined },
-                returnTo: '/ai-assistant', returnLabel: 'AI Assistant',
+                returnTo: '/app/ai-assistant', returnLabel: 'AI Assistant',
                 prefillPrompt: `Give me another quiz on ${sumTopic} and focus on my mistakes.`,
                 retryTo: '/ai-quiz-session', retryState: { quizId: quizIdStr, topic: sumTopic, subject: sumSubject, chapter: storedQuiz.chapterId || quiz.chapter || '', questions: mappedQuestions }
               }
@@ -395,7 +395,7 @@ export default function AIChatBot() {
               state: {
                 mode: 'practice', subject: sumSubject, topic: sumTopic, totalQuestions: total,
                 summary: { score, total, percentage: pct, subject: sumSubject, topic: sumTopic, chapterLabel: String(quiz.chapter ?? ''), attemptedAt: analytics?.lastReviewed ? String(analytics.lastReviewed) : undefined },
-                returnTo: '/ai-assistant', returnLabel: 'AI Assistant',
+                returnTo: '/app/ai-assistant', returnLabel: 'AI Assistant',
                 prefillPrompt: `Give me another quiz on ${sumTopic} and focus on my mistakes.`,
                 retryTo: '/ai-quiz-session', retryState: { lineId: String(quiz.lineId), topic: sumTopic, subject: sumSubject, chapter: String(quiz.chapter ?? ''), questions: mappedQuestions }
               }
@@ -437,7 +437,7 @@ export default function AIChatBot() {
       <div className="sticky top-0 z-30 bg-card border-b border-border px-4 py-3" style={{ boxShadow: 'var(--shadow-sm)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/dashboard')} className="w-9 h-9 flex items-center justify-center rounded-xl bg-muted hover:bg-accent transition-colors">
+            <button onClick={() => navigate('/app/dashboard')} className="w-9 h-9 flex items-center justify-center rounded-xl bg-muted hover:bg-accent transition-colors">
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--gradient-primary)' }}>
@@ -610,3 +610,4 @@ export default function AIChatBot() {
     </div>
   );
 }
+

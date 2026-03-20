@@ -176,7 +176,7 @@ const LearningPathFlow = () => {
               You've finished all content in this learning path
             </p>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/app/dashboard')}
               className="nf-btn-primary !w-auto px-8 mx-auto"
             >
               Back to Dashboard
@@ -362,3 +362,4 @@ const LearningPathFlow = () => {
 };
 
 export default LearningPathFlow;
+

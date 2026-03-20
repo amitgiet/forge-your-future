@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, demoLogin } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -24,10 +24,6 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoLogin = () => {
-    demoLogin();
   };
 
   return (
@@ -118,23 +114,10 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Demo */}
-          <div className="mt-4 pt-4 border-t border-border">
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              className="nf-btn-outline w-full"
-            >
-              <Zap className="w-4 h-4" />
-              Enter Demo Mode
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
           <div className="mt-4 text-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <button onClick={() => navigate('/signup')} className="text-primary font-semibold hover:underline">
+              <button onClick={() => navigate('/app/signup')} className="text-primary font-semibold hover:underline">
                 Sign up
               </button>
             </p>

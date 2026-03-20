@@ -2,7 +2,13 @@ import type { Config } from "tailwindcss";
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./index.html",
+    "./pages/**/*.{js,jsx,ts,tsx}",
+    "./components/**/*.{js,jsx,ts,tsx}",
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
   prefix: "",
   theme: {
     container: {
@@ -73,6 +79,8 @@ export default {
       fontFamily: {
         sans: ["Inter", "-apple-system", "system-ui", "sans-serif"],
         display: ["Plus Jakarta Sans", "Inter", "system-ui", "sans-serif"],
+        inter: ["Inter", "-apple-system", "system-ui", "sans-serif"],
+        poppins: ["Poppins", "Inter", "-apple-system", "system-ui", "sans-serif"],
       },
       boxShadow: {
         'sm': 'var(--shadow-sm)',

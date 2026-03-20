@@ -247,7 +247,7 @@ const NCERTSearch = () => {
       {/* Sticky Header */}
       <div className="sticky top-0 z-30 bg-card border-b border-border shadow-sm">
         <div className="flex items-center gap-3 px-4 py-3 max-w-3xl mx-auto">
-          <button onClick={() => navigate('/dashboard')} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+          <button onClick={() => navigate('/app/dashboard')} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
             <ArrowLeft className="w-4.5 h-4.5 text-foreground" />
           </button>
           <div className="flex-1 min-w-0">
@@ -601,3 +601,4 @@ const NCERTSearch = () => {
 };
 
 export default NCERTSearch;
+

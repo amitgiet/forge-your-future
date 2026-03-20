@@ -135,7 +135,7 @@ const Dashboard = () => {
 
   const quickActions = [
     { icon: BookMarked, label: 'Formulas', sub: 'Cards', path: '/formula-cards', color: 'primary' },
-    { icon: FileText, label: 'Mock Test', sub: 'Series', path: '/tests', color: 'warning' },
+    { icon: FileText, label: 'Mock Test', sub: 'Series', path: '/app/tests', color: 'warning' },
     {
       icon: Brain,
       label: 'Revision',
@@ -196,7 +196,7 @@ const Dashboard = () => {
                 <div className="flex items-center gap-2">
                   <ThemeToggle />
                   <motion.button
-                    onClick={() => navigate('/profile')}
+                    onClick={() => navigate('/app/profile')}
                     className="w-10 h-10 rounded-2xl flex items-center justify-center text-primary-foreground font-bold text-sm"
                     style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-glow-primary)' }}
                     whileHover={{ scale: 1.05 }}
@@ -407,3 +407,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

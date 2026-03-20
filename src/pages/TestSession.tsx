@@ -59,7 +59,7 @@ export default function TestSession() {
     } catch (err) {
       console.error('Failed to load test:', err);
       setError('Failed to load test');
-      navigate('/tests');
+      navigate('/app/tests');
     } finally {
       setLoading(false);
     }
@@ -110,7 +110,7 @@ export default function TestSession() {
         <h2 className="text-2xl font-bold mb-2">Error Loading Test</h2>
         <p className="text-muted-foreground mb-6">{error || 'No questions found.'}</p>
         <motion.button
-          onClick={() => navigate('/tests')}
+          onClick={() => navigate('/app/tests')}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="px-6 py-2 bg-primary hover:bg-primary/90 rounded-lg font-bold text-primary-foreground"

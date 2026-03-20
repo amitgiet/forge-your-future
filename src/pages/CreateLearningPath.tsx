@@ -197,7 +197,7 @@ const CreateLearningPath = () => {
           {/* Actions */}
           <div className="flex gap-3 pt-2">
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/app/dashboard')}
               className="nf-btn-outline flex-1"
               disabled={loading}
             >
@@ -227,3 +227,4 @@ const CreateLearningPath = () => {
 };
 
 export default CreateLearningPath;
+

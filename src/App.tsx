@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { ThemeProvider } from 'next-themes';
@@ -57,8 +57,48 @@ import FormulaChapterDetail from "./pages/FormulaChapterDetail";
 import FormulaCardViewer from "./pages/FormulaCardViewer";
 import StudyPlanner from "./pages/StudyPlanner";
 import NotFound from "./pages/NotFound";
+import MarketingHome from "./marketing/pages/Home";
 
 const queryClient = new QueryClient();
+
+const legacyAppRoots = new Set([
+  "dashboard",
+  "login",
+  "signup",
+  "onboarding",
+  "tests",
+  "social",
+  "profile",
+  "ai-assistant",
+  "revision",
+  "curriculum-browser",
+  "pyq-marked-ncert",
+  "mock-analyzer",
+  "ncert-search",
+  "my-learning-paths",
+  "doubts",
+  "formula-cards",
+  "quiz-generator",
+  "study-plan",
+  "leaderboard",
+  "daily-challenge",
+  "chat",
+  "add-friend",
+  "test",
+  "quiz",
+  "analytics",
+  "practice-session",
+  "learning-path"
+]);
+
+const LegacyAppRedirect = () => {
+  const location = useLocation();
+  const firstSegment = location.pathname.split('/').filter(Boolean)[0];
+  if (!firstSegment || !legacyAppRoots.has(firstSegment)) {
+    return <NotFound />;
+  }
+  return <Navigate to={`/app${location.pathname}${location.search}${location.hash}`} replace />;
+};
 
 const App = () => (
   <Provider store={store}>
@@ -72,57 +112,58 @@ const App = () => (
                   <Toaster />
                   <Sonner />
                   <Routes>
-                    <Route path="/" element={<Splash />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-                    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                    <Route path="/quiz" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
-                    <Route path="/mock-analyzer" element={<ProtectedRoute><MockAnalyzer /></ProtectedRoute>} />
-                    <Route path="/ncert-search" element={<ProtectedRoute><NCERTSearch /></ProtectedRoute>} />
-                    <Route path="/ncert-reader" element={<ProtectedRoute><NCERTReader /></ProtectedRoute>} />
-                    <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                    <Route path="/revision" element={<ProtectedRoute><Revision /></ProtectedRoute>} />
-                    <Route path="/create-learning-path" element={<ProtectedRoute><CreateLearningPath /></ProtectedRoute>} />
-                    <Route path="/learning-path/:pathId" element={<ProtectedRoute><LearningPathFlow /></ProtectedRoute>} />
-                    <Route path="/my-learning-paths" element={<ProtectedRoute><MyLearningPaths /></ProtectedRoute>} />
-                    <Route path="/start-practice" element={<ProtectedRoute><StartPractice /></ProtectedRoute>} />
-                    <Route path="/practice-session/:challengeId" element={<ProtectedRoute><PracticeSession /></ProtectedRoute>} />
-                    <Route path="/my-challenges" element={<ProtectedRoute><MyChallenges /></ProtectedRoute>} />
-                    <Route path="/social" element={<ProtectedRoute><Social /></ProtectedRoute>} />
-                    <Route path="/add-friend" element={<ProtectedRoute><AddFriend /></ProtectedRoute>} />
-                    <Route path="/chat/:chatId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-                    <Route path="/quiz-start" element={<ProtectedRoute><QuizStart /></ProtectedRoute>} />
-                    <Route path="/quiz/start" element={<ProtectedRoute><QuizStart /></ProtectedRoute>} />
-                    <Route path="/quiz-session" element={<ProtectedRoute><QuizSession /></ProtectedRoute>} />
-                    <Route path="/quiz-results" element={<ProtectedRoute><QuizResults /></ProtectedRoute>} />
-                    <Route path="/revision-dashboard" element={<ProtectedRoute><RevisionDashboard /></ProtectedRoute>} />
-                    <Route path="/revision/track" element={<ProtectedRoute><StartPractice /></ProtectedRoute>} />
-                    <Route path="/quiz-generator" element={<ProtectedRoute><QuizGenerator /></ProtectedRoute>} />
-                    <Route path="/tests" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
-                    <Route path="/tests/:seriesKey" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
-                    <Route path="/tests/:seriesKey/:typeKey" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
-                    <Route path="/tests/pdf-viewer" element={<ProtectedRoute><MockPdfViewer /></ProtectedRoute>} />
-                    <Route path="/test/custom/create" element={<ProtectedRoute><CustomTestCreate /></ProtectedRoute>} />
-                    <Route path="/test/custom-session" element={<ProtectedRoute><CustomTestSession /></ProtectedRoute>} />
-                    <Route path="/test/session/:attemptId" element={<ProtectedRoute><TestSession /></ProtectedRoute>} />
-                    <Route path="/test/report/:attemptId" element={<ProtectedRoute><TestReport /></ProtectedRoute>} />
-                    <Route path="/daily-challenge" element={<ProtectedRoute><DailyChallenge /></ProtectedRoute>} />
-                    <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-                    <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
-                    <Route path="/ai-quiz-session" element={<ProtectedRoute><AIQuizSession /></ProtectedRoute>} />
-                    <Route path="/pyq-marked-ncert" element={<ProtectedRoute><PYQMarkedNCERT /></ProtectedRoute>} />
-                    <Route path="/pyq-marked-ncert/:topicId" element={<ProtectedRoute><PYQTopicViewer /></ProtectedRoute>} />
-                    <Route path="/curriculum-browser" element={<ProtectedRoute><CurriculumBrowser /></ProtectedRoute>} />
-                    <Route path="/curriculum-quiz-instructions" element={<ProtectedRoute><CurriculumQuizInstructions /></ProtectedRoute>} />
-                    <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                    <Route path="/study-plan" element={<ProtectedRoute><StudyPlanner /></ProtectedRoute>} />
-                    <Route path="/doubts" element={<ProtectedRoute><DoubtForum /></ProtectedRoute>} />
-                    <Route path="/doubts/:id" element={<ProtectedRoute><DoubtDetail /></ProtectedRoute>} />
-                    <Route path="/formula-cards" element={<ProtectedRoute><FormulaCards /></ProtectedRoute>} />
-                    <Route path="/formula-cards/:chapterId" element={<ProtectedRoute><FormulaChapterDetail /></ProtectedRoute>} />
-                    <Route path="/formula-cards/viewer" element={<ProtectedRoute><FormulaCardViewer /></ProtectedRoute>} />
-                    <Route path="*" element={<NotFound />} />
+                    <Route path="/" element={<MarketingHome />} />
+                    <Route path="/app/" element={<Splash />} />
+                    <Route path="/app/login" element={<Login />} />
+                    <Route path="/app/signup" element={<Signup />} />
+                    <Route path="/app/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+                    <Route path="/app/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/app/quiz" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
+                    <Route path="/app/mock-analyzer" element={<ProtectedRoute><MockAnalyzer /></ProtectedRoute>} />
+                    <Route path="/app/ncert-search" element={<ProtectedRoute><NCERTSearch /></ProtectedRoute>} />
+                    <Route path="/app/ncert-reader" element={<ProtectedRoute><NCERTReader /></ProtectedRoute>} />
+                    <Route path="/app/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                    <Route path="/app/revision" element={<ProtectedRoute><Revision /></ProtectedRoute>} />
+                    <Route path="/app/create-learning-path" element={<ProtectedRoute><CreateLearningPath /></ProtectedRoute>} />
+                    <Route path="/app/learning-path/:pathId" element={<ProtectedRoute><LearningPathFlow /></ProtectedRoute>} />
+                    <Route path="/app/my-learning-paths" element={<ProtectedRoute><MyLearningPaths /></ProtectedRoute>} />
+                    <Route path="/app/start-practice" element={<ProtectedRoute><StartPractice /></ProtectedRoute>} />
+                    <Route path="/app/practice-session/:challengeId" element={<ProtectedRoute><PracticeSession /></ProtectedRoute>} />
+                    <Route path="/app/my-challenges" element={<ProtectedRoute><MyChallenges /></ProtectedRoute>} />
+                    <Route path="/app/social" element={<ProtectedRoute><Social /></ProtectedRoute>} />
+                    <Route path="/app/add-friend" element={<ProtectedRoute><AddFriend /></ProtectedRoute>} />
+                    <Route path="/app/chat/:chatId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                    <Route path="/app/quiz-start" element={<ProtectedRoute><QuizStart /></ProtectedRoute>} />
+                    <Route path="/app/quiz/start" element={<ProtectedRoute><QuizStart /></ProtectedRoute>} />
+                    <Route path="/app/quiz-session" element={<ProtectedRoute><QuizSession /></ProtectedRoute>} />
+                    <Route path="/app/quiz-results" element={<ProtectedRoute><QuizResults /></ProtectedRoute>} />
+                    <Route path="/app/revision-dashboard" element={<ProtectedRoute><RevisionDashboard /></ProtectedRoute>} />
+                    <Route path="/app/revision/track" element={<ProtectedRoute><StartPractice /></ProtectedRoute>} />
+                    <Route path="/app/quiz-generator" element={<ProtectedRoute><QuizGenerator /></ProtectedRoute>} />
+                    <Route path="/app/tests" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
+                    <Route path="/app/tests/:seriesKey" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
+                    <Route path="/app/tests/:seriesKey/:typeKey" element={<ProtectedRoute><TestSeries /></ProtectedRoute>} />
+                    <Route path="/app/tests/pdf-viewer" element={<ProtectedRoute><MockPdfViewer /></ProtectedRoute>} />
+                    <Route path="/app/test/custom/create" element={<ProtectedRoute><CustomTestCreate /></ProtectedRoute>} />
+                    <Route path="/app/test/custom-session" element={<ProtectedRoute><CustomTestSession /></ProtectedRoute>} />
+                    <Route path="/app/test/session/:attemptId" element={<ProtectedRoute><TestSession /></ProtectedRoute>} />
+                    <Route path="/app/test/report/:attemptId" element={<ProtectedRoute><TestReport /></ProtectedRoute>} />
+                    <Route path="/app/daily-challenge" element={<ProtectedRoute><DailyChallenge /></ProtectedRoute>} />
+                    <Route path="/app/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+                    <Route path="/app/ai-assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
+                    <Route path="/app/ai-quiz-session" element={<ProtectedRoute><AIQuizSession /></ProtectedRoute>} />
+                    <Route path="/app/pyq-marked-ncert" element={<ProtectedRoute><PYQMarkedNCERT /></ProtectedRoute>} />
+                    <Route path="/app/pyq-marked-ncert/:topicId" element={<ProtectedRoute><PYQTopicViewer /></ProtectedRoute>} />
+                    <Route path="/app/curriculum-browser" element={<ProtectedRoute><CurriculumBrowser /></ProtectedRoute>} />
+                    <Route path="/app/curriculum-quiz-instructions" element={<ProtectedRoute><CurriculumQuizInstructions /></ProtectedRoute>} />
+                    <Route path="/app/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                    <Route path="/app/study-plan" element={<ProtectedRoute><StudyPlanner /></ProtectedRoute>} />
+                    <Route path="/app/doubts" element={<ProtectedRoute><DoubtForum /></ProtectedRoute>} />
+                    <Route path="/app/doubts/:id" element={<ProtectedRoute><DoubtDetail /></ProtectedRoute>} />
+                    <Route path="/app/formula-cards" element={<ProtectedRoute><FormulaCards /></ProtectedRoute>} />
+                    <Route path="/app/formula-cards/:chapterId" element={<ProtectedRoute><FormulaChapterDetail /></ProtectedRoute>} />
+                    <Route path="/app/formula-cards/viewer" element={<ProtectedRoute><FormulaCardViewer /></ProtectedRoute>} />
+                    <Route path="*" element={<LegacyAppRedirect />} />
                   </Routes>
                 </TooltipProvider>
               </RevisionProvider>
@@ -135,3 +176,5 @@ const App = () => (
 );
 
 export default App;
+
+

@@ -119,7 +119,7 @@ export default function TestReport() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-background">
         <AlertCircle className="w-12 h-12 text-destructive mb-3" />
         <p className="text-muted-foreground mb-4">Could not load report</p>
-        <Button onClick={() => navigate('/tests')}>Back to Tests</Button>
+        <Button onClick={() => navigate('/app/tests')}>Back to Tests</Button>
       </div>
     );
   }
@@ -148,7 +148,7 @@ export default function TestReport() {
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => (returnTo ? navigate(returnTo) : navigate('/tests'))}
+            onClick={() => (returnTo ? navigate(returnTo) : navigate('/app/tests'))}
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
@@ -485,7 +485,7 @@ export default function TestReport() {
           <Button
             variant="outline"
             className="flex-1 h-11"
-            onClick={() => (returnTo ? navigate(returnTo) : navigate('/tests'))}
+            onClick={() => (returnTo ? navigate(returnTo) : navigate('/app/tests'))}
           >
             {returnLabel}
           </Button>

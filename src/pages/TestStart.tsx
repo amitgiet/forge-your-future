@@ -15,7 +15,7 @@ const TestStart = () => {
   useEffect(() => {
     const loadTestDetails = async () => {
       if (!testId) {
-        navigate('/tests');
+        navigate('/app/tests');
         return;
       }
       try {
@@ -24,7 +24,7 @@ const TestStart = () => {
       } catch (error) {
         console.error('Failed to load test details:', error);
         alert('Could not load test details. Please try again.');
-        navigate('/tests');
+        navigate('/app/tests');
       } finally {
         setLoading(false);
       }
@@ -69,7 +69,7 @@ const TestStart = () => {
           className="flex items-center gap-4 mb-6"
         >
           <button
-            onClick={() => navigate('/tests')}
+            onClick={() => navigate('/app/tests')}
             className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center"
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />

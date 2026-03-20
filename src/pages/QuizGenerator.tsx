@@ -181,7 +181,7 @@ const QuizGenerator = () => {
         <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
           <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/app/dashboard')}
               className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center"
             >
               <ArrowLeft className="w-4 h-4 text-foreground" />
@@ -495,7 +495,7 @@ const QuizGenerator = () => {
             </motion.button>
 
             <motion.button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/app/dashboard')}
               whileTap={{ scale: 0.98 }}
               className="w-full py-3 bg-card border-2 border-border rounded-2xl text-foreground font-semibold"
             >
@@ -512,3 +512,4 @@ const QuizGenerator = () => {
 };
 
 export default QuizGenerator;
+

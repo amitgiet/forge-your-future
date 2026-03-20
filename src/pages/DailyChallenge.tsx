@@ -315,7 +315,7 @@ const DailyChallenge = () => {
             </div>
 
             <motion.button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/app/dashboard')}
               className="nf-btn-primary w-full"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -641,7 +641,7 @@ const DailyChallenge = () => {
                   </motion.button>
 
                   <motion.button
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate('/app/dashboard')}
                     className="nf-btn-outline w-full"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -659,3 +659,4 @@ const DailyChallenge = () => {
 };
 
 export default DailyChallenge;
+
