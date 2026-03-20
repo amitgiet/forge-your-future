@@ -21,7 +21,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "₹299",
+    price: "₹99",
     period: "/month",
     desc: "Full NEET prep power. Everything you need to crack it.",
     cta: "Get Pro Access",
