@@ -20,8 +20,8 @@ export default function Home() {
       "@context": "https://schema.org",
       "@type": "Organization",
       name: "NEETFORGE",
-      url: "https://neetforge.com/",
-      logo: "https://neetforge.com/favicon.ico",
+      url: "https://neetforge.in/",
+      logo: "https://neetforge.in/favicon.ico",
       description:
         "AI-powered NEET preparation platform for daily practice, mock test analysis, revision planning, and weak-area improvement.",
     },
@@ -29,7 +29,7 @@ export default function Home() {
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: "NEETFORGE",
-      url: "https://neetforge.com/",
+      url: "https://neetforge.in/",
       description:
         "NEET preparation website focused on practice, analytics, revision, and performance improvement.",
     },

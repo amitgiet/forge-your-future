@@ -406,7 +406,7 @@ export default function NeetHero() {
           </div>
 
           <div className="flex items-center gap-4 flex-wrap">
-            <a href="https://neetforge.vercel.app" target="_blank" rel="noreferrer"
+            <a href="/app/" 
               className="flex items-center gap-2 bg-[#2563EB] text-white font-bold px-7 py-4 rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 text-base">
               Start Practicing Free <ArrowRight className="w-4 h-4" />
             </a>
