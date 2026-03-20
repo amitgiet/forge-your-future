@@ -374,11 +374,11 @@ export default function NeetHero() {
   const chips = screens[current].chips;
 
   return (
-    <section className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-gradient-to-br from-[#EFF6FF] via-white to-[#F0FDF4]">
+    <section className="relative min-h-screen flex items-center pt-12 md:pt-12 overflow-hidden bg-gradient-to-br from-[#EFF6FF] via-white to-[#F0FDF4]">
       <div className="absolute top-20 right-0 w-[600px] h-[600px] bg-blue-100/40 rounded-full blur-3xl -z-0 translate-x-1/3" />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-indigo-100/30 rounded-full blur-3xl -z-0 -translate-x-1/3" />
 
-      <div className="relative max-w-6xl mx-auto px-5 py-16 grid md:grid-cols-2 gap-16 items-center">
+      <div className="relative max-w-6xl mx-auto px-5 pt-8 pb-16 md:py-16 grid md:grid-cols-2 gap-12 md:gap-16 items-center">
         {/* Left */}
         <div>
           <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-[#2563EB] text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-wider">
