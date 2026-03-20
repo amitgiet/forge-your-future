@@ -82,13 +82,13 @@ export default function NeetFAQ() {
             </div> */}
           </div>
 
-          <div className="rounded-[2rem] border border-slate-200 bg-white/90 p-3 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.3)] backdrop-blur-sm">
+          <div className="rounded-[2rem] border border-slate-200 bg-white/90 p-3 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.22),0_10px_20px_-14px_rgba(15,23,42,0.12)] backdrop-blur-sm">
             <Accordion type="single" collapsible defaultValue="faq-0" className="space-y-3">
               {faqs.map((faq, index) => (
                 <AccordionItem
                   key={faq.question}
                   value={`faq-${index}`}
-                  className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-0 shadow-sm transition-colors data-[state=open]:border-blue-200 data-[state=open]:bg-blue-50/40"
+                  className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white px-0 shadow-[0_18px_34px_-26px_rgba(15,23,42,0.28),0_3px_8px_-4px_rgba(15,23,42,0.12)] transition-all duration-300 data-[state=open]:border-blue-200 data-[state=open]:bg-blue-50/40 data-[state=open]:shadow-[0_24px_44px_-28px_rgba(37,99,235,0.28),0_10px_18px_-10px_rgba(37,99,235,0.14)]"
                 >
                   <AccordionTrigger className="group px-6 py-5 text-left text-base font-bold text-slate-900 hover:no-underline [&>svg]:hidden">
                     <div className="flex w-full items-center justify-between gap-4">

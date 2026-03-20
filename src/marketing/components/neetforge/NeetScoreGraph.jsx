@@ -113,15 +113,16 @@ export default function NeetScoreGraph() {
 
         <div className="flex flex-col lg:flex-row gap-8 items-stretch">
           {/* Left: student cards */}
-          <div className="flex flex-row lg:flex-col gap-3 lg:w-56">
+          <div className="-mx-5 overflow-x-auto px-5 pb-2 lg:mx-0 lg:overflow-visible lg:px-0 lg:pb-0">
+            <div className="flex w-max snap-x snap-mandatory flex-row gap-3 lg:w-auto lg:flex-col lg:gap-3 lg:snap-none lg:w-56">
             {students.map((s, i) => (
               <button
                 key={i}
                 onClick={() => setActive(i)}
-                className={`flex-1 lg:flex-none text-left px-4 py-4 rounded-2xl border transition-all duration-200 ${
+                className={`min-w-[170px] snap-start lg:min-w-0 lg:flex-none text-left px-4 py-4 rounded-2xl border transition-all duration-200 shadow-[0_18px_34px_-26px_rgba(15,23,42,0.22),0_6px_14px_-10px_rgba(15,23,42,0.12)] ${
                   active === i
-                    ? "bg-[#0f172a] border-[#0f172a] text-white shadow-lg"
-                    : "bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-sm"
+                    ? "bg-[#0f172a] border-[#0f172a] text-white shadow-[0_24px_44px_-24px_rgba(15,23,42,0.45),0_10px_20px_-12px_rgba(15,23,42,0.28)]"
+                    : "bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-[0_22px_40px_-26px_rgba(15,23,42,0.26),0_8px_18px_-12px_rgba(15,23,42,0.14)]"
                 }`}
               >
                 <div className="flex items-center gap-3 mb-2">
@@ -143,6 +144,7 @@ export default function NeetScoreGraph() {
                 </div>
               </button>
             ))}
+            </div>
           </div>
 
           {/* Right: chart */}
