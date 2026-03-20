@@ -336,7 +336,7 @@ const screens = [
   {
     component: TestSeriesScreen,
     chips: [
-      { text: "📄 29 Tests", pos: "top-16 -left-12", style: "bg-white border border-gray-200 text-gray-800" },
+      { text: "📄 200+ Tests", pos: "top-16 -left-12", style: "bg-white border border-gray-200 text-gray-800" },
       { text: "🆓 Free Access", pos: "top-1/2 -right-12", style: "bg-green-500 text-white" },
       { text: "⏱ NTA Pattern", pos: "bottom-20 -left-8", style: "bg-[#2563EB] text-white" },
     ],

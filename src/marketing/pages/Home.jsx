@@ -7,6 +7,8 @@ import NeetStats from "../components/neetforge/NeetStats";
 import NeetHowItWorks from "../components/neetforge/NeetHowItWorks";
 import NeetTestimonials from "../components/neetforge/NeetTestimonials";
 import NeetPricing from "../components/neetforge/NeetPricing";
+import NeetScoreGraph from "../components/neetforge/NeetScoreGraph";
+import NeetAppDownload from "../components/neetforge/NeetAppDownload";
 import NeetCTA from "../components/neetforge/NeetCTA";
 import NeetFooter from "../components/neetforge/NeetFooter";
 
@@ -21,6 +23,8 @@ export default function Home() {
       <NeetHowItWorks />
       <NeetTestimonials />
       <NeetPricing />
+      <NeetScoreGraph />
+      <NeetAppDownload />
       <NeetCTA />
       <NeetFooter />
     </div>
