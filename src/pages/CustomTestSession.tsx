@@ -13,6 +13,16 @@ interface LocationState {
   duration?: number; // minutes
   subject?: string;
   topic?: string;
+  curriculumRun?: { runId: string };
+  curriculumRestore?: any;
+  curriculumContext?: {
+    subject: string;
+    chapterId: string;
+    topic: string;
+    subTopic: string;
+    mode: 'practice' | 'test';
+    uids?: number[];
+  };
 }
 
 function optionToIndex(value: unknown): number | null {
@@ -69,6 +79,128 @@ function normalizeQuestion(raw: any, defaultSubject?: string): NTAQuestion {
     topic: raw.topic || '',
     difficulty: raw.difficulty || '',
     imageUrl: raw.imageUrl || raw.image || '',
+  };
+}
+
+function buildLocalReportAttempt(
+  questions: NTAQuestion[],
+  submitData: NTASubmitData,
+  title: string
+) {
+  const answers = questions.map((question, index) => {
+    const selectedOption = submitData.answers[index];
+    const correctAnswerIndex = optionToIndex(question.correctAnswer);
+    const isCorrect =
+      selectedOption !== null &&
+      correctAnswerIndex !== null &&
+      selectedOption === correctAnswerIndex;
+
+    return {
+      questionId: {
+        _id: String(question._id || question.id || index),
+      },
+      selectedOption:
+        selectedOption !== null ? String.fromCharCode(65 + selectedOption) : null,
+      timeSpent: Number(submitData.meta[index]?.timeSpent || 0),
+      isMarkedForReview:
+        submitData.meta[index]?.state === 'marked-review' ||
+        submitData.meta[index]?.state === 'answered-marked',
+      isCorrect,
+    };
+  });
+
+  let correct = 0;
+  let incorrect = 0;
+  let skipped = 0;
+
+  const subjectMap = new Map<string, { correct: number; total: number }>();
+  const chapterMap = new Map<string, { subject: string; correct: number; total: number; wrong: number }>();
+
+  questions.forEach((question, index) => {
+    const selectedOption = submitData.answers[index];
+    const correctAnswerIndex = optionToIndex(question.correctAnswer);
+    const isAttempted = selectedOption !== null;
+    const isCorrect =
+      isAttempted &&
+      correctAnswerIndex !== null &&
+      selectedOption === correctAnswerIndex;
+
+    if (!isAttempted) skipped += 1;
+    else if (isCorrect) correct += 1;
+    else incorrect += 1;
+
+    const subjectKey = String(question.subject || 'General');
+    const subjectEntry = subjectMap.get(subjectKey) || { correct: 0, total: 0 };
+    subjectEntry.total += 1;
+    if (isCorrect) subjectEntry.correct += 1;
+    subjectMap.set(subjectKey, subjectEntry);
+
+    const chapterKey = String(question.chapter || question.topic || 'General');
+    const chapterEntry = chapterMap.get(chapterKey) || {
+      subject: subjectKey,
+      correct: 0,
+      total: 0,
+      wrong: 0,
+    };
+    chapterEntry.total += 1;
+    if (isCorrect) chapterEntry.correct += 1;
+    else if (isAttempted) chapterEntry.wrong += 1;
+    chapterMap.set(chapterKey, chapterEntry);
+  });
+
+  const totalQuestions = questions.length;
+  const totalMarks = totalQuestions * 4;
+  const marksObtained = correct * 4 - incorrect;
+  const totalTimeSpent = submitData.meta.reduce((sum, item) => sum + Number(item.timeSpent || 0), 0);
+
+  const subjectWise = Array.from(subjectMap.entries()).map(([subject, stats]) => ({
+    subject,
+    correct: stats.correct,
+    total: stats.total,
+    accuracy: stats.total > 0 ? (stats.correct / stats.total) * 100 : 0,
+  }));
+
+  const chapterWise = Array.from(chapterMap.entries()).map(([chapter, stats]) => ({
+    chapter,
+    subject: stats.subject,
+    correct: stats.correct,
+    total: stats.total,
+    accuracy: stats.total > 0 ? (stats.correct / stats.total) * 100 : 0,
+  }));
+
+  const weakAreas = chapterWise
+    .filter((entry) => entry.total > 0 && entry.accuracy < 60)
+    .sort((a, b) => a.accuracy - b.accuracy)
+    .map((entry) => ({
+      chapter: entry.chapter,
+      subject: entry.subject,
+      questionsWrong: chapterMap.get(entry.chapter)?.wrong || 0,
+      accuracy: entry.accuracy,
+    }));
+
+  return {
+    testId: {
+      _id: 'curriculum',
+      title,
+      questions,
+    },
+    questions,
+    answers,
+    results: {
+      marksObtained,
+      totalMarks,
+      correct,
+      incorrect,
+      skipped,
+      percentage: totalMarks > 0 ? (marksObtained / totalMarks) * 100 : 0,
+      timeAnalysis: {
+        totalTimeSpent,
+        avgTimePerQuestion: totalQuestions > 0 ? totalTimeSpent / totalQuestions : 0,
+      },
+      subjectWise,
+      chapterWise,
+    },
+    weakAreas,
   };
 }
 
@@ -171,9 +303,35 @@ export default function CustomTestSession() {
         await apiService.tests.submitTest(state.attemptId);
         navigate(`/app/test/report/${state.attemptId}`);
       } else {
-        // Fallback for legacy local questions flow if needed, but we should focus on the new flow
-        // navigate to results with local state...
-        navigate('/app/dashboard'); 
+        if (state.curriculumRun?.runId) {
+          await apiService.curriculum.submitRun(state.curriculumRun.runId, {
+            answers: data.answers,
+            questionTimes: data.meta.map((item) => Number(item.timeSpent || 0)),
+            elapsedSeconds: Number(data.timeTaken || 0),
+            remainingSeconds: null,
+          });
+        }
+
+        const attemptData = buildLocalReportAttempt(
+          questions,
+          data,
+          testInfo.title || state.title || 'Curriculum Quiz'
+        );
+
+        navigate('/app/test/report/curriculum', {
+          state: {
+            attemptData,
+            meta: data.meta,
+            timeTaken: data.timeTaken,
+            returnTo: '/app/curriculum-browser',
+            returnLabel: 'Back to Curriculum',
+            returnState: state.curriculumRestore
+              ? { curriculumRestore: state.curriculumRestore, refreshRoadmap: true }
+              : undefined,
+            retryTo: '/app/test/custom-session',
+            retryState: state,
+          },
+        });
       }
     } catch (err) {
       console.error('Failed to submit test:', err);

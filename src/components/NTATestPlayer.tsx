@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Clock, Menu, X, Flag, Star, StickyNote,
-  AlertTriangle, Eraser, CheckCircle2, Send, Eye, BookOpen
+  AlertTriangle, Eraser, CheckCircle2, Send, Eye, BookOpen, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -315,9 +315,16 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+    setShowSubmitDialog(false);
     recordTimeSpent();
     const answers = meta.map((m) => m.selectedOption);
-    await onSubmit({ answers, meta, timeTaken: duration - timeLeft });
+    try {
+      await onSubmit({ answers, meta, timeTaken: duration - timeLeft });
+    } catch (error) {
+      console.error('Failed to submit test:', error);
+      setIsSubmitting(false);
+      setShowSubmitDialog(true);
+    }
   };
 
   const q = questions[currentQ];
@@ -391,9 +398,14 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
                 size="sm"
                 className="h-8 text-xs font-bold px-3"
                 onClick={() => setShowSubmitDialog(true)}
+                disabled={isSubmitting}
               >
-                <Send className="w-3.5 h-3.5 mr-1" />
-                Submit
+                {isSubmitting ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5 mr-1" />
+                )}
+                {isSubmitting ? 'Submitting...' : 'Submit'}
               </Button>
             )}
           </div>
@@ -675,6 +687,20 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {isSubmitting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm">
+          <div className="rounded-2xl border border-border bg-card px-6 py-5 shadow-xl">
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Submitting your test</p>
+                <p className="text-xs text-muted-foreground">Preparing report and analysis...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

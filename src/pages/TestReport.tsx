@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Trophy, TrendingUp, Clock, Target, AlertCircle, CheckCircle, XCircle,
-  ArrowRight, ArrowLeft, Eye, BarChart3, Timer, Zap, BookOpen, Flag, RotateCcw
+  ArrowRight, ArrowLeft, BarChart3, Timer, Zap, BookOpen, Flag, RotateCcw
 } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import apiService from '../lib/apiService';
@@ -23,10 +23,31 @@ function formatDuration(seconds: number): string {
 
 const optionLabels = ['A', 'B', 'C', 'D'];
 
+const getText = (value: any): string => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    const resolved =
+      value.en ||
+      value.english ||
+      value.hi ||
+      value.hindi ||
+      value.text ||
+      value.value ||
+      Object.values(value).find((item) => typeof item === 'string');
+    return typeof resolved === 'string' ? resolved : '';
+  }
+  return String(value);
+};
+
 const getOptionsArray = (options: any): string[] => {
-  if (Array.isArray(options)) return options.map((o) => String(o ?? ''));
+  if (Array.isArray(options)) {
+    return options.map((opt) => getText(opt?.text || opt?.value || opt));
+  }
   if (options && typeof options === 'object') {
-    return optionLabels.map((label) => String(options[label] ?? ''));
+    return optionLabels.map((label) =>
+      getText(options[label] ?? options[label.toLowerCase()] ?? '')
+    );
   }
   return [];
 };
@@ -51,10 +72,9 @@ export default function TestReport() {
   const [openExplanations, setOpenExplanations] = useState<Record<string, boolean>>({});
   const returnTo: string | null = (location.state as any)?.returnTo ?? null;
   const returnLabel: string = (location.state as any)?.returnLabel ?? 'Back';
+  const returnState: Record<string, unknown> | null = (location.state as any)?.returnState ?? null;
   const retryTo: string | null = (location.state as any)?.retryTo ?? null;
-  const reviewQuestions: any[] = Array.isArray((location.state as any)?.questions)
-    ? (location.state as any).questions
-    : [];
+  const retryState: Record<string, unknown> | null = (location.state as any)?.retryState ?? null;
 
   const toggleExplanation = (key: string) => {
     setOpenExplanations((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -106,6 +126,55 @@ export default function TestReport() {
     return { total, avg, fast, medium, slow, bookmarked, markedReview, slowest5 };
   }, [ntaMeta]);
 
+  const reviewQuestions = useMemo(() => {
+    const stateQuestions = Array.isArray((location.state as any)?.questions)
+      ? (location.state as any).questions
+      : null;
+
+    if (stateQuestions?.length) {
+      return stateQuestions;
+    }
+
+    const testQuestions = Array.isArray(attempt?.testId?.questions)
+      ? attempt.testId.questions
+      : Array.isArray(attempt?.test?.questions)
+        ? attempt.test.questions
+        : Array.isArray(attempt?.questions)
+          ? attempt.questions
+          : [];
+    const answers = Array.isArray(attempt?.answers) ? attempt.answers : [];
+
+    const answerMap = new Map<string, any>();
+    answers.forEach((answer: any) => {
+      const questionId = String(answer?.questionId?._id || answer?.questionId || '');
+      if (questionId) {
+        answerMap.set(questionId, answer);
+      }
+    });
+
+    return testQuestions.map((question: any, idx: number) => {
+      const questionId = String(question?._id || question?.id || '');
+      const answer = questionId ? answerMap.get(questionId) : null;
+
+      return {
+        _id: questionId || String(idx),
+        id: questionId || String(idx),
+        question:
+          typeof question?.question === 'string'
+            ? question.question
+            : getText(question?.question || question?.text),
+        options: getOptionsArray(question?.options),
+        explanation:
+          typeof question?.explanation === 'string'
+            ? question.explanation
+            : getText(question?.explanation || question?.solution),
+        userAnswer: answer?.selectedOption ?? null,
+        correctAnswer: question?.correctAnswer ?? question?.correct ?? question?.correct_option ?? null,
+        subject: question?.subject || '',
+      };
+    });
+  }, [attempt, location.state]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -148,7 +217,11 @@ export default function TestReport() {
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => (returnTo ? navigate(returnTo) : navigate('/app/tests'))}
+            onClick={() =>
+              returnTo
+                ? navigate(returnTo, returnState ? { state: returnState } : undefined)
+                : navigate('/app/tests')
+            }
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
@@ -403,6 +476,7 @@ export default function TestReport() {
                   const selectedIdx = getAnswerIndex(q.userAnswer);
                   const correctIdx = getAnswerIndex(q.correctAnswer);
                   const isCorrect = selectedIdx !== null && correctIdx !== null && selectedIdx === correctIdx;
+                  const isUnattempted = selectedIdx === null;
                   const hasExplanation = Boolean(String(q.explanation || '').trim());
                   const isExplanationOpen = Boolean(openExplanations[reviewKey]);
 
@@ -412,9 +486,15 @@ export default function TestReport() {
                         <p className="text-xs font-semibold text-foreground">Q{idx + 1}. {q.question}</p>
                         <Badge
                           variant="secondary"
-                          className={isCorrect ? 'bg-emerald-500/15 text-emerald-600' : 'bg-destructive/15 text-destructive'}
+                          className={
+                            isUnattempted
+                              ? 'bg-muted text-muted-foreground'
+                              : isCorrect
+                                ? 'bg-emerald-500/15 text-emerald-600'
+                                : 'bg-destructive/15 text-destructive'
+                          }
                         >
-                          {isCorrect ? 'Correct' : 'Wrong'}
+                          {isUnattempted ? 'Skipped' : isCorrect ? 'Correct' : 'Wrong'}
                         </Badge>
                       </div>
 
@@ -485,7 +565,11 @@ export default function TestReport() {
           <Button
             variant="outline"
             className="flex-1 h-11"
-            onClick={() => (returnTo ? navigate(returnTo) : navigate('/app/tests'))}
+            onClick={() =>
+              returnTo
+                ? navigate(returnTo, returnState ? { state: returnState } : undefined)
+                : navigate('/app/tests')
+            }
           >
             {returnLabel}
           </Button>
@@ -493,19 +577,10 @@ export default function TestReport() {
             <Button
               variant="outline"
               className="flex-1 h-11"
-              onClick={() => navigate(retryTo)}
+              onClick={() => navigate(retryTo, retryState ? { state: retryState } : undefined)}
             >
               <RotateCcw className="w-4 h-4 mr-1.5" />
               Retake
-            </Button>
-          )}
-          {(attemptId !== 'curriculum' && attemptId !== 'custom') && (
-            <Button
-              className="flex-1 h-11"
-              onClick={() => navigate(`/test/${testId?._id}/solutions/${attemptId}`)}
-            >
-              <Eye className="w-4 h-4 mr-1.5" />
-              View Solutions
             </Button>
           )}
         </motion.div>
