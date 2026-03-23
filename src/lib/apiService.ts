@@ -411,19 +411,21 @@ export const apiService = {
         params: topic ? { topic } : {},
       }),
 
-    getFriendsLeaderboard: () => api.get('/social/friends/leaderboard'),
+    logResource: (data: {
+      chapterId: string;
+      subject?: string;
+      resourceType: string;
+      durationSeconds: number;
+    }) => api.post('/curriculum/log-resource', data),
 
-    createDirectChat: (friendId: string) => api.post('/social/chats/direct', { friendId }),
+    toggleResourceReaction: (data: {
+      chapterId: string;
+      resourceType: string;
+      reaction: 'like' | 'dislike' | 'none';
+    }) => api.post('/curriculum/toggle-reaction', data),
 
-    createGroupChat: (data: { name: string; participants: string[] }) =>
-      api.post('/social/chats/group', data),
-
-    getChats: () => api.get('/social/chats'),
-
-    sendMessage: (data: { chatId: string; text: string }) => api.post('/social/messages', data),
-
-    getMessages: (chatId: string, limit?: number, skip?: number) =>
-      api.get(`/social/messages/${chatId}?limit=${limit || 50}&skip=${skip || 0}`),
+    getResourceReactions: (chapterId: string) =>
+      api.get(`/curriculum/reactions/${encodeURIComponent(chapterId)}`),
   },
 
   // Test Series Hierarchy APIs

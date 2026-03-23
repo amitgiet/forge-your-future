@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 
 const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "Modules", href: "#modules" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "Features", href: "/#features" },
+  { label: "Modules", href: "/#modules" },
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Pricing", href: "/#pricing" },
 ];
 
 export default function NeetNavbar() {
@@ -37,11 +37,11 @@ export default function NeetNavbar() {
 
         {/* CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <a href="/app/login"
+          <a href="https://neetforge.in" target="_blank" rel="noreferrer"
             className="text-sm font-semibold text-[#2563EB] hover:underline">
             Sign In
           </a>
-          <a href="/app/signup"
+          <a href="https://neetforge.in" target="_blank" rel="noreferrer"
             className="bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
             Get Started Free
           </a>
@@ -59,7 +59,7 @@ export default function NeetNavbar() {
             <a key={l.label} href={l.href} onClick={() => setMobileOpen(false)}
               className="block text-sm font-medium text-gray-700 py-1.5">{l.label}</a>
           ))}
-          <a href="/app/signup"
+          <a href="https://neetforge.in" target="_blank" rel="noreferrer"
             className="block w-full text-center bg-[#2563EB] text-white font-semibold py-3 rounded-xl mt-2">
             Get Started Free
           </a>

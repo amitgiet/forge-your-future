@@ -1,9 +1,25 @@
 import React from "react";
 
 const links = {
-  Product: ["Features", "Modules", "How It Works", "Pricing", "Demo"],
-  Prep: ["Daily Practice", "Mock Tests", "Formula Cards", "Revision System", "Analytics"],
-  Company: ["About", "Careers", "Blog", "Contact"],
+  Product: [
+    { label: "Features", href: "#features" },
+    { label: "Modules", href: "#modules" },
+    { label: "How It Works", href: "#how-it-works" },
+    { label: "Pricing", href: "#pricing" },
+  ],
+  Prep: [
+    { label: "Daily Practice", href: "/neet-daily-practice" },
+    { label: "Mock Tests", href: "/neet-mock-tests" },
+    { label: "AI Analysis", href: "/neet-ai-analysis" },
+    { label: "Formula Cards", href: "/neet-formula-cards" },
+    { label: "Revision System", href: "/neet-revision" },
+  ],
+  Company: [
+    { label: "About", href: "/about" },
+    { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Terms of Service", href: "/terms" },
+    { label: "Contact", href: "mailto:support@neetforge.in" },
+  ],
 };
 
 export default function NeetFooter() {
@@ -19,7 +35,7 @@ export default function NeetFooter() {
             <p className="text-sm leading-relaxed text-gray-500 mb-6">
               The performance-first NEET preparation app. Practice → Analyze → Revise → Improve. Continuously.
             </p>
-            <a href="/app/login"
+            <a href="https://neetforge.in" target="_blank" rel="noreferrer"
               className="inline-block bg-[#2563EB] text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors">
               Open App →
             </a>
@@ -31,8 +47,8 @@ export default function NeetFooter() {
               <h4 className="text-white font-bold text-sm mb-4 uppercase tracking-wider">{section}</h4>
               <ul className="space-y-2.5">
                 {items.map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-gray-500 text-sm hover:text-[#2563EB] transition-colors">{item}</a>
+                  <li key={item.label}>
+                    <a href={item.href} className="text-gray-500 text-sm hover:text-[#2563EB] transition-colors">{item.label}</a>
                   </li>
                 ))}
               </ul>

@@ -836,7 +836,7 @@ const CurriculumBrowser = () => {
       };
 
       if (mode === 'test') {
-        navigate('/curriculum-quiz-instructions', {
+        navigate('/app/curriculum-quiz-instructions', {
           state: {
             questions: rawQuestions,
             title: `${subTopic.subTopic} – Test`,
@@ -849,7 +849,7 @@ const CurriculumBrowser = () => {
           },
         });
       } else {
-        navigate('/curriculum-quiz-instructions', {
+        navigate('/app/curriculum-quiz-instructions', {
           state: {
             questions: rawQuestions,
             title: `${subTopic.subTopic} – Practice`,

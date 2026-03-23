@@ -11,7 +11,9 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { apiService } from '@/lib/apiService';
 import BottomNav from '@/components/BottomNav';
+import { useToast } from '@/hooks/use-toast';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -75,6 +77,7 @@ function formatChapterId(id: string): string {
 
 export default function CustomTestCreate() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [step, setStep] = useState<Step>('subject');
   const [selectedSubjects, setSelectedSubjects] = useState<Set<Subject>>(new Set());
@@ -82,15 +85,16 @@ export default function CustomTestCreate() {
   const isMultiSubject = selectedSubjects.size > 1;
 
   const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+  const [selectedChapters, setSelectedChapters] = useState<Set<string>>(new Set());
   const [topicGroups, setTopicGroups] = useState<TopicGroup[]>([]);
   const [selectedSubTopics, setSelectedSubTopics] = useState<Set<string>>(new Set());
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
   const [chapterSearch, setChapterSearch] = useState('');
 
   const [difficulty, setDifficulty] = useState<Difficulty>('mixed');
   const [questionCount, setQuestionCount] = useState<number>(30);
-  const [mode, setMode] = useState<Mode>('practice');
+  const [duration, setDuration] = useState<number>(45);
+  const [mode, setMode] = useState<Mode>('test');
   const [title, setTitle] = useState<string>('');
   const [isPYQ, setIsPYQ] = useState<boolean>(false);
 
@@ -100,12 +104,19 @@ export default function CustomTestCreate() {
   const [error, setError] = useState<string | null>(null);
 
   // ── Load chapters ──────────────────────────────────────────────────────────
-  const loadChapters = useCallback(async (sub: Subject) => {
+  const loadChaptersBatch = useCallback(async (subs: Subject[]) => {
     setLoadingChapters(true);
     setError(null);
     try {
-      const res = await api.get(`/curriculum/${sub}/chapters`);
-      setChapters(res.data.data || []);
+      const responses = await Promise.all(
+        subs.map((s) => api.get(`/curriculum/${s}/chapters`))
+      );
+      const allChapters: Chapter[] = [];
+      responses.forEach((res, i) => {
+        const data = Array.isArray(res.data?.data) ? res.data.data : [];
+        allChapters.push(...data.map((c: any) => ({ ...c, subject: subs[i] })));
+      });
+      setChapters(allChapters);
     } catch {
       setError('Failed to load chapters. Please try again.');
     } finally {
@@ -114,12 +125,21 @@ export default function CustomTestCreate() {
   }, []);
 
   // ── Load subtopics ─────────────────────────────────────────────────────────
-  const loadSubTopics = useCallback(async (sub: Subject, chapterId: string) => {
+  const loadSubTopicsBatch = useCallback(async (selections: { subject: Subject, chapterId: string }[]) => {
     setLoadingSubTopics(true);
     setError(null);
     try {
-      const res = await api.get(`/curriculum/${sub}/chapters/${encodeURIComponent(chapterId)}/subtopics`);
-      setTopicGroups(res.data.data || []);
+      const responses = await Promise.all(
+        selections.map((sel) => api.get(`/curriculum/${sel.subject}/chapters/${encodeURIComponent(sel.chapterId)}/subtopics`))
+      );
+      
+      const combinedGroups: TopicGroup[] = [];
+      responses.forEach(res => {
+        const data = Array.isArray(res.data?.data) ? res.data.data : [];
+        combinedGroups.push(...data);
+      });
+      
+      setTopicGroups(combinedGroups);
     } catch {
       setError('Failed to load subtopics. Please try again.');
     } finally {
@@ -159,22 +179,37 @@ export default function CustomTestCreate() {
 
   const handleProceedFromSubject = () => {
     if (selectedSubjects.size === 0) return;
-    setSelectedChapter(null);
+    setChapters([]);
+    setSelectedChapters(new Set());
     setTopicGroups([]);
     setSelectedSubTopics(new Set());
-    if (selectedSubjects.size === 1) {
-      loadChapters([...selectedSubjects][0]);
-      setStep('chapter');
-    } else {
-      setStep('config');
-    }
+    setExpandedTopic(null);
+
+    loadChaptersBatch(Array.from(selectedSubjects));
+    setStep('chapter');
   };
 
-  const handleSelectChapter = (ch: Chapter) => {
-    setSelectedChapter(ch);
+  const toggleChapter = (chapterId: string) => {
+    setSelectedChapters((prev) => {
+      const next = new Set(prev);
+      if (next.has(chapterId)) next.delete(chapterId);
+      else next.add(chapterId);
+      return next;
+    });
+  };
+
+  const handleProceedFromChapters = () => {
+    if (selectedChapters.size === 0) return;
     setTopicGroups([]);
     setSelectedSubTopics(new Set());
-    loadSubTopics(subject!, ch._id);
+    setExpandedTopic(null);
+
+    // Filter selected chapters and get their subjects
+    const selections = chapters
+      .filter(ch => selectedChapters.has(ch._id))
+      .map(ch => ({ subject: ch.subject as Subject, chapterId: ch._id }));
+
+    loadSubTopicsBatch(selections);
     setStep('subtopics');
   };
 
@@ -205,67 +240,54 @@ export default function CustomTestCreate() {
 
   // ── Generate test ──────────────────────────────────────────────────────────
   const handleGenerateTest = async () => {
-    if (!subject && !isMultiSubject) return;
+    if (!subject && !isMultiSubject) {
+      toast({ title: 'Missing Subject', description: 'Please select at least one subject', variant: 'destructive' });
+      return;
+    }
     setLoadingTest(true);
     setError(null);
 
     try {
-      const selectedArray = Array.from(selectedSubTopics);
-      const firstSubTopic = selectedArray.length === 1 ? selectedArray[0].split('|||')[1] : undefined;
-      const firstTopic = selectedArray.length === 1 ? selectedArray[0].split('|||')[0] : undefined;
-
-      const body: Record<string, unknown> = {
-        count: questionCount,
+      const payload: any = {
+        title: title.trim() || (isMultiSubject ? 'Combined Custom Test' : `${SUBJECT_CONFIG[[...selectedSubjects][0]!].label} Custom Test`),
+        questionCount: Number(effectiveQuestionCount),
+        duration: Number(duration),
         difficulty: difficulty === 'mixed' ? undefined : difficulty,
-        isPYQ: isPYQ || undefined,
-        mode,
-        title: title.trim() || undefined,
+        ncertOnly: isPYQ,
       };
 
-      if (isMultiSubject) {
-        body.subjects = [...selectedSubjects];
-      } else {
-        body.subject = subject;
-        body.chapterId = selectedChapter?._id;
-        if (selectedArray.length === 1) {
-          body.subTopic = firstSubTopic;
-          body.topic = firstTopic;
-        }
-      }
+      payload.subjects = Array.from(selectedSubjects).map(s => s.charAt(0).toUpperCase() + s.slice(1));
+      if (selectedChapters.size > 0) payload.chapters = Array.from(selectedChapters);
+      if (selectedSubTopics.size > 0) payload.subTopics = Array.from(selectedSubTopics).map((entry) => entry.split('|||')[1]);
 
-      const res = await api.post('/questions/test', body);
-      const { data: questions, meta } = res.data;
+      // 1. Create the Custom Test
+      const createRes = await apiService.tests.createCustomTest(payload);
+      const testData = createRes.data?.data;
+      const testId = testData?._id;
+      
+      if (!testId) throw new Error('Custom test ID missing from response');
 
-      if (!questions || questions.length === 0) {
-        setError('No questions found for the selected filters. Try different options.');
-        return;
-      }
+      // 2. Start the Test Attempt
+      const startRes = await apiService.tests.startTest(testId);
+      const attemptData = startRes.data?.data;
+      const attemptId = attemptData?.attemptId || attemptData?._id;
 
-      if (mode === 'test') {
-        // Use NTA-style exam UI for test mode
-        navigate('/app/test/custom-session', {
-          state: {
-            questions,
-            title: `${subject} - Custom Test`,
-            duration: Math.ceil(questions.length * 1.5),
-            subject,
-            topic: meta?.filters?.subTopic || meta?.filters?.chapterId || 'Custom Test',
-          },
-        });
-      } else {
-        navigate('/app/quiz-session', {
-          state: {
-            questions,
-            mode,
-            topic: meta?.filters?.subTopic || meta?.filters?.chapterId || 'Custom Test',
-            subject,
-            questionCount: questions.length,
-          },
-        });
-      }
+      if (!attemptId) throw new Error('Attempt ID missing from response');
+
+      // 3. Navigate to the Session with the attempt ID
+      navigate('/app/test/custom-session', {
+        state: {
+          testId,
+          attemptId,
+          title: payload.title,
+          duration: payload.duration,
+          subject: isMultiSubject ? 'Mixed' : [...selectedSubjects][0],
+        },
+      });
     } catch (err: unknown) {
-      const message = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(message || 'Failed to generate test. Please try again.');
+      toast({ title: 'Generation Failed', description: message || 'Failed to create test', variant: 'destructive' });
     } finally {
       setLoadingTest(false);
     }
@@ -277,10 +299,7 @@ export default function CustomTestCreate() {
     if (step === 'subject') navigate(-1);
     else if (step === 'chapter') setStep('subject');
     else if (step === 'subtopics') setStep('chapter');
-    else if (step === 'config') {
-      if (isMultiSubject) setStep('subject');
-      else setStep('subtopics');
-    }
+    else if (step === 'config') setStep('subtopics');
   };
 
   const currentStepIndex = STEPS.indexOf(step);
@@ -424,7 +443,9 @@ export default function CustomTestCreate() {
               <div className="mb-4">
                 <h2 className="text-xl font-bold text-foreground">Select Chapter</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {subject && SUBJECT_CONFIG[subject].emoji} {subject && SUBJECT_CONFIG[subject].label} · {chapters.length} chapters
+                  {isMultiSubject 
+                    ? `${selectedSubjects.size} subjects · ${chapters.length} chapters`
+                    : `${subject && SUBJECT_CONFIG[subject].emoji} ${subject && SUBJECT_CONFIG[subject].label} · ${chapters.length} chapters`}
                 </p>
               </div>
 
@@ -454,19 +475,42 @@ export default function CustomTestCreate() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.03 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => handleSelectChapter(ch)}
-                      className="w-full flex items-center gap-3 p-4 rounded-2xl border border-border bg-card hover:border-primary/30 hover:shadow-sm transition-all text-left"
+                      onClick={() => toggleChapter(ch._id)}
+                      className={`w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all text-left ${
+                        selectedChapters.has(ch._id)
+                          ? 'border-primary bg-primary/5 shadow-sm'
+                          : 'border-border bg-card hover:border-primary/30'
+                      }`}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                        selectedChapters.has(ch._id) ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary'
+                      }`}>
                         {idx + 1}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-sm text-foreground truncate">{formatChapterId(ch._id)}</div>
+                        <div className="text-[10px] text-muted-foreground capitalize">{ch.subject}</div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                        selectedChapters.has(ch._id) ? 'border-primary bg-primary' : 'border-muted-foreground/30'
+                      }`}>
+                        {selectedChapters.has(ch._id) && <CheckCircle2 className="w-3.5 h-3.5 text-primary-foreground" />}
+                      </div>
                     </motion.button>
                   ))}
                 </div>
+              )}
+
+              {selectedChapters.size > 0 && (
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleProceedFromChapters}
+                  className="w-full mt-6 py-4 bg-primary rounded-2xl text-primary-foreground font-bold text-base flex items-center justify-center gap-2 shadow-sm"
+                >
+                  Continue with {selectedChapters.size} Chapter(s)
+                  <ChevronRight className="w-5 h-5" />
+                </motion.button>
               )}
             </motion.div>
           )}
@@ -477,7 +521,9 @@ export default function CustomTestCreate() {
               <div className="mb-4">
                 <h2 className="text-xl font-bold text-foreground">Select Topics</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {formatChapterId(selectedChapter?._id || '')}
+                  {selectedChapters.size > 1 
+                    ? `${selectedChapters.size} Chapters Selected`
+                    : formatChapterId([...selectedChapters][0] || '')}
                 </p>
               </div>
 
@@ -510,17 +556,17 @@ export default function CustomTestCreate() {
                       const allInTopic = tg.sub_topics.every((st) =>
                         selectedSubTopics.has(`${tg.topic}|||${st.subTopic}`)
                       );
-                      const isExpanded = selectedTopic === tg.topic;
+                      const isExpanded = expandedTopic === tg.topic;
                       const selectedCount = tg.sub_topics.filter((st) =>
                         selectedSubTopics.has(`${tg.topic}|||${st.subTopic}`)
                       ).length;
                       const totalQs = tg.sub_topics.reduce((sum, st) => sum + st.uid_count, 0);
 
                       return (
-                        <div key={tg.topic} className="bg-card border border-border rounded-2xl overflow-hidden">
+                        <div key={`${tg.topic}-${tg.sub_topics.length}`} className="bg-card border border-border rounded-2xl overflow-hidden">
                           {/* Topic header — tap to expand/collapse */}
                           <button
-                            onClick={() => setSelectedTopic(isExpanded ? null : tg.topic)}
+                            onClick={() => setExpandedTopic(isExpanded ? null : tg.topic)}
                             className="w-full flex items-center justify-between p-3 bg-muted/30 text-left"
                           >
                             <div className="flex-1 min-w-0">
@@ -631,8 +677,8 @@ export default function CustomTestCreate() {
                 <div className="text-sm flex-1">
                   <div className="font-bold text-foreground">
                     {isMultiSubject
-                      ? `Combined (${selectedSubjects.size} subjects)`
-                      : `${subject && SUBJECT_CONFIG[subject].label} · ${formatChapterId(selectedChapter?._id || '')}`}
+                      ? `${Array.from(selectedSubjects).map(s => s.charAt(0).toUpperCase()).join('+')} · ${selectedChapters.size} Chapter(s)`
+                      : `${subject && SUBJECT_CONFIG[subject].label} · ${selectedChapters.size} Chapter(s)`}
                   </div>
                   <div className="text-muted-foreground text-xs mt-0.5">
                     {selectedSubTopics.size > 0
@@ -651,6 +697,31 @@ export default function CustomTestCreate() {
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={`${subject ? SUBJECT_CONFIG[subject].label : 'Combined'} Test`}
                   className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+              </div>
+
+              {/* Duration Settings */}
+              <div className="bg-card border border-border rounded-2xl p-4">
+                <label className="block text-sm font-bold text-foreground mb-3">
+                  Duration: <span className="text-primary">{duration} minutes</span>
+                </label>
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {[15, 30, 45, 60].map(d => (
+                    <button
+                      key={d}
+                      onClick={() => setDuration(d)}
+                      className={`py-2 rounded-lg text-xs font-bold border ${duration === d ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 text-muted-foreground border-border'}`}
+                    >
+                      {d}m
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="range"
+                  min={5} max={180} step={5}
+                  value={duration}
+                  onChange={(e) => setDuration(Number(e.target.value))}
+                  className="w-full accent-primary"
                 />
               </div>
 
@@ -675,7 +746,7 @@ export default function CustomTestCreate() {
                 {mode === 'test' && (
                   <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
                     <ClockIcon className="w-3 h-3" />
-                    72 seconds per question (NEET standard)
+                    Strict timing per question
                   </p>
                 )}
               </div>
@@ -711,8 +782,8 @@ export default function CustomTestCreate() {
                     <div className={`absolute top-1 w-5 h-5 bg-card rounded-full shadow-sm transition-all ${isPYQ ? 'left-6' : 'left-1'}`} />
                   </div>
                   <div>
-                    <div className="font-semibold text-sm text-foreground">PYQ Only</div>
-                    <div className="text-xs text-muted-foreground">Only previous year questions</div>
+                    <div className="font-semibold text-sm text-foreground">NCERT Only</div>
+                    <div className="text-xs text-muted-foreground">Only standard NCERT questions</div>
                   </div>
                 </label>
               </div>

@@ -17,19 +17,66 @@ export default function TestSession() {
 
   useEffect(() => {
     loadTest();
-  }, []);
+  }, [attemptId]);
 
   const loadTest = async () => {
     try {
       const res = await apiService.tests.getAttempt(attemptId!);
-      const attemptData = res.data.data;
-      setTest(attemptData.testId);
+      const attemptData = res.data?.data || res.data;
+      const testData = attemptData?.testId || attemptData?.test || {};
+      setTest(testData);
 
-      const rawQuestions: NTAQuestion[] = attemptData.testId.questions;
-      setQuestions(rawQuestions);
+      const rawQuestions: any[] = Array.isArray(testData?.questions)
+        ? testData.questions
+        : Array.isArray(attemptData?.questions)
+          ? attemptData.questions
+          : [];
+      
+      const normalizedQuestions: NTAQuestion[] = rawQuestions.map((q: any) => {
+        const rawOptions = Array.isArray(q?.options) ? q.options : [];
+        const options = rawOptions.length > 0
+          ? rawOptions.map((opt: any) => {
+              if (typeof opt === 'string') return opt;
+              if (opt && typeof opt === 'object') {
+                if (typeof opt.text === 'string') return opt.text;
+                if (opt.text && typeof opt.text === 'object') return String(opt.text.en || opt.text.hi || '');
+                if (typeof opt.value === 'string') return opt.value;
+              }
+              return '';
+            })
+          : ['A', 'B', 'C', 'D'].map((key) => {
+              const value = q?.options?.[key];
+              if (typeof value === 'string') return value;
+              if (value && typeof value === 'object') {
+                if (typeof value.text === 'string') return value.text;
+                if (value.text && typeof value.text === 'object') return String(value.text.en || value.text.hi || '');
+              }
+              return '';
+            });
+
+        return {
+          _id: q?._id ? String(q._id) : undefined,
+          id: q?.id ? String(q.id) : undefined,
+          question: typeof q?.question === 'string'
+            ? q.question
+            : String(q?.question?.en || q?.question?.hi || ''),
+          options,
+          correctAnswer: q?.correctAnswer ?? q?.correct_option ?? null,
+          explanation: typeof q?.explanation === 'string'
+            ? q.explanation
+            : String(q?.explanation?.en || q?.explanation?.hi || ''),
+          subject: q?.subject,
+          chapter: q?.chapter || q?.chapterId,
+          topic: q?.topic || q?.topicId,
+          difficulty: q?.difficulty,
+          imageUrl: q?.imageUrl,
+        };
+      });
+
+      setQuestions(normalizedQuestions);
 
       // Restore existing answers into meta
-      const metaArray: QuestionMeta[] = rawQuestions.map(() => ({
+      const metaArray: QuestionMeta[] = normalizedQuestions.map(() => ({
         state: 'not-visited' as const,
         selectedOption: null,
         bookmarked: false,
@@ -38,8 +85,8 @@ export default function TestSession() {
       }));
 
       attemptData.answers?.forEach((a: any) => {
-        const qIndex = rawQuestions.findIndex(
-          (q: any) => q._id === (a.questionId?._id || a.questionId)
+        const qIndex = normalizedQuestions.findIndex(
+          (q: any) => String(q._id || q.id) === String(a.questionId?._id || a.questionId)
         );
         if (qIndex !== -1 && a.selectedOption !== null && a.selectedOption !== undefined) {
           let optIdx: number | null = null;
