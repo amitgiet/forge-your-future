@@ -13,9 +13,13 @@ declare global {
   }
 }
 
+const normalizePreferredLanguage = (value: unknown): 'en' | 'hi' => (
+  value === 'hi' ? 'hi' : 'en'
+);
+
 const Profile = () => {
   const { t, language, setLanguage } = useLanguage();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -57,7 +61,16 @@ const Profile = () => {
       const response = await apiService.auth.getProfile();
       if (response.data.success) {
         const data = response.data.data;
+        const preferredLanguage = normalizePreferredLanguage(data.profile?.preferredLanguage);
         setProfileData(data);
+        setLanguage(preferredLanguage);
+        updateUser((prev) => prev ? ({
+          ...prev,
+          profile: {
+            ...(prev.profile || {}),
+            preferredLanguage,
+          },
+        }) : data);
         setFormData({
           name: data.name || '',
           targetYear: data.profile?.targetYear || '2026',
@@ -99,12 +112,23 @@ const Profile = () => {
   };
 
   const handleLanguageChange = async (lang: 'en' | 'hi') => {
-    setLanguage(lang);
+    const nextLanguage = normalizePreferredLanguage(lang);
+    const previousLanguage = normalizePreferredLanguage(profileData?.profile?.preferredLanguage);
+    setLanguage(nextLanguage);
     try {
-      await apiService.auth.updateProfile({ preferredLanguage: lang });
-      setProfileData((prev: any) => ({ ...prev, profile: { ...(prev?.profile || {}), preferredLanguage: lang } }));
+      const payload = { preferredLanguage: nextLanguage };
+      await apiService.auth.updateProfile(payload);
+      setProfileData((prev: any) => ({ ...prev, profile: { ...(prev?.profile || {}), preferredLanguage: nextLanguage } }));
+      updateUser((prev) => prev ? ({
+        ...prev,
+        profile: {
+          ...(prev.profile || {}),
+          preferredLanguage: nextLanguage,
+        },
+      }) : prev);
     } catch (error) {
       console.error('Update preferred language error:', error);
+      setLanguage(previousLanguage);
     }
   };
 
@@ -582,12 +606,12 @@ const Profile = () => {
               <span className="font-semibold text-foreground text-sm">{t('profile.language')}</span>
             </div>
             <div className="flex items-center gap-1 p-1 bg-muted rounded-xl">
-              {(['en', 'hi'] as const).map(lang => (
-                <button key={lang} onClick={() => handleLanguageChange(lang)}
+              {(['en', 'hi'] as const).map((buttonLang) => (
+                <button key={buttonLang} onClick={() => handleLanguageChange(buttonLang)}
                   className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    language === lang ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                    language === buttonLang ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                   }`}>
-                  {lang === 'en' ? 'EN' : 'हिं'}
+                  {buttonLang === 'en' ? 'EN' : 'हिं'}
                 </button>
               ))}
             </div>

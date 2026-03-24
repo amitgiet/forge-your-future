@@ -21,7 +21,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string, phone?: string) => Promise<void>;
   logout: () => Promise<void>;
-  demoLogin: () => void;
+  updateUser: (updater: User | null | ((current: User | null) => User | null)) => void;
   isAuthenticated: boolean;
 }
 
@@ -43,21 +43,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const checkAuth = async () => {
-    // Demo mode - bypass API call
-    const token = localStorage.getItem('token');
-    if (token === 'demo-token-12345') {
-      setUser({
-        _id: 'demo-user',
-        name: 'Demo User',
-        email: 'demo@neetforge.com',
-        profile: { preferredLanguage: 'en' },
-        subscription: { plan: 'free' }
-      });
-      syncPreferredLanguage('en');
-      setLoading(false);
-      return;
-    }
-
     try {
       const response = await apiService.auth.getProfile();
       if (response.data.success) {
@@ -114,16 +99,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const demoLogin = () => {
-    localStorage.setItem('token', 'demo-token-12345');
-    const demoUser: User = {
-      _id: 'demo-user',
-      name: 'Demo User',
-      email: 'demo@neetforge.com',
-      subscription: { plan: 'free' }
-    };
-    setUser(demoUser);
-    navigate('/app/dashboard');
+  const updateUser = (updater: User | null | ((current: User | null) => User | null)) => {
+    setUser((current) => {
+      const nextUser = typeof updater === 'function' ? updater(current) : updater;
+      syncPreferredLanguage(nextUser?.profile?.preferredLanguage);
+      return nextUser;
+    });
   };
 
   return (
@@ -134,7 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         signup,
         logout,
-        demoLogin,
+        updateUser,
         isAuthenticated: !!user,
       }}
     >
