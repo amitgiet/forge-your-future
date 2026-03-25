@@ -35,7 +35,7 @@ export default function NeetFooter() {
             <p className="text-sm leading-relaxed text-gray-500 mb-6">
               The performance-first NEET preparation app. Practice → Analyze → Revise → Improve. Continuously.
             </p>
-            <a href="https://neetforge.in" target="_blank" rel="noreferrer"
+            <a href="https://neetforge.in/app" target="_blank" rel="noreferrer"
               className="inline-block bg-[#2563EB] text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors">
               Open App →
             </a>

@@ -54,7 +54,7 @@ export default function MockTests() {
                     <p className="text-gray-500 text-lg leading-relaxed mb-8 max-w-2xl mx-auto">
                         Practice with NTA-style full-length mock tests. After every test, NEETFORGE shows you exactly which chapters cost you marks — so you fix the right things.
                     </p>
-                    <a href="https://neetforge.in" target="_blank" rel="noreferrer"
+                    <a href="https://neetforge.in/app" target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-2 bg-[#2563EB] text-white font-bold px-8 py-4 rounded-2xl hover:bg-blue-700 transition-colors shadow-lg text-base">
                         Start a Free Mock Test <ArrowRight className="w-5 h-5" />
                     </a>
@@ -129,7 +129,7 @@ export default function MockTests() {
                 <div className="max-w-2xl mx-auto px-5">
                     <h2 className="text-3xl font-black text-white mb-4">Ready to Test Yourself?</h2>
                     <p className="text-gray-400 mb-8">Take your first free NEET mock test today and see exactly where you stand.</p>
-                    <a href="https://neetforge.in" target="_blank" rel="noreferrer"
+                    <a href="https://neetforge.in/app" target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-2 bg-[#2563EB] text-white font-bold px-8 py-4 rounded-2xl hover:bg-blue-700 transition-colors text-base">
                         <Zap className="w-5 h-5" /> Take Free Mock Test
                     </a>

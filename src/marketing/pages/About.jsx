@@ -72,7 +72,7 @@ export default function About() {
                 <section className="max-w-2xl mx-auto px-5 text-center">
                     <h2 className="text-3xl font-black text-[#0f172a] mb-4">Ready to Try It?</h2>
                     <p className="text-gray-500 mb-8">See for yourself why thousands of NEET aspirants practice on NEETFORGE every day.</p>
-                    <a href="https://neetforge.in" target="_blank" rel="noreferrer"
+                    <a href="https://neetforge.in/app" target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-2 bg-[#2563EB] text-white font-bold px-8 py-4 rounded-2xl hover:bg-blue-700 transition-colors shadow-lg text-base">
                         Start Free <ArrowRight className="w-5 h-5" />
                     </a>

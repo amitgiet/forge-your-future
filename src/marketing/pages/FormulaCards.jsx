@@ -59,7 +59,7 @@ export default function FormulaCards() {
                     <p className="text-gray-500 text-lg leading-relaxed mb-8 max-w-2xl mx-auto">
                         Swipe through Physics equations, Chemistry reactions, and Biology key facts in minutes. NEETFORGE formula cards are built for quick pre-test revision — not lengthy note reading.
                     </p>
-                    <a href="https://neetforge.in" target="_blank" rel="noreferrer"
+                    <a href="https://neetforge.in/app" target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-2 bg-orange-500 text-white font-bold px-8 py-4 rounded-2xl hover:bg-orange-600 transition-colors shadow-lg text-base">
                         Browse Formula Cards <ArrowRight className="w-5 h-5" />
                     </a>
@@ -129,7 +129,7 @@ export default function FormulaCards() {
                 <div className="max-w-2xl mx-auto px-5">
                     <h2 className="text-3xl font-black text-white mb-4">Swipe. Review. Score Higher.</h2>
                     <p className="text-gray-400 mb-8">10 minutes of formula cards before a test can save you crucial marks.</p>
-                    <a href="https://neetforge.in" target="_blank" rel="noreferrer"
+                    <a href="https://neetforge.in/app" target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-2 bg-orange-500 text-white font-bold px-8 py-4 rounded-2xl hover:bg-orange-600 transition-colors text-base">
                         <Zap className="w-5 h-5" /> Access Formula Cards Free
                     </a>

@@ -52,7 +52,7 @@ export default function AIAnalysis() {
                     <p className="text-gray-500 text-lg leading-relaxed mb-8 max-w-2xl mx-auto">
                         Most NEET aspirants know their score but don't know why they lost marks. NEETFORGE AI goes beyond the number — it maps your mistakes to chapters, detects patterns, and tells you exactly what to fix.
                     </p>
-                    <a href="https://neetforge.in" target="_blank" rel="noreferrer"
+                    <a href="https://neetforge.in/app" target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-2 bg-violet-600 text-white font-bold px-8 py-4 rounded-2xl hover:bg-violet-700 transition-colors shadow-lg text-base">
                         Try AI Analysis Free <ArrowRight className="w-5 h-5" />
                     </a>
@@ -124,7 +124,7 @@ export default function AIAnalysis() {
                 <div className="max-w-2xl mx-auto px-5">
                     <h2 className="text-3xl font-black text-white mb-4">Stop Guessing. Start Fixing.</h2>
                     <p className="text-gray-400 mb-8">Let AI show you exactly which chapters to focus on next.</p>
-                    <a href="https://neetforge.in" target="_blank" rel="noreferrer"
+                    <a href="https://neetforge.in/app" target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-2 bg-violet-600 text-white font-bold px-8 py-4 rounded-2xl hover:bg-violet-700 transition-colors text-base">
                         <Zap className="w-5 h-5" /> Analyse My Performance Free
                     </a>

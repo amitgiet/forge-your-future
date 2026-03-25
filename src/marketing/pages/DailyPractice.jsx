@@ -53,7 +53,7 @@ export default function DailyPractice() {
                     <p className="text-gray-500 text-lg leading-relaxed mb-8 max-w-2xl mx-auto">
                         The most common reason NEET aspirants miss their target? Inconsistency. NEETFORGE's Daily Practice system ensures you solve fresh questions every single day — no exceptions.
                     </p>
-                    <a href="https://neetforge.in" target="_blank" rel="noreferrer"
+                    <a href="https://neetforge.in/app" target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-2 bg-orange-500 text-white font-bold px-8 py-4 rounded-2xl hover:bg-orange-600 transition-colors shadow-lg text-base">
                         Start Today's DPP <ArrowRight className="w-5 h-5" />
                     </a>
@@ -125,7 +125,7 @@ export default function DailyPractice() {
                 <div className="max-w-2xl mx-auto px-5">
                     <h2 className="text-3xl font-black text-white mb-4">Start Your Daily Practice Streak</h2>
                     <p className="text-gray-400 mb-8">15 minutes a day, every day. That's how NEET toppers do it.</p>
-                    <a href="https://neetforge.in" target="_blank" rel="noreferrer"
+                    <a href="https://neetforge.in/app" target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-2 bg-orange-500 text-white font-bold px-8 py-4 rounded-2xl hover:bg-orange-600 transition-colors text-base">
                         <Zap className="w-5 h-5" /> Begin Daily Practice Free
                     </a>
