@@ -110,24 +110,24 @@ export default function NeetAppDownload() {
                 <div className="w-36 h-36 bg-white p-2 rounded-xl mb-3 border border-gray-100 flex items-center justify-center overflow-hidden">
                   <svg viewBox="0 0 100 100" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
                     {/* Outer squares */}
-                    <rect x="5" y="5" width="28" height="28" rx="3" fill="none" stroke="#1d4ed8" strokeWidth="5"/>
-                    <rect x="13" y="13" width="12" height="12" rx="1" fill="#1d4ed8"/>
-                    <rect x="67" y="5" width="28" height="28" rx="3" fill="none" stroke="#1d4ed8" strokeWidth="5"/>
-                    <rect x="75" y="13" width="12" height="12" rx="1" fill="#1d4ed8"/>
-                    <rect x="5" y="67" width="28" height="28" rx="3" fill="none" stroke="#1d4ed8" strokeWidth="5"/>
-                    <rect x="13" y="75" width="12" height="12" rx="1" fill="#1d4ed8"/>
+                    <rect x="5" y="5" width="28" height="28" rx="3" fill="none" stroke="#1d4ed8" strokeWidth="5" />
+                    <rect x="13" y="13" width="12" height="12" rx="1" fill="#1d4ed8" />
+                    <rect x="67" y="5" width="28" height="28" rx="3" fill="none" stroke="#1d4ed8" strokeWidth="5" />
+                    <rect x="75" y="13" width="12" height="12" rx="1" fill="#1d4ed8" />
+                    <rect x="5" y="67" width="28" height="28" rx="3" fill="none" stroke="#1d4ed8" strokeWidth="5" />
+                    <rect x="13" y="75" width="12" height="12" rx="1" fill="#1d4ed8" />
                     {/* Inner data dots */}
                     {[
-                      [42,5],[50,5],[58,5],[42,13],[58,13],[42,21],[50,21],
-                      [5,42],[13,42],[21,42],[5,50],[21,50],[5,58],[13,58],[21,58],
-                      [42,42],[50,42],[58,42],[67,42],[75,42],[42,50],[67,50],
-                      [42,58],[50,58],[58,58],[67,58],[75,58],[83,58],[91,58],
-                      [42,67],[50,67],[67,67],[83,67],
-                      [42,75],[58,75],[67,75],[75,75],[91,75],
-                      [42,83],[50,83],[58,83],[83,83],
-                      [42,91],[67,91],[75,91],[83,91],[91,91],
+                      [42, 5], [50, 5], [58, 5], [42, 13], [58, 13], [42, 21], [50, 21],
+                      [5, 42], [13, 42], [21, 42], [5, 50], [21, 50], [5, 58], [13, 58], [21, 58],
+                      [42, 42], [50, 42], [58, 42], [67, 42], [75, 42], [42, 50], [67, 50],
+                      [42, 58], [50, 58], [58, 58], [67, 58], [75, 58], [83, 58], [91, 58],
+                      [42, 67], [50, 67], [67, 67], [83, 67],
+                      [42, 75], [58, 75], [67, 75], [75, 75], [91, 75],
+                      [42, 83], [50, 83], [58, 83], [83, 83],
+                      [42, 91], [67, 91], [75, 91], [83, 91], [91, 91],
                     ].map(([x, y], i) => (
-                      <rect key={i} x={x} y={y} width="6" height="6" rx="1" fill="#1d4ed8"/>
+                      <rect key={i} x={x} y={y} width="6" height="6" rx="1" fill="#1d4ed8" />
                     ))}
                   </svg>
                 </div>
