@@ -33,6 +33,23 @@ export default function Home() {
       description:
         "NEET preparation website focused on practice, analytics, revision, and performance improvement.",
     },
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: "NEETFORGE",
+      operatingSystem: "Android, Web",
+      applicationCategory: "EducationApplication",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "INR",
+      },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: "4.8",
+        ratingCount: "1200",
+      },
+    },
     faqSchema,
   ];
 

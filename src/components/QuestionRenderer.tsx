@@ -99,7 +99,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
     const { template, correctAnswer } = question.typeData || {};
     return (
       <div className="space-y-4">
-        <p className="text-lg font-medium text-foreground mb-4">{template}</p>
+        <p className="text-lg font-medium text-foreground mb-4 whitespace-pre-wrap">{template}</p>
         <input
           type="text"
           onChange={(e) => handleAnswer(e.target.value)}
@@ -155,7 +155,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
                     : 'bg-primary/10 border-primary/30 text-foreground'
                 }`}
               >
-                {item}
+                <span className="whitespace-pre-wrap">{item}</span>
               </button>
             ))}
           </div>
@@ -170,7 +170,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
                 }}
                 className="w-full p-3 rounded-xl bg-card border-2 border-border hover:border-primary/50 text-sm font-medium text-foreground text-left"
               >
-                {item}
+                <span className="whitespace-pre-wrap">{item}</span>
               </button>
             ))}
           </div>

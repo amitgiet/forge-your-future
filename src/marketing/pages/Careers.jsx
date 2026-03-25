@@ -1,8 +1,7 @@
 
 import React from 'react';
-import AnnouncementBar from '../components/eduport/AnnouncementBar';
-import Navbar from '../components/eduport/Navbar';
-import Footer from '../components/eduport/Footer';
+import NeetNavbar from '../components/neetforge/NeetNavbar';
+import NeetFooter from '../components/neetforge/NeetFooter';
 import { Briefcase, MapPin, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,11 +19,10 @@ const positions = [
 export default function Careers() {
     return (
         <div className="min-h-screen bg-background">
-            <AnnouncementBar />
-            <Navbar />
+            <NeetNavbar />
 
             {/* Hero */}
-            <section className="py-16 md:py-24">
+            <section className="pt-28 pb-16 md:pt-32 md:pb-24">
                 <div className="max-w-4xl mx-auto px-4 text-center">
                     <h1 className="text-4xl md:text-5xl font-poppins font-bold text-foreground mb-4">Join Our Team</h1>
                     <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -61,7 +59,7 @@ export default function Careers() {
                 </div>
             </section>
 
-            <Footer />
+            <NeetFooter />
         </div>
     );
 }

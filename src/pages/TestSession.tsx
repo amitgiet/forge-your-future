@@ -4,6 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import apiService from '../lib/apiService';
 import NTATestPlayer, { NTAQuestion, NTASubmitData, QuestionMeta } from '@/components/NTATestPlayer';
+import { AnswerPayload, answerPayloadFromAttempt, normalizeQuestions } from '@/lib/questionNormalization';
+import { resolveDiagramMediaForQuestions } from '@/lib/questionMedia';
 
 export default function TestSession() {
   const { attemptId } = useParams();
@@ -32,53 +34,14 @@ export default function TestSession() {
           ? attemptData.questions
           : [];
       
-      const normalizedQuestions: NTAQuestion[] = rawQuestions.map((q: any) => {
-        const rawOptions = Array.isArray(q?.options) ? q.options : [];
-        const options = rawOptions.length > 0
-          ? rawOptions.map((opt: any) => {
-              if (typeof opt === 'string') return opt;
-              if (opt && typeof opt === 'object') {
-                if (typeof opt.text === 'string') return opt.text;
-                if (opt.text && typeof opt.text === 'object') return String(opt.text.en || opt.text.hi || '');
-                if (typeof opt.value === 'string') return opt.value;
-              }
-              return '';
-            })
-          : ['A', 'B', 'C', 'D'].map((key) => {
-              const value = q?.options?.[key];
-              if (typeof value === 'string') return value;
-              if (value && typeof value === 'object') {
-                if (typeof value.text === 'string') return value.text;
-                if (value.text && typeof value.text === 'object') return String(value.text.en || value.text.hi || '');
-              }
-              return '';
-            });
-
-        return {
-          _id: q?._id ? String(q._id) : undefined,
-          id: q?.id ? String(q.id) : undefined,
-          question: typeof q?.question === 'string'
-            ? q.question
-            : String(q?.question?.en || q?.question?.hi || ''),
-          options,
-          correctAnswer: q?.correctAnswer ?? q?.correct_option ?? null,
-          explanation: typeof q?.explanation === 'string'
-            ? q.explanation
-            : String(q?.explanation?.en || q?.explanation?.hi || ''),
-          subject: q?.subject,
-          chapter: q?.chapter || q?.chapterId,
-          topic: q?.topic || q?.topicId,
-          difficulty: q?.difficulty,
-          imageUrl: q?.imageUrl,
-        };
-      });
+      const normalizedQuestions: NTAQuestion[] = await resolveDiagramMediaForQuestions(normalizeQuestions(rawQuestions));
 
       setQuestions(normalizedQuestions);
 
       // Restore existing answers into meta
       const metaArray: QuestionMeta[] = normalizedQuestions.map(() => ({
         state: 'not-visited' as const,
-        selectedOption: null,
+        answerPayload: null,
         bookmarked: false,
         note: '',
         timeSpent: 0,
@@ -88,16 +51,13 @@ export default function TestSession() {
         const qIndex = normalizedQuestions.findIndex(
           (q: any) => String(q._id || q.id) === String(a.questionId?._id || a.questionId)
         );
-        if (qIndex !== -1 && a.selectedOption !== null && a.selectedOption !== undefined) {
-          let optIdx: number | null = null;
-          if (typeof a.selectedOption === 'string' && a.selectedOption.length > 0) {
-            optIdx = a.selectedOption.toUpperCase().charCodeAt(0) - 65;
-          } else if (typeof a.selectedOption === 'number') {
-            optIdx = a.selectedOption;
-          }
-          if (optIdx !== null && optIdx >= 0) {
-            metaArray[qIndex].selectedOption = optIdx;
+        if (qIndex !== -1) {
+          const payload = answerPayloadFromAttempt(normalizedQuestions[qIndex], a);
+          if (payload) {
+            metaArray[qIndex].answerPayload = payload;
             metaArray[qIndex].state = a.isMarkedForReview ? 'answered-marked' : 'answered';
+          } else if (a.isMarkedForReview) {
+            metaArray[qIndex].state = 'marked-review';
           }
         }
       });
@@ -125,15 +85,20 @@ export default function TestSession() {
     }
   };
 
-  const handleAnswerChange = async (questionIndex: number, answer: number | null, meta: QuestionMeta) => {
+  const handleAnswerChange = async (questionIndex: number, answer: AnswerPayload | null, meta: QuestionMeta) => {
     if (!attemptId) return;
     const question = questions[questionIndex] as any;
     if (!question?._id) return;
 
     try {
+      const selectedOption = answer?.kind === 'mcq' && Number.isInteger(answer.selectedOption)
+        ? String.fromCharCode(65 + Number(answer.selectedOption))
+        : null;
       await apiService.tests.saveAnswer(attemptId, {
         questionId: question._id,
-        selectedOption: answer !== null ? String.fromCharCode(65 + answer) : '',
+        answerType: answer?.kind || question.type,
+        answerPayload: answer,
+        selectedOption,
         timeSpent: meta.timeSpent,
         isMarkedForReview: meta.state === 'marked-review' || meta.state === 'answered-marked',
       });

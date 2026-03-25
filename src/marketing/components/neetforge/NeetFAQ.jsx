@@ -7,7 +7,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const faqs = [
+export const faqs = [
   {
     question: "What is NEETFORGE?",
     answer:
@@ -32,6 +32,41 @@ const faqs = [
     question: "Who should use NEETFORGE?",
     answer:
       "It is useful for NEET aspirants who want a more structured preparation system, including droppers, class 11 students, class 12 students, and learners who want better feedback after practice.",
+  },
+  {
+    question: "Is NEETFORGE free to use?",
+    answer:
+      "Yes. NEETFORGE has a free tier that gives you access to daily practice questions, formula cards, and basic analytics. Premium features like full mock test analysis, personalized revision plans, and AI insights are available with a Pro plan.",
+  },
+  {
+    question: "Does NEETFORGE cover NEET Biology, Chemistry, and Physics?",
+    answer:
+      "Yes. NEETFORGE covers all three NEET subjects — Biology (Botany + Zoology), Chemistry (Physical, Organic, Inorganic), and Physics — with chapter-wise questions, PYQs, formula cards, and revision tools for each subject.",
+  },
+  {
+    question: "How can I practice PYQ (Previous Year Questions) on NEETFORGE?",
+    answer:
+      "NEETFORGE includes a dedicated PYQ practice mode that lets you filter questions by subject, chapter, year, and exam type (NEET/AIPMT). You can attempt them in timed or untimed mode and see AI-generated explanations after each question.",
+  },
+  {
+    question: "What is the AI analysis feature on NEETFORGE?",
+    answer:
+      "NEETFORGE's AI analysis reviews your mock test performance and pinpoints which chapters and question types are hurting your score. It generates a prioritized list of weak areas and recommends specific revision tasks — saving you hours of manual review.",
+  },
+  {
+    question: "How does the revision system work?",
+    answer:
+      "NEETFORGE uses a spaced-repetition system. After you attempt questions, it tracks which concepts you struggled with and schedules them for automatic revision at the optimal time — so you never forget a topic close to the exam.",
+  },
+  {
+    question: "Can I use NEETFORGE on Android?",
+    answer:
+      "Yes. NEETFORGE is available as an Android app. You can also access the full platform on any browser via the web app at neetforge.in/app, with no installation needed.",
+  },
+  {
+    question: "How is NEETFORGE different from other NEET apps?",
+    answer:
+      "Most NEET apps focus only on content delivery. NEETFORGE focuses on performance improvement — it tells you what to fix, when to revise it, and tracks your accuracy over time so that every study session is targeted and efficient.",
   },
 ];
 

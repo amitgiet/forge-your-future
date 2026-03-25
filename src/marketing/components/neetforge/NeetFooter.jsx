@@ -16,9 +16,10 @@ const links = {
   ],
   Company: [
     { label: "About", href: "/about" },
+    { label: "FAQ", href: "/faq" },
     { label: "Privacy Policy", href: "/privacy-policy" },
     { label: "Terms of Service", href: "/terms" },
-    { label: "Contact", href: "mailto:support@neetforge.in" },
+    { label: "Contact", href: "/contact" },
   ],
 };
 
@@ -59,9 +60,9 @@ export default function NeetFooter() {
         <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-600">
           <div>© {new Date().getFullYear()} NEETFORGE. All Rights Reserved.</div>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-white transition-colors">Support</a>
+            <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
+            <a href="/contact" className="hover:text-white transition-colors">Support</a>
           </div>
         </div>
       </div>

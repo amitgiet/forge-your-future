@@ -111,6 +111,14 @@ export const apiService = {
     getRandomQuestions: (filters: any) => api.post('/questions/random', filters),
 
     getPYQs: (filters: any) => api.get('/questions/pyq', { params: filters }),
+
+    resolveDiagrams: (data: { items: Array<{
+      questionId: string;
+      subject?: string | null;
+      refs?: string[];
+      imageUrl?: string | null;
+    }> }) =>
+      api.post('/questions/resolve-diagrams', data),
   },
 
   // Chapters APIs
@@ -258,7 +266,7 @@ export const apiService = {
 
     startTest: (testId: string) => api.post(`/tests/${testId}/start`),
 
-    saveAnswer: (attemptId: string, data: { questionId: string; selectedOption: string; timeSpent: number; isMarkedForReview: boolean }) =>
+    saveAnswer: (attemptId: string, data: { questionId: string; answerType: string; answerPayload: any; selectedOption?: string | null; timeSpent: number; isMarkedForReview: boolean }) =>
       api.post(`/tests/attempts/${attemptId}/answer`, data),
 
     submitTest: (attemptId: string) => api.post(`/tests/attempts/${attemptId}/submit`),
@@ -426,6 +434,9 @@ export const apiService = {
 
     getResourceReactions: (chapterId: string) =>
       api.get(`/curriculum/reactions/${encodeURIComponent(chapterId)}`),
+
+    getImageFallback: (subject: string, questionId: string) =>
+      api.get(`/curriculum/image-fallback/${subject}/${questionId}`),
   },
 
   // Test Series Hierarchy APIs
@@ -455,4 +466,3 @@ export const apiService = {
 };
 
 export default apiService;
-

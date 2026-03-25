@@ -11,7 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import BottomNav from '@/components/BottomNav';
+import DiagramGallery from '@/components/questions/DiagramGallery';
 import type { QuestionMeta } from '@/components/NTATestPlayer';
+import {
+  AnswerPayload,
+  answerPayloadFromAttempt,
+  getCorrectOptionIndex,
+  normalizeQuestions,
+} from '@/lib/questionNormalization';
+import { resolveDiagramMediaForQuestions } from '@/lib/questionMedia';
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -23,46 +31,6 @@ function formatDuration(seconds: number): string {
 
 const optionLabels = ['A', 'B', 'C', 'D'];
 
-const getText = (value: any): string => {
-  if (!value) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'object') {
-    const resolved =
-      value.en ||
-      value.english ||
-      value.hi ||
-      value.hindi ||
-      value.text ||
-      value.value ||
-      Object.values(value).find((item) => typeof item === 'string');
-    return typeof resolved === 'string' ? resolved : '';
-  }
-  return String(value);
-};
-
-const getOptionsArray = (options: any): string[] => {
-  if (Array.isArray(options)) {
-    return options.map((opt) => getText(opt?.text || opt?.value || opt));
-  }
-  if (options && typeof options === 'object') {
-    return optionLabels.map((label) =>
-      getText(options[label] ?? options[label.toLowerCase()] ?? '')
-    );
-  }
-  return [];
-};
-
-const getAnswerIndex = (value: unknown): number | null => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string') {
-    const v = value.trim().toUpperCase();
-    if (/^[A-D]$/.test(v)) return v.charCodeAt(0) - 65;
-    const n = Number(v);
-    if (Number.isFinite(n)) return n;
-  }
-  return null;
-};
-
 export default function TestReport() {
   const { attemptId } = useParams();
   const navigate = useNavigate();
@@ -70,6 +38,7 @@ export default function TestReport() {
   const [attempt, setAttempt] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [openExplanations, setOpenExplanations] = useState<Record<string, boolean>>({});
+  const [reviewQuestions, setReviewQuestions] = useState<any[]>([]);
   const returnTo: string | null = (location.state as any)?.returnTo ?? null;
   const returnLabel: string = (location.state as any)?.returnLabel ?? 'Back';
   const returnState: Record<string, unknown> | null = (location.state as any)?.returnState ?? null;
@@ -126,13 +95,19 @@ export default function TestReport() {
     return { total, avg, fast, medium, slow, bookmarked, markedReview, slowest5 };
   }, [ntaMeta]);
 
-  const reviewQuestions = useMemo(() => {
+  const baseReviewQuestions = useMemo(() => {
     const stateQuestions = Array.isArray((location.state as any)?.questions)
       ? (location.state as any).questions
       : null;
 
     if (stateQuestions?.length) {
-      return stateQuestions;
+      const alreadyNormalized = Boolean(
+        stateQuestions[0] &&
+        typeof stateQuestions[0] === 'object' &&
+        'questionDiagramRefs' in stateQuestions[0] &&
+        'resolvedQuestionDiagrams' in stateQuestions[0]
+      );
+      return alreadyNormalized ? stateQuestions : normalizeQuestions(stateQuestions);
     }
 
     const testQuestions = Array.isArray(attempt?.testId?.questions)
@@ -152,28 +127,178 @@ export default function TestReport() {
       }
     });
 
-    return testQuestions.map((question: any, idx: number) => {
+    return normalizeQuestions(testQuestions).map((question: any, idx: number) => {
       const questionId = String(question?._id || question?.id || '');
       const answer = questionId ? answerMap.get(questionId) : null;
 
       return {
+        ...question,
         _id: questionId || String(idx),
         id: questionId || String(idx),
-        question:
-          typeof question?.question === 'string'
-            ? question.question
-            : getText(question?.question || question?.text),
-        options: getOptionsArray(question?.options),
-        explanation:
-          typeof question?.explanation === 'string'
-            ? question.explanation
-            : getText(question?.explanation || question?.solution),
-        userAnswer: answer?.selectedOption ?? null,
-        correctAnswer: question?.correctAnswer ?? question?.correct ?? question?.correct_option ?? null,
-        subject: question?.subject || '',
+        userAnswer: answerPayloadFromAttempt(question, answer),
+        evaluationStatus: answer?.evaluationStatus || null,
+        evaluationReason: answer?.evaluationReason || null,
       };
     });
   }, [attempt, location.state]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadReviewQuestions = async () => {
+      if (!baseReviewQuestions.length) {
+        setReviewQuestions([]);
+        return;
+      }
+
+      const needsResolution = baseReviewQuestions.some((question: any) => (
+        (question.questionDiagramRefs?.length || question.explanationDiagramRefs?.length) &&
+        !(question.resolvedQuestionDiagrams?.length || question.resolvedExplanationDiagrams?.length)
+      ));
+
+      if (!needsResolution) {
+        setReviewQuestions(baseReviewQuestions);
+        return;
+      }
+
+      const resolved = await resolveDiagramMediaForQuestions(baseReviewQuestions);
+      if (active) {
+        setReviewQuestions(resolved);
+      }
+    };
+
+    loadReviewQuestions();
+
+    return () => {
+      active = false;
+    };
+  }, [baseReviewQuestions]);
+
+  const renderAnswerReview = (q: any) => {
+    const payload = q.userAnswer as AnswerPayload | null;
+
+    if (q.type === 'mcq') {
+      const options = Array.isArray(q.typeData?.options) ? q.typeData.options : [];
+      const selectedIdx = payload?.kind === 'mcq' ? payload.selectedOption : null;
+      const correctIdx = getCorrectOptionIndex(q);
+      const isCorrect = selectedIdx !== null && correctIdx !== null && selectedIdx === correctIdx;
+      const isUnattempted = selectedIdx === null;
+
+      return (
+        <>
+          <div className="space-y-1.5 mb-2">
+            {options.map((opt: string, optIdx: number) => {
+              const isSelected = selectedIdx === optIdx;
+              const isRight = correctIdx === optIdx;
+              const rowClass = isRight
+                ? 'border-emerald-500/40 bg-emerald-500/10'
+                : isSelected && !isRight
+                  ? 'border-destructive/40 bg-destructive/10'
+                  : 'border-border bg-card';
+
+              return (
+                <div key={optIdx} className={`rounded-lg border px-2.5 py-2 text-xs ${rowClass}`}>
+                  <span className="font-semibold mr-1">{optionLabels[optIdx]}.</span>
+                  <span>{opt}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
+            <p className="text-muted-foreground">
+              Your Answer:{' '}
+              <span className={isUnattempted ? 'text-muted-foreground' : isCorrect ? 'text-emerald-600 font-semibold' : 'text-destructive font-semibold'}>
+                {isUnattempted ? 'Not Attempted' : optionLabels[selectedIdx ?? -1] || 'Invalid'}
+              </span>
+            </p>
+            <p className="text-muted-foreground">
+              Correct Answer:{' '}
+              <span className="text-emerald-600 font-semibold">
+                {correctIdx === null ? 'N/A' : optionLabels[correctIdx] || 'N/A'}
+              </span>
+            </p>
+          </div>
+        </>
+      );
+    }
+
+    if (q.type === 'fillup') {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
+          <p className="text-muted-foreground">Your Answer: <span className="text-foreground font-semibold">{payload?.kind === 'fillup' && payload.value ? payload.value : 'Not Attempted'}</span></p>
+          <p className="text-muted-foreground">Accepted Answer(s): <span className="text-emerald-600 font-semibold">{(q.typeData?.acceptedAnswers || []).join(', ') || 'N/A'}</span></p>
+        </div>
+      );
+    }
+
+    if (q.type === 'match') {
+      const pairs = Array.isArray(q.typeData?.pairs) ? q.typeData.pairs : [];
+      const userPairs = payload?.kind === 'match' ? payload.pairs : {};
+      return (
+        <div className="space-y-1.5">
+          {pairs.map((pair: any) => {
+            const userValue = userPairs?.[pair.id] || '';
+            const correct = userValue && userValue === pair.right;
+            return (
+              <div key={pair.id} className={`rounded-lg border px-2.5 py-2 text-xs ${correct ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-border bg-card'}`}>
+                <div className="font-semibold text-foreground">{pair.left}</div>
+                <div className="mt-1 text-muted-foreground">Your match: {userValue || 'Not matched'}</div>
+                <div className="text-emerald-600">Correct match: {pair.right}</div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    if (q.type === 'order') {
+      const items = Array.isArray(q.typeData?.items) ? q.typeData.items : [];
+      const orderedIds = payload?.kind === 'order' ? payload.orderedIds : [];
+      const currentOrder = orderedIds.length ? orderedIds : items.map((item: any) => item.id);
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="rounded-lg border border-border bg-card p-2.5">
+            <p className="font-semibold text-foreground mb-2">Your Order</p>
+            <div className="space-y-1">{currentOrder.map((id: string, index: number) => <div key={`${id}-${index}`}>{index + 1}. {items.find((item: any) => item.id === id)?.text || id}</div>)}</div>
+          </div>
+          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5">
+            <p className="font-semibold text-foreground mb-2">Correct Order</p>
+            <div className="space-y-1">{(q.typeData?.correctOrder || []).map((id: string, index: number) => <div key={`${id}-correct-${index}`}>{index + 1}. {items.find((item: any) => item.id === id)?.text || id}</div>)}</div>
+          </div>
+        </div>
+      );
+    }
+
+    if (q.type === 'flashcard') {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="rounded-lg border border-border bg-card p-2.5">
+            <p className="font-semibold text-foreground mb-2">Front</p>
+            <p className="text-foreground/85 whitespace-pre-wrap">{q.typeData?.front || q.question}</p>
+          </div>
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5">
+            <p className="font-semibold text-foreground mb-2">Back</p>
+            <p className="text-foreground/85 whitespace-pre-wrap">{q.typeData?.back || q.explanation}</p>
+            <p className="mt-2 text-muted-foreground">Status: {payload?.kind === 'flashcard' && payload.completed ? 'Completed' : 'Viewed'}</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (q.type === 'video') {
+      const videoUrl = q.videoUrl || q.typeData?.videoUrl;
+      return (
+        <div className="rounded-lg border border-border bg-card p-2.5 text-xs">
+          <p className="font-semibold text-foreground mb-1">Video Question</p>
+          <p className="text-muted-foreground">Status: {payload?.kind === 'video' && payload.completed ? 'Completed' : 'Not completed'}</p>
+          {videoUrl ? <a href={videoUrl} target="_blank" rel="noreferrer" className="text-primary font-semibold">Open video</a> : null}
+        </div>
+      );
+    }
+
+    return <div className="rounded-lg border border-border bg-card p-2.5 text-xs text-muted-foreground">Unsupported question data.</div>;
+  };
 
   if (loading) {
     return (
@@ -286,6 +411,26 @@ export default function TestReport() {
               </Card>
             ))}
           </div>
+          {((results?.partial ?? 0) > 0 || (results?.ungradedQuestions ?? 0) > 0) && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(results?.partial ?? 0) > 0 && (
+                <Badge variant="secondary" className="text-xs bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                  Partial: {results.partial}
+                </Badge>
+              )}
+              {(results?.ungradedQuestions ?? 0) > 0 && (
+                <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+                  Ungraded Items: {results.ungradedQuestions}
+                </Badge>
+              )}
+              {results?.completionWise && (
+                <Badge variant="secondary" className="text-xs">
+                  Completed: {(results.completionWise.flashcardCompleted ?? 0) + (results.completionWise.videoCompleted ?? 0)}/
+                  {(results.completionWise.flashcardTotal ?? 0) + (results.completionWise.videoTotal ?? 0)}
+                </Badge>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* ═══ TIME ANALYTICS (from NTA meta) ═══ */}
@@ -472,12 +617,9 @@ export default function TestReport() {
               <CardContent className="space-y-3">
                 {reviewQuestions.map((q: any, idx: number) => {
                   const reviewKey = String(q._id || q.id || idx);
-                  const options = getOptionsArray(q.options);
-                  const selectedIdx = getAnswerIndex(q.userAnswer);
-                  const correctIdx = getAnswerIndex(q.correctAnswer);
-                  const isCorrect = selectedIdx !== null && correctIdx !== null && selectedIdx === correctIdx;
-                  const isUnattempted = selectedIdx === null;
-                  const hasExplanation = Boolean(String(q.explanation || '').trim());
+                  const isUnattempted = !q.userAnswer;
+                  const isCorrect = q.evaluationStatus === 'correct';
+                  const hasExplanation = Boolean(String(q.explanation || '').trim()) || Boolean(q.explanationImageUrl) || Boolean(q.resolvedExplanationDiagrams?.length);
                   const isExplanationOpen = Boolean(openExplanations[reviewKey]);
 
                   return (
@@ -491,55 +633,41 @@ export default function TestReport() {
                               ? 'bg-muted text-muted-foreground'
                               : isCorrect
                                 ? 'bg-emerald-500/15 text-emerald-600'
-                                : 'bg-destructive/15 text-destructive'
+                                : q.evaluationStatus === 'partial'
+                                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                                  : q.evaluationStatus === 'ungraded'
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'bg-destructive/15 text-destructive'
                           }
                         >
-                          {isUnattempted ? 'Skipped' : isCorrect ? 'Correct' : 'Wrong'}
+                          {isUnattempted
+                            ? 'Skipped'
+                            : isCorrect
+                              ? 'Correct'
+                              : q.evaluationStatus === 'partial'
+                                ? 'Partial'
+                                : q.evaluationStatus === 'ungraded'
+                                  ? 'Ungraded'
+                                  : 'Wrong'}
                         </Badge>
                       </div>
 
-                      <div className="space-y-1.5 mb-2">
-                        {options.map((opt, optIdx) => {
-                          const isSelected = selectedIdx === optIdx;
-                          const isRight = correctIdx === optIdx;
-                          const rowClass = isRight
-                            ? 'border-emerald-500/40 bg-emerald-500/10'
-                            : isSelected && !isRight
-                              ? 'border-destructive/40 bg-destructive/10'
-                              : 'border-border bg-card';
-
-                          return (
-                            <div key={optIdx} className={`rounded-lg border px-2.5 py-2 text-xs ${rowClass}`}>
-                              <span className="font-semibold mr-1">{optionLabels[optIdx]}.</span>
-                              <span>{opt}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div className="mt-1 flex items-start justify-between gap-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] flex-1">
-                          <p className="text-muted-foreground">
-                            Your Answer:{' '}
-                            <span className={selectedIdx === null ? 'text-muted-foreground' : isCorrect ? 'text-emerald-600 font-semibold' : 'text-destructive font-semibold'}>
-                              {selectedIdx === null ? 'Not Attempted' : optionLabels[selectedIdx] || 'Invalid'}
-                            </span>
-                          </p>
-                          <p className="text-muted-foreground">
-                            Correct Answer:{' '}
-                            <span className="text-emerald-600 font-semibold">
-                              {correctIdx === null ? 'N/A' : optionLabels[correctIdx] || 'N/A'}
-                            </span>
-                          </p>
+                      {q.imageUrl ? (
+                        <div className="mb-3 rounded-xl overflow-hidden border border-border bg-card">
+                          <img src={q.imageUrl} alt={`Question ${idx + 1}`} className="w-full object-contain max-h-60" loading="lazy" />
                         </div>
+                      ) : null}
 
+                      <DiagramGallery diagrams={q.resolvedQuestionDiagrams} className="mb-3" />
+
+                      {renderAnswerReview(q)}
+
+                      <div className="mt-2 flex items-start justify-between gap-2">
+                        <div className="text-[11px] text-muted-foreground flex-1">
+                          {q.evaluationReason || (isUnattempted ? 'Not attempted.' : isCorrect ? 'Correct.' : 'Incorrect.')}
+                        </div>
                         {hasExplanation && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-[11px] shrink-0"
-                            onClick={() => toggleExplanation(reviewKey)}
-                          >
+                          <Button variant="outline" size="sm" className="h-7 text-[11px] shrink-0" onClick={() => toggleExplanation(reviewKey)}>
                             {isExplanationOpen ? 'Close Explanation' : 'View Explanation'}
                           </Button>
                         )}
@@ -551,6 +679,12 @@ export default function TestReport() {
                           <p className="text-xs text-foreground/85 leading-relaxed whitespace-pre-wrap">
                             {String(q.explanation)}
                           </p>
+                          {q.explanationImageUrl ? (
+                            <div className="mt-2 rounded-xl overflow-hidden border border-border bg-card">
+                              <img src={q.explanationImageUrl} alt={`Explanation ${idx + 1}`} className="w-full object-contain max-h-60" loading="lazy" />
+                            </div>
+                          ) : null}
+                          <DiagramGallery diagrams={q.resolvedExplanationDiagrams} className="mt-2" />
                         </div>
                       )}
                     </div>

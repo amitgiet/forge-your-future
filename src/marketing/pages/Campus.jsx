@@ -1,7 +1,6 @@
 import React from 'react';
-import AnnouncementBar from '../components/eduport/AnnouncementBar';
-import Navbar from '../components/eduport/Navbar';
-import Footer from '../components/eduport/Footer';
+import NeetNavbar from '../components/neetforge/NeetNavbar';
+import NeetFooter from '../components/neetforge/NeetFooter';
 import { MapPin, Users, BookOpen, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -38,11 +37,10 @@ const highlights = [
 export default function Campus() {
     return (
         <div className="min-h-screen bg-background">
-            <AnnouncementBar />
-            <Navbar />
+            <NeetNavbar />
 
             {/* Hero */}
-            <section className="py-16 md:py-24 bg-accent text-accent-foreground">
+            <section className="pt-28 pb-16 md:pt-32 md:pb-24 bg-accent text-accent-foreground">
                 <div className="max-w-5xl mx-auto px-4 text-center">
                     <h1 className="text-4xl md:text-6xl font-poppins font-bold mb-4">NEET JEE Campus</h1>
                     <p className="text-lg text-accent-foreground/80 max-w-2xl mx-auto">
@@ -101,7 +99,7 @@ export default function Campus() {
                 </div>
             </section>
 
-            <Footer />
+            <NeetFooter />
         </div>
     );
 }

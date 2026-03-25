@@ -301,7 +301,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
                 className="nf-card mb-6"
               >
                 {/* Question Text */}
-                <h2 className="text-lg font-semibold text-foreground mb-6">
+                <h2 className="text-lg font-semibold text-foreground mb-6 whitespace-pre-wrap">
                   {currentQuestion?.question}
                 </h2>
 
@@ -357,7 +357,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
             <div className="space-y-3 mb-6">
               {currentQuestion?.options?.map((option: string, index: number) => {
                 const isSelected = Array.isArray(answers[currentQuestionIndex])
-                  ? (answers[currentQuestionIndex] as number[]).includes(index)
+                   ? (answers[currentQuestionIndex] as number[]).includes(index)
                   : false;
                 return (
                   <motion.button
@@ -426,7 +426,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
               <Lightbulb className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-foreground mb-1">Explanation</p>
-                <p className="text-sm text-muted-foreground">{currentQuestion.explanation}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{currentQuestion.explanation}</p>
               </div>
             </motion.div>
           )}

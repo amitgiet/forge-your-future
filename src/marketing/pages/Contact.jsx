@@ -1,8 +1,7 @@
 
 import React, { useState } from 'react';
-import AnnouncementBar from '../components/eduport/AnnouncementBar';
-import Navbar from '../components/eduport/Navbar';
-import Footer from '../components/eduport/Footer';
+import NeetNavbar from '../components/neetforge/NeetNavbar';
+import NeetFooter from '../components/neetforge/NeetFooter';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -22,10 +21,9 @@ export default function Contact() {
 
     return (
         <div className="min-h-screen bg-background">
-            <AnnouncementBar />
-            <Navbar />
+            <NeetNavbar />
 
-            <section className="py-16 md:py-24">
+            <section className="pt-28 pb-16 md:pt-32 md:pb-24">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="text-center mb-12">
                         <h1 className="text-4xl md:text-5xl font-poppins font-bold text-foreground mb-3">Request A Callback</h1>
@@ -133,7 +131,7 @@ export default function Contact() {
                 </div>
             </section>
 
-            <Footer />
+            <NeetFooter />
         </div>
     );
 }
