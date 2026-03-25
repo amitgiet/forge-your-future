@@ -1,7 +1,7 @@
 import React from "react";
 import { Smartphone, Star, Users, ArrowRight } from "lucide-react";
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || "https://api.neetforge.in";
+const BACKEND_URL = "https://backend-forge-neet.onrender.com";
 
 async function trackClick(buttonLabel) {
   try {
