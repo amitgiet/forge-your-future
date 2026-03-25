@@ -1,6 +1,20 @@
 import React from "react";
 import { Smartphone, Star, Users, ArrowRight } from "lucide-react";
 
+const BACKEND_URL = import.meta.env.VITE_API_URL || "https://api.neetforge.in";
+
+async function trackClick(buttonLabel) {
+  try {
+    await fetch(`${BACKEND_URL}/api/v1/marketing/track-download-click`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ buttonLabel, referrer: window.location.href }),
+    });
+  } catch (_) {
+    // Silently fail — tracking should never block the user
+  }
+}
+
 export default function NeetAppDownload() {
   return (
     <section className="py-20 bg-[#F8FAFF]">
@@ -53,6 +67,7 @@ export default function NeetAppDownload() {
                   href="https://drive.google.com/file/d/1w7RXkAbBp0i4oCf51Z7S045SZ6gJwV0d/view?usp=sharing"
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => trackClick("ios")}
                   className="flex items-center gap-3 bg-white text-[#1d4ed8] font-bold px-5 py-3 rounded-2xl hover:bg-blue-50 transition-colors shadow-lg text-sm"
                 >
                   <span className="text-xl leading-none">🍎</span>
@@ -65,6 +80,7 @@ export default function NeetAppDownload() {
                   href="https://drive.google.com/file/d/1w7RXkAbBp0i4oCf51Z7S045SZ6gJwV0d/view?usp=sharing"
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => trackClick("android")}
                   className="flex items-center gap-3 bg-white text-[#1d4ed8] font-bold px-5 py-3 rounded-2xl hover:bg-blue-50 transition-colors shadow-lg text-sm"
                 >
                   <span className="text-xl leading-none">▶</span>
@@ -79,6 +95,7 @@ export default function NeetAppDownload() {
                 href="https://neetforge.in/app/"
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => trackClick("web")}
                 className="inline-flex items-center gap-2 text-blue-200 text-sm font-semibold mt-5 hover:text-white transition-colors"
               >
                 Or use the web app instead <ArrowRight className="w-4 h-4" />
