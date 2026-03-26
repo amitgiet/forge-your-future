@@ -65,11 +65,40 @@ function formatTime(s: number): string {
 
 const isAttempted = (answerPayload: AnswerPayload | null | undefined) => isAnswerPayloadAttempted(answerPayload);
 
-const getEmbeddableVideoUrl = (url: string | null | undefined) => {
-  if (!url) return null;
-  const trimmed = url.trim();
+const YOUTUBE_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+
+const getEmbeddableVideoUrl = (value: string | null | undefined) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (YOUTUBE_ID_PATTERN.test(trimmed)) return `https://www.youtube.com/embed/${trimmed}`;
+
   const match = trimmed.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/);
   return match?.[1] ? `https://www.youtube.com/embed/${match[1]}` : trimmed;
+};
+
+const getVideoSource = (question: NTAQuestion) => {
+  const candidates = [
+    question.videoUrl,
+    question.typeData?.videoUrl,
+    question.imageId,
+    question.question,
+  ];
+
+  for (const candidate of candidates) {
+    const embeddableUrl = getEmbeddableVideoUrl(candidate);
+    if (embeddableUrl) {
+      return {
+        embedUrl: embeddableUrl,
+        rawValue: typeof candidate === 'string' ? candidate.trim() : '',
+      };
+    }
+  }
+
+  return {
+    embedUrl: null,
+    rawValue: '',
+  };
 };
 
 interface RendererProps {
@@ -227,8 +256,11 @@ const FlashcardRenderer: React.FC<RendererProps> = ({ question, answerPayload, o
 
 const VideoRenderer: React.FC<RendererProps> = ({ question, answerPayload, onChange, readOnly }) => {
   const completed = answerPayload?.kind === 'video' ? answerPayload.completed : false;
-  const videoUrl = getEmbeddableVideoUrl(question.videoUrl || question.typeData?.videoUrl);
+  const { embedUrl: videoUrl, rawValue: rawVideoValue } = getVideoSource(question);
   const prompt = question.typeData?.prompt || question.question;
+  const openVideoUrl = rawVideoValue
+    ? (YOUTUBE_ID_PATTERN.test(rawVideoValue) ? `https://www.youtube.com/watch?v=${rawVideoValue}` : rawVideoValue)
+    : null;
 
   return (
     <div className="space-y-3">
@@ -252,9 +284,9 @@ const VideoRenderer: React.FC<RendererProps> = ({ question, answerPayload, onCha
         <Button className="flex-1" disabled={readOnly} onClick={() => onChange({ kind: 'video', completed: !completed })}>
           {completed ? 'Completed' : 'Mark Watched'}
         </Button>
-        {question.videoUrl ? (
+        {openVideoUrl ? (
           <Button variant="outline" className="flex-1" asChild>
-            <a href={question.videoUrl} target="_blank" rel="noreferrer">
+            <a href={openVideoUrl} target="_blank" rel="noreferrer">
               <LinkIcon className="w-4 h-4 mr-2" />
               Open Video
             </a>
