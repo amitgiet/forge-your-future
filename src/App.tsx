@@ -56,6 +56,7 @@ import DoubtDetail from "./pages/DoubtDetail";
 import FormulaCards from "./pages/FormulaCards";
 import FormulaChapterDetail from "./pages/FormulaChapterDetail";
 import FormulaCardViewer from "./pages/FormulaCardViewer";
+import ToppersEssentials from "./pages/ToppersEssentials";
 import StudyPlanner from "./pages/StudyPlanner";
 import NotFound from "./pages/NotFound";
 import MarketingHome from "./marketing/pages/Home";
@@ -191,6 +192,7 @@ const App = () => (
                     <Route path="/app/formula-cards" element={<ProtectedRoute><FormulaCards /></ProtectedRoute>} />
                     <Route path="/app/formula-cards/:chapterId" element={<ProtectedRoute><FormulaChapterDetail /></ProtectedRoute>} />
                     <Route path="/app/formula-cards/viewer" element={<ProtectedRoute><FormulaCardViewer /></ProtectedRoute>} />
+                    <Route path="/app/toppers-essentials/*" element={<ProtectedRoute><ToppersEssentials /></ProtectedRoute>} />
                     <Route path="*" element={<LegacyAppRedirect />} />
                   </Routes>
                 </TooltipProvider>

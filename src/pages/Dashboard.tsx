@@ -359,16 +359,14 @@ const Dashboard = () => {
                     title: "Toppers' Essentials",
                     description: 'Expert study guides',
                     color: 'warning',
-                    path: '#',
+                    path: '/app/toppers-essentials',
                   },
                 ].map((resource, index) => (
                   <motion.button
                     key={index}
                     variants={fadeUp}
                     onClick={() => navigate(resource.path)}
-                    disabled={resource.path === '#'}
-                    className={`w-full p-4 rounded-2xl flex items-center gap-3 glass-card group cursor-pointer transition-all ${resource.path === '#' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent/20'
-                      }`}
+                    className="w-full p-4 rounded-2xl flex items-center gap-3 glass-card group cursor-pointer transition-all hover:bg-accent/20"
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >

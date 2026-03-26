@@ -176,6 +176,14 @@ export const apiService = {
       api.post(`/formulas/progress/${cardId}`, data),
   },
 
+  chapterResources: {
+    getChapters: (subject: 'biology' | 'chemistry' | 'physics') =>
+      api.get(`/chapter-resources/${subject}/chapters`),
+
+    getChapterDetail: (subject: 'biology' | 'chemistry' | 'physics', slug: string) =>
+      api.get(`/chapter-resources/${subject}/chapters/${encodeURIComponent(slug)}`),
+  },
+
   // Learning Paths APIs
   learningPaths: {
     createPath: (data: { title: string; description?: string; goals: any[]; dailyGoal?: number }) =>
