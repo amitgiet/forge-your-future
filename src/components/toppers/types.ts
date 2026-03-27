@@ -25,6 +25,11 @@ export type ContentItem = {
   driveLink?: string | null;
   driveId?: string | null;
   files?: PageFile[];
+  // Dual-language TTS audio (populated by podcastTranscribeAndRegenerate.js)
+  englishDriveLink?: string | null;
+  englishDriveId?: string | null;
+  hindiDriveLink?: string | null;
+  hindiDriveId?: string | null;
 };
 
 export type GridlockCell = {
