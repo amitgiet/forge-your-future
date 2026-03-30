@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
@@ -41,6 +41,8 @@ export interface QuizPlayerProps {
     showMarks?: boolean;
   };
   onNavigate?: (questionIndex: number) => void;
+  instructionContent?: ReactNode;
+  instructionStartLabel?: string;
 }
 
 export interface QuestionStatus {
@@ -62,6 +64,8 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   readOnly = false,
   config = {},
   onNavigate,
+  instructionContent,
+  instructionStartLabel,
 }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | number[] | null)[]>(
@@ -246,7 +250,10 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
               showTimer={showTimer}
               duration={duration}
               onStart={() => setQuizStarted(true)}
-            />
+              startLabel={instructionStartLabel}
+            >
+              {instructionContent}
+            </QuizInstructionScreen>
           )}
 
           {/* Quiz Content */}

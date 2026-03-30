@@ -105,8 +105,9 @@ const NeuronzDashboard: React.FC = () => {
       <div className="space-y-3">
         {LEVEL_CONFIG.map((conf, idx) => {
           const levelKey = `L${conf.level}`;
+          const dueAtLevel = dueQuestions?.byLevel?.[levelKey as keyof NonNullable<typeof dueQuestions>['byLevel']]?.length || 0;
           const totalAtLevel = dueQuestions?.totalByLevel?.[levelKey]?.total || 0;
-          const isClickable = totalAtLevel > 0 && !conf.locked;
+          const isClickable = dueAtLevel > 0 && !conf.locked;
 
           return (
             <motion.div
@@ -114,7 +115,7 @@ const NeuronzDashboard: React.FC = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.06 }}
-              onClick={() => handleLevelClick(conf.level, totalAtLevel)}
+              onClick={() => handleLevelClick(conf.level, dueAtLevel)}
               className={`bg-card rounded-xl border border-border p-4 flex items-center gap-3.5 transition-all shadow-sm ${
                 isClickable
                   ? 'cursor-pointer hover:border-primary/40 hover:shadow-md active:scale-[0.98]'
@@ -140,8 +141,9 @@ const NeuronzDashboard: React.FC = () => {
               {/* Count + Arrow */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="text-right">
-                  <p className="text-lg font-bold text-foreground">{totalAtLevel}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Questions</p>
+                  <p className="text-lg font-bold text-foreground">{dueAtLevel}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Due Now</p>
+                  <p className="text-[10px] text-muted-foreground">{totalAtLevel} tracked</p>
                 </div>
                 {isClickable && (
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">

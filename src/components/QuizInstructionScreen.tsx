@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 
 export interface QuizInstructionScreenProps {
@@ -9,6 +9,8 @@ export interface QuizInstructionScreenProps {
   showTimer?: boolean;
   duration?: number;
   onStart: () => void;
+  children?: ReactNode;
+  startLabel?: string;
 }
 
 const QuizInstructionScreen: React.FC<QuizInstructionScreenProps> = ({
@@ -19,6 +21,8 @@ const QuizInstructionScreen: React.FC<QuizInstructionScreenProps> = ({
   showTimer = false,
   duration = 0,
   onStart,
+  children,
+  startLabel = 'Start Quiz',
 }) => {
   return (
     <motion.div
@@ -122,6 +126,8 @@ const QuizInstructionScreen: React.FC<QuizInstructionScreenProps> = ({
         </ul>
       </motion.div>
 
+      {children ? <div className="mb-6">{children}</div> : null}
+
       {/* Start Button */}
       <motion.button
         onClick={onStart}
@@ -132,7 +138,7 @@ const QuizInstructionScreen: React.FC<QuizInstructionScreenProps> = ({
         transition={{ delay: 0.3 }}
         className="w-full py-4 bg-gradient-to-r from-primary to-accent rounded-lg text-white font-bold text-lg hover:shadow-lg transition-all"
       >
-        Start Quiz
+        {startLabel}
       </motion.button>
     </motion.div>
   );
