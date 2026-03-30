@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CheckCircle2, Brain } from 'lucide-react';
+import { ArrowLeft, Brain } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import NeuronzDashboard from '@/components/NeuronzDashboard';
 import BottomNav from '@/components/BottomNav';
 import NTATestPlayer, { type NTAQuestion, type NTASubmitData } from '@/components/NTATestPlayer';
+import { buildLocalReportAttempt } from '@/lib/testReportAnalytics';
 import {
   getMasteryProgress,
   loadDueQuestions,
@@ -19,12 +20,6 @@ type LevelQuestion = {
   options: string[];
   explanation?: string;
   correctIndex: number | null;
-};
-
-type AttemptSummary = {
-  attempted: number;
-  correct: number;
-  total: number;
 };
 
 const REVISION_DURATION_SECONDS = 12 * 60 * 60;
@@ -101,7 +96,6 @@ const Revision = () => {
 
   const level = Number(searchParams.get('level'));
   const isLevelMode = Number.isInteger(level) && level >= 1 && level <= 7;
-  const [summary, setSummary] = useState<AttemptSummary | null>(null);
   const [sessionMode, setSessionMode] = useState<'all' | '50' | null>(null);
   const [quizStarted, setQuizStarted] = useState(false);
 
@@ -112,7 +106,6 @@ const Revision = () => {
       return;
     }
 
-    setSummary(null);
     setSessionMode(null);
     setQuizStarted(false);
     void dispatch(loadDueQuestions());
@@ -157,16 +150,12 @@ const Revision = () => {
   const handleSubmitLevelQuiz = async (data: NTASubmitData) => {
     if (!isLevelMode || normalizedQuestions.length === 0) return;
     const payload: { questionId: string; wasCorrect: boolean; timeSpent?: number }[] = [];
-    let attempted = 0;
-    let correct = 0;
 
     normalizedQuestions.forEach((question, index) => {
       const answerPayload = data.answers[index];
       if (answerPayload?.kind !== 'mcq' || !Number.isInteger(answerPayload.selectedOption)) return;
-      attempted += 1;
       const selectedOption = Number(answerPayload.selectedOption);
       const wasCorrect = question.correctIndex !== null && selectedOption === question.correctIndex;
-      if (wasCorrect) correct += 1;
       payload.push({
         questionId: question.questionId,
         wasCorrect,
@@ -180,7 +169,22 @@ const Revision = () => {
       await dispatch(getMasteryProgress());
     }
 
-    setSummary({ attempted, correct, total: normalizedQuestions.length });
+    const attemptData = buildLocalReportAttempt(
+      quizQuestions,
+      data,
+      `NeuronZ Level ${level}`
+    );
+
+    navigate('/app/test/report/revision', {
+      state: {
+        attemptData,
+        meta: data.meta,
+        timeTaken: data.timeTaken,
+        questions: quizQuestions,
+        returnTo: '/app/revision',
+        returnLabel: 'Back to Revision',
+      },
+    });
   };
 
   if (!isLevelMode) {
@@ -198,46 +202,6 @@ const Revision = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
-
-  if (summary) {
-    const pct = summary.attempted > 0 ? Math.round((summary.correct / summary.attempted) * 100) : 0;
-    return (
-      <div className="min-h-screen bg-background pb-24">
-        <div className="nf-safe-area p-4 max-w-lg mx-auto">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-card rounded-2xl border border-border p-6 text-center space-y-4 mt-8 shadow-sm"
-          >
-            <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
-            </div>
-            <h1 className="text-xl font-bold text-foreground">Level {level} Complete!</h1>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-muted/50 rounded-xl p-3">
-                <p className="text-2xl font-bold text-foreground">{summary.correct}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Correct</p>
-              </div>
-              <div className="bg-muted/50 rounded-xl p-3">
-                <p className="text-2xl font-bold text-foreground">{summary.attempted}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Attempted</p>
-              </div>
-              <div className="bg-muted/50 rounded-xl p-3">
-                <p className="text-2xl font-bold text-primary">{pct}%</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Accuracy</p>
-              </div>
-            </div>
-            <button
-              onClick={() => navigate('/app/revision')}
-              className="w-full py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold shadow-sm"
-            >
-              Back to NeuronZ
-            </button>
-          </motion.div>
-        </div>
       </div>
     );
   }

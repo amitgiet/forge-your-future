@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Trophy, TrendingUp, Clock, Target, AlertCircle, CheckCircle, XCircle,
-  ArrowRight, ArrowLeft, BarChart3, Timer, Zap, BookOpen, Flag, RotateCcw
+  Trophy, Clock, Target, AlertCircle, CheckCircle, XCircle,
+  ArrowRight, ArrowLeft, BarChart3, Timer, Zap, BookOpen, Flag, RotateCcw,
+  PieChart as PieChartIcon, Gauge, BrainCircuit
 } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts';
 import apiService from '../lib/apiService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +22,11 @@ import {
   normalizeQuestions,
 } from '@/lib/questionNormalization';
 import { resolveDiagramMediaForQuestions } from '@/lib/questionMedia';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -30,6 +37,20 @@ function formatDuration(seconds: number): string {
 }
 
 const optionLabels = ['A', 'B', 'C', 'D'];
+const OUTCOME_COLORS = ['#16a34a', '#dc2626', '#f59e0b', '#0ea5e9'];
+
+const scoreTone = (value: number) => {
+  if (value >= 80) return 'text-emerald-600 dark:text-emerald-400';
+  if (value >= 50) return 'text-amber-600 dark:text-amber-400';
+  return 'text-destructive';
+};
+
+const chapterTone = (accuracy: number) => {
+  if (accuracy >= 80) return 'text-emerald-600 dark:text-emerald-400';
+  if (accuracy >= 60) return 'text-primary';
+  if (accuracy >= 40) return 'text-amber-600 dark:text-amber-400';
+  return 'text-destructive';
+};
 
 export default function TestReport() {
   const { attemptId } = useParams();
@@ -44,56 +65,34 @@ export default function TestReport() {
   const returnState: Record<string, unknown> | null = (location.state as any)?.returnState ?? null;
   const retryTo: string | null = (location.state as any)?.retryTo ?? null;
   const retryState: Record<string, unknown> | null = (location.state as any)?.retryState ?? null;
+  const ntaMeta: QuestionMeta[] | null = (location.state as any)?.meta ?? null;
+  const totalTimeTaken: number = (location.state as any)?.timeTaken ?? 0;
 
   const toggleExplanation = (key: string) => {
     setOpenExplanations((prev) => ({ ...prev, [key]: !prev[key] }));
   };
-
-  // NTA meta from navigation state (per-question timing, bookmarks, etc.)
-  const ntaMeta: QuestionMeta[] | null = (location.state as any)?.meta ?? null;
-  const totalTimeTaken: number = (location.state as any)?.timeTaken ?? 0;
 
   useEffect(() => {
     const attemptData = (location.state as any)?.attemptData;
     if (attemptData) {
       setAttempt(attemptData);
       setLoading(false);
-    } else {
-      loadReport();
+      return;
     }
-  }, []);
 
-  const loadReport = async () => {
-    try {
-      const res = await apiService.tests.getAttempt(attemptId!);
-      setAttempt(res.data.data);
-    } catch (error) {
-      console.error('Failed to load report:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const loadReport = async () => {
+      try {
+        const res = await apiService.tests.getAttempt(attemptId!);
+        setAttempt(res.data.data);
+      } catch (error) {
+        console.error('Failed to load report:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Time analytics from NTA meta
-  const timeAnalytics = useMemo(() => {
-    if (!ntaMeta) return null;
-    const times = ntaMeta.map((m) => m.timeSpent);
-    const total = times.reduce((a, b) => a + b, 0);
-    const avg = total / times.length;
-    const fast = times.filter((t) => t < 30).length;
-    const medium = times.filter((t) => t >= 30 && t <= 90).length;
-    const slow = times.filter((t) => t > 90).length;
-    const bookmarked = ntaMeta.filter((m) => m.bookmarked).length;
-    const markedReview = ntaMeta.filter(
-      (m) => m.state === 'marked-review' || m.state === 'answered-marked'
-    ).length;
-    const sorted = [...times].sort((a, b) => b - a);
-    const slowest5 = sorted.slice(0, 5).map((t, i) => ({
-      time: t,
-      qIndex: times.indexOf(t),
-    }));
-    return { total, avg, fast, medium, slow, bookmarked, markedReview, slowest5 };
-  }, [ntaMeta]);
+    void loadReport();
+  }, [attemptId, location.state]);
 
   const baseReviewQuestions = useMemo(() => {
     const stateQuestions = Array.isArray((location.state as any)?.questions)
@@ -122,9 +121,7 @@ export default function TestReport() {
     const answerMap = new Map<string, any>();
     answers.forEach((answer: any) => {
       const questionId = String(answer?.questionId?._id || answer?.questionId || '');
-      if (questionId) {
-        answerMap.set(questionId, answer);
-      }
+      if (questionId) answerMap.set(questionId, answer);
     });
 
     return normalizeQuestions(testQuestions).map((question: any, idx: number) => {
@@ -162,17 +159,145 @@ export default function TestReport() {
       }
 
       const resolved = await resolveDiagramMediaForQuestions(baseReviewQuestions);
-      if (active) {
-        setReviewQuestions(resolved);
-      }
+      if (active) setReviewQuestions(resolved);
     };
 
-    loadReviewQuestions();
+    void loadReviewQuestions();
 
     return () => {
       active = false;
     };
   }, [baseReviewQuestions]);
+
+  const analytics = useMemo(() => {
+    if (!attempt?.results) return null;
+
+    const results = attempt.results;
+    const answerTimeById = new Map<string, number>();
+    (attempt.answers || []).forEach((answer: any) => {
+      const id = String(answer?.questionId?._id || answer?.questionId || '');
+      if (id) answerTimeById.set(id, Number(answer?.timeSpent || 0));
+    });
+
+    const questionTimings = reviewQuestions.map((question: any, index: number) => {
+      const id = String(question?._id || question?.id || index);
+      const timeSpent = Number(ntaMeta?.[index]?.timeSpent ?? answerTimeById.get(id) ?? 0);
+      return {
+        id,
+        label: `Q${index + 1}`,
+        question: String(question?.question || ''),
+        subject: String(question?.subject || 'General'),
+        chapter: String(question?.chapter || question?.topic || 'General'),
+        timeSpent,
+        isCorrect: question?.evaluationStatus === 'correct',
+        isAttempted: Boolean(question?.userAnswer),
+      };
+    });
+
+    const nonZeroTimes = questionTimings.filter((item) => item.timeSpent > 0);
+    const totalTime = Number(totalTimeTaken || results?.timeAnalysis?.totalTime || nonZeroTimes.reduce((sum, item) => sum + item.timeSpent, 0));
+    const avgTime = Number(results?.timeAnalysis?.avgTimePerQuestion || (questionTimings.length ? totalTime / questionTimings.length : 0));
+    const fastest = nonZeroTimes.length ? [...nonZeroTimes].sort((a, b) => a.timeSpent - b.timeSpent)[0] : null;
+    const slowest = nonZeroTimes.length ? [...nonZeroTimes].sort((a, b) => b.timeSpent - a.timeSpent)[0] : null;
+    const overTimeQuestions = [...nonZeroTimes]
+      .sort((a, b) => b.timeSpent - a.timeSpent)
+      .filter((item) => item.timeSpent >= Math.max(avgTime * 1.35, 45))
+      .slice(0, 5);
+
+    const subjectTimingMap = new Map<string, { total: number; correct: number; attempted: number; totalTime: number }>();
+    questionTimings.forEach((item) => {
+      const entry = subjectTimingMap.get(item.subject) || { total: 0, correct: 0, attempted: 0, totalTime: 0 };
+      entry.total += 1;
+      if (item.isAttempted) entry.attempted += 1;
+      if (item.isCorrect) entry.correct += 1;
+      entry.totalTime += item.timeSpent;
+      subjectTimingMap.set(item.subject, entry);
+    });
+
+    const subjectInsights = (results.subjectWise || []).map((subject: any) => {
+      const timing = subjectTimingMap.get(String(subject.subject)) || { total: 0, correct: 0, attempted: 0, totalTime: 0 };
+      const avgSubjectTime = subject.total > 0 ? timing.totalTime / subject.total : 0;
+      const accuracy = Number(subject.accuracy || 0);
+      const efficiencyScore = Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(accuracy * Math.min(1.25, avgTime > 0 && avgSubjectTime > 0 ? avgTime / avgSubjectTime : 1))
+        )
+      );
+
+      return {
+        subject: String(subject.subject),
+        accuracy,
+        correct: Number(subject.correct || 0),
+        total: Number(subject.total || 0),
+        avgTime: avgSubjectTime,
+        efficiencyScore,
+      };
+    });
+
+    const outcomeChartData = [
+      { name: 'Correct', value: Number(results.correct || 0), fill: OUTCOME_COLORS[0] },
+      { name: 'Incorrect', value: Number(results.incorrect || 0), fill: OUTCOME_COLORS[1] },
+      { name: 'Skipped', value: Number(results.skipped || 0), fill: OUTCOME_COLORS[2] },
+      ...(results.partial > 0 ? [{ name: 'Partial', value: Number(results.partial || 0), fill: OUTCOME_COLORS[3] }] : []),
+    ].filter((item) => item.value > 0);
+
+    const subjectChartData = subjectInsights.map((item) => ({
+      subject: item.subject,
+      accuracy: Math.round(item.accuracy),
+      avgTime: Math.round(item.avgTime),
+      efficiency: item.efficiencyScore,
+    }));
+
+    const chapterBreakdown = [...(results.chapterWise || [])]
+      .map((chapter: any) => ({
+        chapter: String(chapter.chapter || 'General'),
+        subject: String(chapter.subject || 'General'),
+        accuracy: Number(chapter.accuracy || 0),
+        total: Number(chapter.total || 0),
+        correct: Number(chapter.correct || 0),
+        incorrect: Number(chapter.incorrect || 0),
+        partial: Number(chapter.partial || 0),
+      }))
+      .sort((a, b) => a.accuracy - b.accuracy);
+
+    const weakTopics = (attempt.weakAreas?.length ? attempt.weakAreas : chapterBreakdown)
+      .slice(0, 6)
+      .map((item: any) => ({
+        chapter: String(item.chapter || 'General'),
+        subject: String(item.subject || 'General'),
+        accuracy: Number(item.accuracy || 0),
+        questionsWrong: Number(item.questionsWrong || item.incorrect || 0),
+      }));
+
+    const strongTopics = [...chapterBreakdown]
+      .sort((a, b) => b.accuracy - a.accuracy)
+      .filter((item) => item.total > 0)
+      .slice(0, 6)
+      .map((item) => ({
+        chapter: item.chapter,
+        subject: item.subject,
+        accuracy: item.accuracy,
+        questionsWrong: item.incorrect,
+      }));
+
+    return {
+      totalTime,
+      avgTime,
+      fastest,
+      slowest,
+      overTimeQuestions,
+      subjectInsights,
+      outcomeChartData,
+      subjectChartData,
+      chapterBreakdown,
+      weakTopics,
+      strongTopics,
+      bookmarked: ntaMeta?.filter((item) => item.bookmarked).length || 0,
+      markedReview: ntaMeta?.filter((item) => item.state === 'marked-review' || item.state === 'answered-marked').length || 0,
+    };
+  }, [attempt, ntaMeta, reviewQuestions, totalTimeTaken]);
 
   const renderAnswerReview = (q: any) => {
     const payload = q.userAnswer as AnswerPayload | null;
@@ -318,14 +443,17 @@ export default function TestReport() {
     );
   }
 
-  const { results, weakAreas, testId } = attempt;
-  const scorePercent = results?.percentage ?? 0;
-  const scoreColor =
-    scorePercent >= 80
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : scorePercent >= 50
-        ? 'text-amber-600 dark:text-amber-400'
-        : 'text-destructive';
+  const { results, testId } = attempt;
+  const scorePercent = Number(results?.percentage ?? 0);
+  const scoreColor = scoreTone(scorePercent);
+  const summaryCards = [
+    { icon: Target, label: 'Total Questions', value: results?.totalQuestions ?? 0, tone: 'text-primary' },
+    { icon: CheckCircle, label: 'Correct', value: results?.correct ?? 0, tone: 'text-emerald-600' },
+    { icon: XCircle, label: 'Incorrect', value: results?.incorrect ?? 0, tone: 'text-destructive' },
+    { icon: AlertCircle, label: 'Skipped', value: results?.skipped ?? 0, tone: 'text-amber-500' },
+    { icon: Trophy, label: 'Score', value: `${results?.marksObtained ?? 0}/${results?.totalMarks ?? 0}`, tone: scoreColor },
+    { icon: Clock, label: 'Time Taken', value: formatDuration(Number(analytics?.totalTime || 0)), tone: 'text-primary' },
+  ];
 
   const anim = (delay: number) => ({
     initial: { opacity: 0, y: 16 },
@@ -335,9 +463,8 @@ export default function TestReport() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
-        <div className="flex items-center gap-3 max-w-2xl mx-auto">
+        <div className="flex items-center gap-3 max-w-6xl mx-auto">
           <Button
             variant="ghost"
             size="icon"
@@ -357,85 +484,148 @@ export default function TestReport() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
-        {/* ═══ SCORE CARD ═══ */}
+      <div className="max-w-6xl mx-auto px-4 py-4 space-y-4">
         <motion.div {...anim(0)}>
           <Card className="overflow-hidden border-0 shadow-md">
-            <div className="bg-primary/5 p-5">
-              <div className="text-center mb-4">
-                <div className={`text-5xl font-black ${scoreColor}`}>
-                  {scorePercent.toFixed(1)}%
+            <div className="bg-primary/5 p-6">
+              <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] items-center">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Overall Result</p>
+                  <div className={`mt-2 text-5xl font-black ${scoreColor}`}>
+                    {scorePercent.toFixed(1)}%
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {results?.marksObtained ?? 0} / {results?.totalMarks ?? 0} marks
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {results?.rank && (
+                      <Badge variant="secondary" className="bg-card">
+                        Rank #{results.rank}
+                      </Badge>
+                    )}
+                    {results?.percentile && (
+                      <Badge variant="secondary" className="bg-card">
+                        Percentile {results.percentile.toFixed(1)}
+                      </Badge>
+                    )}
+                    {(results?.partial ?? 0) > 0 && (
+                      <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                        Partial {results.partial}
+                      </Badge>
+                    )}
+                    {(results?.ungradedQuestions ?? 0) > 0 && (
+                      <Badge variant="secondary" className="bg-primary/10 text-primary">
+                        Ungraded {results.ungradedQuestions}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {results?.marksObtained ?? 0} / {results?.totalMarks ?? 0} marks
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {results?.rank && (
-                  <div className="bg-card rounded-xl p-3 text-center">
-                    <Trophy className="w-5 h-5 text-amber-500 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-foreground">#{results.rank}</div>
-                    <div className="text-[10px] text-muted-foreground">Rank</div>
-                  </div>
-                )}
-                {results?.percentile && (
-                  <div className="bg-card rounded-xl p-3 text-center">
-                    <TrendingUp className="w-5 h-5 text-primary mx-auto mb-1" />
-                    <div className="text-lg font-bold text-foreground">{results.percentile.toFixed(1)}</div>
-                    <div className="text-[10px] text-muted-foreground">Percentile</div>
-                  </div>
-                )}
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {summaryCards.map((stat) => (
+                    <div key={stat.label} className="bg-card rounded-xl p-3 text-center border border-border/60">
+                      <stat.icon className={`w-5 h-5 mx-auto mb-1 ${stat.tone}`} />
+                      <div className="text-lg font-bold text-foreground">{stat.value}</div>
+                      <div className="text-[10px] text-muted-foreground">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </Card>
         </motion.div>
 
-        {/* ═══ STATS ROW ═══ */}
-        <motion.div {...anim(0.1)}>
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { icon: CheckCircle, label: 'Correct', value: results?.correct ?? 0, color: 'text-emerald-600' },
-              { icon: XCircle, label: 'Wrong', value: results?.incorrect ?? 0, color: 'text-destructive' },
-              { icon: AlertCircle, label: 'Skipped', value: results?.skipped ?? 0, color: 'text-amber-500' },
-              {
-                icon: Clock,
-                label: 'Avg Time',
-                value: `${Math.round(results?.timeAnalysis?.avgTimePerQuestion ?? 0)}s`,
-                color: 'text-primary',
-              },
-            ].map((stat, i) => (
-              <Card key={i} className="p-3 text-center">
-                <stat.icon className={`w-5 h-5 mx-auto mb-1 ${stat.color}`} />
-                <div className="text-lg font-bold text-foreground">{stat.value}</div>
-                <div className="text-[10px] text-muted-foreground">{stat.label}</div>
-              </Card>
-            ))}
-          </div>
-          {((results?.partial ?? 0) > 0 || (results?.ungradedQuestions ?? 0) > 0) && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {(results?.partial ?? 0) > 0 && (
-                <Badge variant="secondary" className="text-xs bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                  Partial: {results.partial}
-                </Badge>
-              )}
-              {(results?.ungradedQuestions ?? 0) > 0 && (
-                <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
-                  Ungraded Items: {results.ungradedQuestions}
-                </Badge>
-              )}
-              {results?.completionWise && (
-                <Badge variant="secondary" className="text-xs">
-                  Completed: {(results.completionWise.flashcardCompleted ?? 0) + (results.completionWise.videoCompleted ?? 0)}/
-                  {(results.completionWise.flashcardTotal ?? 0) + (results.completionWise.videoTotal ?? 0)}
-                </Badge>
-              )}
-            </div>
-          )}
-        </motion.div>
+        {analytics && (
+          <motion.div {...anim(0.08)} className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <PieChartIcon className="w-4 h-4 text-primary" />
+                  Attempt Outcome
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-[1fr_0.9fr] items-center">
+                <ChartContainer
+                  config={{
+                    Correct: { label: 'Correct', color: OUTCOME_COLORS[0] },
+                    Incorrect: { label: 'Incorrect', color: OUTCOME_COLORS[1] },
+                    Skipped: { label: 'Skipped', color: OUTCOME_COLORS[2] },
+                    Partial: { label: 'Partial', color: OUTCOME_COLORS[3] },
+                  }}
+                  className="h-[260px] w-full"
+                >
+                  <PieChart>
+                    <Pie data={analytics.outcomeChartData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={3}>
+                      {analytics.outcomeChartData.map((entry, index) => (
+                        <Cell key={entry.name} fill={entry.fill || OUTCOME_COLORS[index % OUTCOME_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                  </PieChart>
+                </ChartContainer>
 
-        {/* ═══ TIME ANALYTICS (from NTA meta) ═══ */}
-        {timeAnalytics && (
-          <motion.div {...anim(0.15)}>
+                <div className="space-y-3">
+                  {analytics.outcomeChartData.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.fill }} />
+                        <span className="text-sm font-medium text-foreground">{item.name}</span>
+                      </div>
+                      <span className="text-sm font-bold text-foreground">{item.value}</span>
+                    </div>
+                  ))}
+                  <div className="rounded-xl border border-border bg-primary/5 px-3 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Accuracy</p>
+                    <p className={`text-2xl font-bold ${scoreColor}`}>{scorePercent.toFixed(1)}%</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                  Subject Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ChartContainer
+                  config={{
+                    accuracy: { label: 'Accuracy %', color: '#2563eb' },
+                  }}
+                  className="h-[260px] w-full"
+                >
+                  <BarChart data={analytics.subjectChartData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="subject" tickLine={false} axisLine={false} />
+                    <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={30} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="accuracy" radius={[8, 8, 0, 0]} fill="var(--color-accuracy)" />
+                  </BarChart>
+                </ChartContainer>
+
+                <div className="space-y-2">
+                  {analytics.subjectInsights.map((item) => (
+                    <div key={item.subject} className="rounded-xl border border-border bg-muted/30 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-foreground">{item.subject}</p>
+                        <Badge variant="secondary">Efficiency {item.efficiencyScore}</Badge>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{item.correct}/{item.total} correct</span>
+                        <span>{Math.round(item.avgTime || 0)}s avg</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {analytics && (
+          <motion.div {...anim(0.14)} className="grid gap-4 lg:grid-cols-[1fr_1fr_0.9fr]">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -444,50 +634,81 @@ export default function TestReport() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Total Time</span>
-                  <span className="font-bold text-foreground">{formatDuration(totalTimeTaken || timeAnalytics.total)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Avg per Question</span>
-                  <span className="font-bold text-foreground">{Math.round(timeAnalytics.avg)}s</span>
-                </div>
-
-                {/* Distribution */}
-                <div className="space-y-1.5">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Speed Distribution</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-emerald-500/10 rounded-lg p-2 text-center">
-                      <Zap className="w-3.5 h-3.5 text-emerald-600 mx-auto mb-0.5" />
-                      <div className="text-sm font-bold text-foreground">{timeAnalytics.fast}</div>
-                      <div className="text-[10px] text-muted-foreground">&lt;30s</div>
-                    </div>
-                    <div className="bg-amber-500/10 rounded-lg p-2 text-center">
-                      <Clock className="w-3.5 h-3.5 text-amber-600 mx-auto mb-0.5" />
-                      <div className="text-sm font-bold text-foreground">{timeAnalytics.medium}</div>
-                      <div className="text-[10px] text-muted-foreground">30–90s</div>
-                    </div>
-                    <div className="bg-destructive/10 rounded-lg p-2 text-center">
-                      <AlertCircle className="w-3.5 h-3.5 text-destructive mx-auto mb-0.5" />
-                      <div className="text-sm font-bold text-foreground">{timeAnalytics.slow}</div>
-                      <div className="text-[10px] text-muted-foreground">&gt;90s</div>
-                    </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-border bg-muted/30 p-3">
+                    <p className="text-[11px] text-muted-foreground">Total Time</p>
+                    <p className="text-lg font-bold text-foreground">{formatDuration(analytics.totalTime)}</p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-muted/30 p-3">
+                    <p className="text-[11px] text-muted-foreground">Avg / Question</p>
+                    <p className="text-lg font-bold text-foreground">{Math.round(analytics.avgTime)}s</p>
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+                    <p className="text-[11px] text-muted-foreground">Fastest</p>
+                    <p className="text-sm font-bold text-foreground">{analytics.fastest ? `${analytics.fastest.label} • ${formatDuration(analytics.fastest.timeSpent)}` : 'N/A'}</p>
+                  </div>
+                  <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
+                    <p className="text-[11px] text-muted-foreground">Slowest</p>
+                    <p className="text-sm font-bold text-foreground">{analytics.slowest ? `${analytics.slowest.label} • ${formatDuration(analytics.slowest.timeSpent)}` : 'N/A'}</p>
+                  </div>
+                </div>
+                {(analytics.bookmarked > 0 || analytics.markedReview > 0) && (
+                  <div className="flex flex-wrap gap-2">
+                    {analytics.bookmarked > 0 && <Badge variant="secondary">Bookmarked {analytics.bookmarked}</Badge>}
+                    {analytics.markedReview > 0 && <Badge variant="secondary">Marked for review {analytics.markedReview}</Badge>}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-                {/* Bookmarks & Review */}
-                {(timeAnalytics.bookmarked > 0 || timeAnalytics.markedReview > 0) && (
-                  <div className="flex gap-3 pt-1">
-                    {timeAnalytics.bookmarked > 0 && (
-                      <Badge variant="secondary" className="text-xs">
-                        ⭐ {timeAnalytics.bookmarked} bookmarked
-                      </Badge>
-                    )}
-                    {timeAnalytics.markedReview > 0 && (
-                      <Badge variant="secondary" className="text-xs">
-                        🔖 {timeAnalytics.markedReview} marked for review
-                      </Badge>
-                    )}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Gauge className="w-4 h-4 text-primary" />
+                  Time Efficiency
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {analytics.subjectInsights.map((item) => (
+                  <div key={`eff-${item.subject}`} className="rounded-xl border border-border bg-muted/30 p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-foreground">{item.subject}</p>
+                      <span className="text-sm font-bold text-primary">{item.efficiencyScore}</span>
+                    </div>
+                    <div className="mt-2">
+                      <Progress value={item.efficiencyScore} className="h-2" />
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span>{item.accuracy.toFixed(0)}% accuracy</span>
+                      <span>{Math.round(item.avgTime || 0)}s avg</span>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary" />
+                  Over-Time Questions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {analytics.overTimeQuestions.length > 0 ? analytics.overTimeQuestions.map((item) => (
+                  <div key={`slow-${item.id}`} className="rounded-xl border border-border bg-muted/30 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                      <span className="text-sm font-bold text-destructive">{formatDuration(item.timeSpent)}</span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">{item.question}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">{item.subject} • {item.chapter}</p>
+                  </div>
+                )) : (
+                  <div className="rounded-xl border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                    No question ran unusually long in this attempt.
                   </div>
                 )}
               </CardContent>
@@ -495,52 +716,18 @@ export default function TestReport() {
           </motion.div>
         )}
 
-        {/* ═══ SUBJECT-WISE ═══ */}
-        {results?.subjectWise?.length > 0 && (
-          <motion.div {...anim(0.2)}>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-primary" />
-                  Subject-wise Performance
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {results.subjectWise.map((subject: any) => (
-                  <div key={subject.subject}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold text-foreground">{subject.subject}</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {subject.correct}/{subject.total} • {subject.accuracy.toFixed(0)}%
-                      </span>
-                    </div>
-                    <Progress
-                      value={subject.accuracy}
-                      className="h-2"
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* ═══ WEAK AREAS ═══ */}
-        {weakAreas?.length > 0 && (
-          <motion.div {...anim(0.25)}>
+        {analytics && (
+          <motion.div {...anim(0.2)} className="grid gap-4 lg:grid-cols-2">
             <Card className="border-destructive/20">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2 text-destructive">
                   <Target className="w-4 h-4" />
-                  Weak Areas
+                  Weak Topics
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {weakAreas.map((area: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between bg-destructive/5 rounded-xl p-3"
-                  >
+                {analytics.weakTopics.length > 0 ? analytics.weakTopics.map((area) => (
+                  <div key={`weak-${area.subject}-${area.chapter}`} className="flex items-center justify-between bg-destructive/5 rounded-xl p-3">
                     <div className="flex-1 min-w-0 mr-3">
                       <p className="text-xs font-semibold text-foreground truncate">{area.chapter}</p>
                       <p className="text-[10px] text-muted-foreground">
@@ -560,53 +747,77 @@ export default function TestReport() {
                       Fix <ArrowRight className="w-3 h-3 ml-1" />
                     </Button>
                   </div>
-                ))}
+                )) : (
+                  <div className="rounded-xl border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                    No weak topics were detected in this attempt.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-emerald-500/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                  <BrainCircuit className="w-4 h-4" />
+                  Strong Topics
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {analytics.strongTopics.length > 0 ? analytics.strongTopics.map((area) => (
+                  <div key={`strong-${area.subject}-${area.chapter}`} className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold text-foreground truncate">{area.chapter}</p>
+                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{area.accuracy.toFixed(0)}%</span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-muted-foreground">{area.subject}</p>
+                  </div>
+                )) : (
+                  <div className="rounded-xl border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                    Strong topics will show up after more graded questions.
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
         )}
 
-        {/* ═══ CHAPTER-WISE ═══ */}
-        {results?.chapterWise?.length > 0 && (
-          <motion.div {...anim(0.3)}>
+        {analytics?.chapterBreakdown?.length > 0 && (
+          <motion.div {...anim(0.24)}>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-primary" />
-                  Chapter-wise Breakdown
+                  Chapter Breakdown
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-2">
-                  {results.chapterWise.map((ch: any, idx: number) => {
-                    const accColor =
-                      ch.accuracy >= 80
-                        ? 'text-emerald-600'
-                        : ch.accuracy >= 50
-                          ? 'text-amber-600'
-                          : 'text-destructive';
-                    return (
-                      <div key={idx} className="bg-muted/50 rounded-xl p-3">
-                        <p className="text-xs font-semibold text-foreground truncate">{ch.chapter}</p>
-                        <p className="text-[10px] text-muted-foreground mb-1">{ch.subject}</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-muted-foreground">
-                            {ch.correct}/{ch.total}
-                          </span>
-                          <span className={`text-xs font-bold ${accColor}`}>{ch.accuracy.toFixed(0)}%</span>
+                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                  {analytics.chapterBreakdown.map((chapter) => (
+                    <div key={`${chapter.subject}-${chapter.chapter}`} className="bg-muted/50 rounded-xl p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">{chapter.chapter}</p>
+                          <p className="text-[10px] text-muted-foreground">{chapter.subject}</p>
                         </div>
+                        <span className={`text-xs font-bold ${chapterTone(chapter.accuracy)}`}>{chapter.accuracy.toFixed(0)}%</span>
                       </div>
-                    );
-                  })}
+                      <div className="mt-2">
+                        <Progress value={chapter.accuracy} className="h-2" />
+                      </div>
+                      <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span>{chapter.correct}/{chapter.total} correct</span>
+                        <span>{chapter.incorrect} wrong</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           </motion.div>
         )}
 
-        {/* ═══ ACTIONS ═══ */}
         {reviewQuestions.length > 0 && (
-          <motion.div {...anim(0.33)}>
+          <motion.div {...anim(0.28)}>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -621,6 +832,11 @@ export default function TestReport() {
                   const isCorrect = q.evaluationStatus === 'correct';
                   const hasExplanation = Boolean(String(q.explanation || '').trim()) || Boolean(q.explanationImageUrl) || Boolean(q.resolvedExplanationDiagrams?.length);
                   const isExplanationOpen = Boolean(openExplanations[reviewKey]);
+                  const timeSpent = Number(
+                    ntaMeta?.[idx]?.timeSpent ??
+                    attempt?.answers?.find((answer: any) => String(answer?.questionId?._id || answer?.questionId || '') === reviewKey)?.timeSpent ??
+                    0
+                  );
 
                   return (
                     <div key={q._id || q.id || idx} className="rounded-xl border border-border p-3 bg-muted/30">
@@ -650,6 +866,13 @@ export default function TestReport() {
                                   ? 'Ungraded'
                                   : 'Wrong'}
                         </Badge>
+                      </div>
+
+                      <div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-1 border border-border">
+                          <Clock className="w-3 h-3" />
+                          {formatDuration(timeSpent)}
+                        </span>
                       </div>
 
                       {q.imageUrl ? (
@@ -695,7 +918,7 @@ export default function TestReport() {
           </motion.div>
         )}
 
-        <motion.div {...anim(0.35)} className="flex gap-3">
+        <motion.div {...anim(0.32)} className="flex gap-3">
           <Button
             variant="outline"
             className="flex-1 h-11"

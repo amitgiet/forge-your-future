@@ -77,7 +77,7 @@ export default function TestSession() {
       await apiService.tests.submitTest(attemptId!);
       // Pass analytics meta through navigation state
       navigate(`/app/test/report/${attemptId}`, {
-        state: { meta: data.meta, timeTaken: data.timeTaken },
+        state: { meta: data.meta, timeTaken: data.timeTaken, questions },
       });
     } catch (err) {
       console.error('Failed to submit test:', err);

@@ -339,6 +339,7 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fetchedImages, setFetchedImages] = useState<Record<string, string>>({});
+  const [timerTick, setTimerTick] = useState(0);
   const questionEntryTime = useRef(Date.now());
 
   useEffect(() => {
@@ -367,9 +368,12 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
     const elapsed = Math.round((Date.now() - questionEntryTime.current) / 1000);
     setMeta((prev) => {
       const next = [...prev];
-      next[currentQ] = { ...next[currentQ], timeSpent: next[currentQ].timeSpent + elapsed };
+      const nextEntry = { ...next[currentQ], timeSpent: next[currentQ].timeSpent + Math.max(0, elapsed) };
+      next[currentQ] = nextEntry;
+      onAnswerChange?.(currentQ, nextEntry.answerPayload, nextEntry);
       return next;
     });
+    questionEntryTime.current = Date.now();
   }, [currentQ]);
 
   useEffect(() => {
@@ -383,9 +387,20 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
         }
         return t - 1;
       });
+      setTimerTick((value) => value + 1);
     }, 1000);
     return () => clearInterval(interval);
   }, [readOnly]);
+
+  useEffect(() => {
+    if (readOnly) return;
+    const onVisibilityChange = () => {
+      if (document.hidden) recordTimeSpent();
+      else questionEntryTime.current = Date.now();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [recordTimeSpent, readOnly]);
 
   const currentSection = useMemo(() => sections.find((section) => currentQ >= section.startIndex && currentQ <= section.endIndex) ?? sections[0], [currentQ, sections]);
 
@@ -453,6 +468,11 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
 
   const q = questions[currentQ];
   const curMeta = meta[currentQ];
+  const currentQuestionElapsed = useMemo(() => {
+    const stored = Number(curMeta?.timeSpent || 0);
+    if (readOnly || isSubmitting) return stored;
+    return stored + Math.max(0, Math.round((Date.now() - questionEntryTime.current) / 1000));
+  }, [curMeta?.timeSpent, isSubmitting, readOnly, timerTick]);
   const isMarked = curMeta?.state === 'marked-review' || curMeta?.state === 'answered-marked';
   const timerUrgent = timeLeft < 300;
   const timerWarning = timeLeft < 900 && !timerUrgent;
@@ -493,6 +513,10 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
             <div className="flex items-start justify-between mb-3">
               <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Question {currentQ + 1}</span>
               <div className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
+                  <Clock className="w-3.5 h-3.5" />
+                  {formatTime(currentQuestionElapsed)}
+                </span>
                 <button onClick={toggleBookmark} className={`p-1.5 rounded-lg transition-colors ${curMeta?.bookmarked ? 'text-amber-500 bg-amber-500/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
                   <Star className="w-4 h-4" fill={curMeta?.bookmarked ? 'currentColor' : 'none'} />
                 </button>
