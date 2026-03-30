@@ -28,16 +28,34 @@ export const toEmbedDriveUrl = (urlValue = ''): string => {
   return fileId ? `https://drive.google.com/file/d/${fileId}/preview?rm=minimal` : raw;
 };
 
-export const toDirectImageUrl = (urlValue = '', driveId?: string | null): string => {
+export const toThumbnailImageUrl = (urlValue = '', driveId?: string | null): string => {
   const raw = String(urlValue || '').trim();
   const fileId = driveId || extractDriveFileId(raw);
   if (fileId) return `https://drive.google.com/thumbnail?id=${fileId}&sz=w2000`;
   return raw;
 };
 
+export const toDirectImageUrl = (urlValue = '', driveId?: string | null): string => {
+  const raw = String(urlValue || '').trim();
+  const fileId = driveId || extractDriveFileId(raw);
+  if (fileId) return `https://drive.google.com/uc?export=view&id=${fileId}`;
+  return raw;
+};
+
+export const getPageImageCandidates = (pageFile?: PageFile | null): string[] => {
+  if (!pageFile) return [];
+
+  const candidates = [
+    toThumbnailImageUrl(pageFile.driveLink || '', pageFile.driveId || null),
+    toDirectImageUrl(pageFile.driveLink || '', pageFile.driveId || null),
+    String(pageFile.driveLink || '').trim(),
+  ].filter(Boolean);
+
+  return Array.from(new Set(candidates));
+};
+
 export const getPageImageUrl = (pageFile?: PageFile | null): string => {
-  if (!pageFile) return '';
-  return toDirectImageUrl(pageFile.driveLink || '', pageFile.driveId || null);
+  return getPageImageCandidates(pageFile)[0] || '';
 };
 
 export const getResourceTiles = (chapter: ChapterResourceDetail | null): ResourceTile[] => {

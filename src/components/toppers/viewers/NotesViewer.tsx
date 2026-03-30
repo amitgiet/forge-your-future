@@ -1,10 +1,40 @@
-import type { NotesResource } from '@/components/toppers/types';
+import { useMemo, useState } from 'react';
+import type { PageFile, NotesResource } from '@/components/toppers/types';
 import EmptyResourceState from '@/components/toppers/EmptyResourceState';
-import { getPageImageUrl, toEmbedDriveUrl } from '@/components/toppers/utils';
+import { getPageImageCandidates, toEmbedDriveUrl } from '@/components/toppers/utils';
 
 type NotesViewerProps = {
   notes?: NotesResource;
 };
+
+function NotesPageImage({ page }: { page: PageFile }) {
+  const candidates = useMemo(() => getPageImageCandidates(page), [page]);
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const src = candidates[candidateIndex] || '';
+
+  if (!src) {
+    return (
+      <div className="flex min-h-[180px] items-center justify-center rounded-2xl bg-muted px-4 text-center text-sm text-muted-foreground">
+        Image URL missing for page {page.pageId}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={`Page ${page.pageId}`}
+      className="w-full rounded-2xl bg-muted object-contain"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => {
+        if (candidateIndex < candidates.length - 1) {
+          setCandidateIndex((current) => current + 1);
+        }
+      }}
+    />
+  );
+}
 
 export default function NotesViewer({ notes }: NotesViewerProps) {
   if (!notes?.mode) {
@@ -28,12 +58,7 @@ export default function NotesViewer({ notes }: NotesViewerProps) {
       <div className="mx-auto w-full max-w-4xl space-y-4 p-4">
         {(notes.pageFiles || []).map((page) => (
           <div key={page.pageId} className="glass-card overflow-hidden rounded-3xl border border-border p-2">
-            <img
-              src={getPageImageUrl(page)}
-              alt={`Page ${page.pageId}`}
-              className="w-full rounded-2xl bg-muted object-contain"
-              loading="lazy"
-            />
+            <NotesPageImage page={page} />
           </div>
         ))}
       </div>

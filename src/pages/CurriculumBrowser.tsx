@@ -976,7 +976,7 @@ const CurriculumBrowser = () => {
 
   const renderTopics = () => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
-      {toppersEssentials && hasAnyEssential(toppersEssentials) && (
+      {false && toppersEssentials && hasAnyEssential(toppersEssentials) && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}

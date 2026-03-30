@@ -146,15 +146,59 @@ const getOptionMap = (question: any) => {
   }, {} as Record<string, string>);
 };
 
+const splitLegacyMatchPair = (value: any): { left: string; right: string } | null => {
+  const text = getText(value).trim();
+  if (!hasText(text)) return null;
+
+  const separators = [',', '|', ':', ' - ', '\t'];
+  for (const separator of separators) {
+    const index = text.indexOf(separator);
+    if (index === -1) continue;
+
+    const left = text.slice(0, index).trim();
+    const right = text.slice(index + separator.length).trim();
+    if (hasText(left) && hasText(right)) return { left, right };
+  }
+
+  const lines = text.split(/\r?\n/).map((part) => part.trim()).filter(Boolean);
+  if (lines.length >= 2) {
+    return {
+      left: lines[0],
+      right: lines.slice(1).join(' '),
+    };
+  }
+
+  return null;
+};
+
+
 const normalizeMatchPairs = (question: any): MatchPair[] => {
-  const pairs = Array.isArray(question?.typeData?.pairs) ? question.typeData.pairs : [];
-  return pairs
+  const storedPairs = Array.isArray(question?.typeData?.pairs) ? question.typeData.pairs : [];
+  const normalizedStoredPairs = storedPairs
     .map((pair: any, index: number) => ({
       id: String(pair?.id || pair?.left || index),
       left: getText(pair?.left),
       right: getText(pair?.right),
     }))
     .filter((pair: MatchPair) => hasText(pair.left) && hasText(pair.right));
+
+  if (normalizedStoredPairs.length > 0) return normalizedStoredPairs;
+
+  if (question?.options && typeof question.options === 'object' && !Array.isArray(question.options)) {
+    return ['A', 'B', 'C', 'D']
+      .map((label, index) => {
+        const parsed = splitLegacyMatchPair(question.options[label] ?? question.options[label.toLowerCase()]);
+        if (!parsed) return null;
+        return {
+          id: String(label || index),
+          left: parsed.left,
+          right: parsed.right,
+        };
+      })
+      .filter((pair): pair is MatchPair => Boolean(pair));
+  }
+
+  return [];
 };
 
 const normalizeOrderItems = (question: any): { items: OrderItem[]; correctOrder: string[] } => {
