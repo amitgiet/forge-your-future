@@ -22,41 +22,5 @@ export default defineConfig(({ mode }) => ({
     target: "es2020",
     minify: "esbuild",
     cssCodeSplit: true,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes("node_modules")) {
-            if (id.includes("recharts") || id.includes("d3-")) {
-              return "vendor-charts";
-            }
-            if (id.includes("lucide-react")) {
-              return "vendor-icons";
-            }
-            if (
-              id.includes("@radix-ui") ||
-              id.includes("clsx") ||
-              id.includes("tailwind-merge") ||
-              id.includes("class-variance-authority")
-            ) {
-              return "vendor-ui";
-            }
-            if (
-              id.includes("react") ||
-              id.includes("react-dom") ||
-              id.includes("react-router-dom")
-            ) {
-              return "vendor-react";
-            }
-            if (
-              id.includes("@tanstack") ||
-              id.includes("@reduxjs") ||
-              id.includes("react-redux")
-            ) {
-              return "vendor-state";
-            }
-          }
-        },
-      },
-    },
   },
 }));
