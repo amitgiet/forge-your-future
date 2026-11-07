@@ -2,6 +2,7 @@
 import React from 'react';
 import NeetNavbar from '../components/neetforge/NeetNavbar';
 import NeetFooter from '../components/neetforge/NeetFooter';
+import Seo from '../components/Seo';
 import { Briefcase, MapPin, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +20,11 @@ const positions = [
 export default function Careers() {
     return (
         <div className="min-h-screen bg-background">
+            <Seo
+                title="Careers at NEETFORGE: Join Our Mission to Empower Aspirants | NEETFORGE"
+                description="Join the team modernizing medical entrance coaching in India. View open faculty, engineering, content development, and community lead roles."
+                canonicalPath="/careers"
+            />
             <NeetNavbar />
 
             {/* Hero */}

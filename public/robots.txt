@@ -1,13 +1,8 @@
 User-agent: *
 Allow: /
 
-Disallow: /app/dashboard
-Disallow: /app/practice
-Disallow: /app/tests
-Disallow: /app/revision
-Disallow: /app/analytics
-Disallow: /app/ai-assistant
-Disallow: /app/profile
-Disallow: /app/settings
+# Disallow internal student portal and private application screens
+Disallow: /app/
+Disallow: /app/*
 
 Sitemap: https://neetforge.in/sitemap.xml

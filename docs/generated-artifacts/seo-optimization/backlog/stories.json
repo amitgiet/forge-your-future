@@ -1,0 +1,68 @@
+[
+  {
+    "key": "SEO-1",
+    "epicKey": "SEO-EPIC-01",
+    "title": "Resolve Missing Head Brand Assets and Social Media Share Previews",
+    "persona": "Social Media User & Web Crawler",
+    "priority": "Highest",
+    "storyPoints": 3,
+    "description": "Provide authentic static branding assets so that when students and educators share NEETFORGE links on messaging and social platforms, rich preview cards appear with official graphics instead of broken links, and mobile home screen bookmarks work seamlessly.",
+    "acceptanceCriteriaSummary": "Social preview image returns valid 1200x630 PNG; scalable browser icon returns valid SVG; Apple touch icon returns 180x180 PNG; web app manifest parses without syntax errors.",
+    "status": "Backlog"
+  },
+  {
+    "key": "SEO-2",
+    "epicKey": "SEO-EPIC-01",
+    "title": "Configure Production Security Headers and High-Performance Edge Caching",
+    "persona": "Platform User & Web Browser",
+    "priority": "High",
+    "storyPoints": 3,
+    "description": "Deliver industry-standard security headers to safeguard student privacy and guard against common web vulnerabilities, while ensuring versioned static assets are cached permanently at the network edge to speed up repeat visits.",
+    "acceptanceCriteriaSummary": "Versioned assets cache for 1 year with immutable directive; strict security headers are sent on all page responses; missing files return proper 404 status codes rather than deceptive success masks.",
+    "status": "Backlog"
+  },
+  {
+    "key": "SEO-3",
+    "epicKey": "SEO-EPIC-01",
+    "title": "Optimize Initial Marketing Page Load via Route-Level Code Splitting",
+    "persona": "Mobile NEET Aspirant",
+    "priority": "High",
+    "storyPoints": 5,
+    "description": "Separate public marketing pages from heavy internal student dashboards and test tools so that first-time visitors download only the minimal code needed to display the page quickly on mobile devices.",
+    "acceptanceCriteriaSummary": "Initial public marketing bundle size is kept under 100 KB gzipped; internal student features load on demand; page transitions render smoothly without visual glitching.",
+    "status": "Backlog"
+  },
+  {
+    "key": "SEO-4",
+    "epicKey": "SEO-EPIC-01",
+    "title": "Implement Pre-Rendering for Public Marketing Routes with Unique Titles and Canonicals",
+    "persona": "Search Engine Crawler",
+    "priority": "Highest",
+    "storyPoints": 8,
+    "description": "Generate complete, standalone HTML pages for all public marketing pages during deployment so search engines can read distinct titles, page summaries, and canonical addresses without requiring JavaScript execution.",
+    "acceptanceCriteriaSummary": "All 13 marketing pages have distinct raw HTML page titles and self-referencing canonical tags; raw HTML contains readable text and headings; duplicate homepage canonical references on subpages are eliminated.",
+    "status": "Backlog"
+  },
+  {
+    "key": "SEO-5",
+    "epicKey": "SEO-EPIC-01",
+    "title": "Consolidate Schema.org Structured Data and Enable FAQ Rich Snippets",
+    "persona": "Search Engine Knowledge Graph",
+    "priority": "High",
+    "storyPoints": 5,
+    "description": "Streamline search engine structured markup by removing conflicting scripts, eliminating unsupported review claims and non-functional search box declarations, and exposing valid FAQ rich snippet markup.",
+    "acceptanceCriteriaSummary": "Single unified structured data graph per page; verified organization and social profile links; accurate FAQ schema matching visible questions and answers; zero errors in rich results testing.",
+    "status": "Backlog"
+  },
+  {
+    "key": "SEO-6",
+    "epicKey": "SEO-EPIC-01",
+    "title": "Refine Search Crawl Hygiene via Updated Robots Directives and Clean Sitemap",
+    "persona": "Search Engine Webmaster",
+    "priority": "Medium",
+    "storyPoints": 2,
+    "description": "Direct search engine spiders exclusively toward high-value marketing and study pages while shielding private login and student account screens from unnecessary indexing.",
+    "acceptanceCriteriaSummary": "Sitemap lists all 13 canonical marketing pages and excludes private login or signup screens; robots file explicitly disallows private student areas; private auth screens include noindex robots metadata.",
+    "status": "Backlog"
+  }
+]

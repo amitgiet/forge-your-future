@@ -1,85 +1,64 @@
 import { useEffect } from "react";
 
-const DEFAULT_SITE_NAME = "NEETFORGE";
+const BASE_URL = "https://neetforge.in";
 
-function upsertMeta(selector, attributes) {
-  let element = document.head.querySelector(selector);
-
-  if (!element) {
-    element = document.createElement("meta");
-    document.head.appendChild(element);
+function updateTag(selector, attrName, attrValue, content) {
+  let el = document.head.querySelector(selector);
+  if (!el) {
+    el = document.createElement(selector.startsWith("link") ? "link" : "meta");
+    el.setAttribute(attrName, attrValue);
+    document.head.appendChild(el);
   }
-
-  Object.entries(attributes).forEach(([key, value]) => {
-    element.setAttribute(key, value);
-  });
-}
-
-function upsertLink(selector, attributes) {
-  let element = document.head.querySelector(selector);
-
-  if (!element) {
-    element = document.createElement("link");
-    document.head.appendChild(element);
-  }
-
-  Object.entries(attributes).forEach(([key, value]) => {
-    element.setAttribute(key, value);
-  });
+  el.setAttribute(selector.startsWith("link") ? "href" : "content", content);
 }
 
 export default function Seo({
   title,
   description,
   canonicalPath = "/",
-  image = "/og-image.png",
-  type = "website",
+  keywords,
+  image = "https://neetforge.in/og-image.png",
   schema,
 }) {
   useEffect(() => {
-    const origin = window.location.origin;
-    const canonicalUrl = new URL(canonicalPath, origin).toString();
-    const imageUrl = new URL(image, origin).toString();
-    const previousTitle = document.title;
-    const previousJsonLd = document.getElementById("seo-json-ld");
-
+    const fullCanonical = `${BASE_URL}${canonicalPath === "/" ? "" : canonicalPath}`;
+    
     document.title = title;
 
-    upsertMeta('meta[name="description"]', { name: "description", content: description });
-    upsertMeta('meta[name="robots"]', { name: "robots", content: "index, follow" });
-    upsertMeta('meta[property="og:title"]', { property: "og:title", content: title });
-    upsertMeta('meta[property="og:description"]', { property: "og:description", content: description });
-    upsertMeta('meta[property="og:type"]', { property: "og:type", content: type });
-    upsertMeta('meta[property="og:url"]', { property: "og:url", content: canonicalUrl });
-    upsertMeta('meta[property="og:site_name"]', { property: "og:site_name", content: DEFAULT_SITE_NAME });
-    upsertMeta('meta[property="og:image"]', { property: "og:image", content: imageUrl });
-    upsertMeta('meta[name="twitter:card"]', { name: "twitter:card", content: "summary_large_image" });
-    upsertMeta('meta[name="twitter:title"]', { name: "twitter:title", content: title });
-    upsertMeta('meta[name="twitter:description"]', { name: "twitter:description", content: description });
-    upsertMeta('meta[name="twitter:image"]', { name: "twitter:image", content: imageUrl });
-    upsertLink('link[rel="canonical"]', { rel: "canonical", href: canonicalUrl });
+    updateTag('meta[name="description"]', "name", "description", description);
+    if (keywords) {
+      updateTag('meta[name="keywords"]', "name", "keywords", keywords);
+    }
+    updateTag('meta[name="robots"]', "name", "robots", "index, follow");
+
+    updateTag('link[rel="canonical"]', "rel", "canonical", fullCanonical);
+
+    updateTag('meta[property="og:title"]', "property", "og:title", title);
+    updateTag('meta[property="og:description"]', "property", "og:description", description);
+    updateTag('meta[property="og:url"]', "property", "og:url", fullCanonical);
+    updateTag('meta[property="og:type"]', "property", "og:type", "website");
+    updateTag('meta[property="og:image"]', "property", "og:image", image);
+
+    updateTag('meta[name="twitter:title"]', "name", "twitter:title", title);
+    updateTag('meta[name="twitter:description"]', "name", "twitter:description", description);
+    updateTag('meta[name="twitter:image"]', "name", "twitter:image", image);
 
     if (schema) {
-      const script = document.createElement("script");
-      script.id = "seo-json-ld";
-      script.type = "application/ld+json";
-      script.textContent = JSON.stringify(schema);
-
-      if (previousJsonLd) {
-        previousJsonLd.replaceWith(script);
-      } else {
+      let script = document.getElementById("route-schema-jsonld");
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "route-schema-jsonld";
+        script.type = "application/ld+json";
         document.head.appendChild(script);
       }
+      script.textContent = JSON.stringify(schema);
     }
 
     return () => {
-      document.title = previousTitle;
-      const currentJsonLd = document.getElementById("seo-json-ld");
-      if (currentJsonLd) {
-        currentJsonLd.remove();
-      }
+      const script = document.getElementById("route-schema-jsonld");
+      if (script) script.remove();
     };
-  }, [canonicalPath, description, image, schema, title]);
+  }, [title, description, canonicalPath, keywords, image, schema]);
 
   return null;
 }

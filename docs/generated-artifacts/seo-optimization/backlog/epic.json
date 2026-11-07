@@ -1,0 +1,26 @@
+{
+  "key": "SEO-EPIC-01",
+  "summary": "NEETFORGE 10/10 Technical & On-Page SEO Optimization",
+  "status": "Backlog",
+  "priority": "Highest",
+  "lead": "Product Owner",
+  "targetRelease": "Sprint 1 - Technical SEO Modernization",
+  "description": "Establish top-tier search engine visibility, organic social sharing fidelity, and fast mobile landing performance for NEETFORGE. This epic resolves current crawlability roadblocks, prevents search engines from treating marketing pages as duplicate content, secures static media delivery, and establishes modern search structured data to maximize organic aspirant acquisition.",
+  "businessOutcome": {
+    "goal": "Achieve 10/10 technical SEO health across all major search engines and social sharing platforms.",
+    "keyMetrics": [
+      "100% crawl and indexation coverage for all 13 core marketing pages in search consoles.",
+      "100% functional social share previews with branded images across WhatsApp, Twitter/X, and LinkedIn.",
+      "Significant reduction in mobile first-load JavaScript payload to ensure sub-2-second page render on 4G networks.",
+      "Zero search engine spam warnings on structured data and zero soft 404 crawl errors."
+    ]
+  },
+  "stories": [
+    "SEO-1",
+    "SEO-2",
+    "SEO-3",
+    "SEO-4",
+    "SEO-5",
+    "SEO-6"
+  ]
+}

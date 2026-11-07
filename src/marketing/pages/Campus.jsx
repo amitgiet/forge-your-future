@@ -1,6 +1,7 @@
 import React from 'react';
 import NeetNavbar from '../components/neetforge/NeetNavbar';
 import NeetFooter from '../components/neetforge/NeetFooter';
+import Seo from '../components/Seo';
 import { MapPin, Users, BookOpen, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -37,6 +38,11 @@ const highlights = [
 export default function Campus() {
     return (
         <div className="min-h-screen bg-background">
+            <Seo
+                title="NEETFORGE Offline Campuses & Intensive Coaching Centers | NEETFORGE"
+                description="Discover NEETFORGE physical classroom centers and intensive residential coaching campuses across Kerala featuring top faculty and dedicated mentorship."
+                canonicalPath="/campus"
+            />
             <NeetNavbar />
 
             {/* Hero */}

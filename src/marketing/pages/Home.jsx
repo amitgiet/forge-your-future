@@ -11,55 +11,66 @@ import NeetScoreGraph from "../components/neetforge/NeetScoreGraph";
 import NeetAppDownload from "../components/neetforge/NeetAppDownload";
 import NeetCTA from "../components/neetforge/NeetCTA";
 import NeetFooter from "../components/neetforge/NeetFooter";
-import NeetFAQ, { faqSchema } from "../components/neetforge/NeetFAQ";
+import NeetFAQ from "../components/neetforge/NeetFAQ";
 import Seo from "../components/Seo";
 
-export default function Home() {
-  const schema = [
+const homeSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
     {
-      "@context": "https://schema.org",
       "@type": "Organization",
-      name: "NEETFORGE",
-      url: "https://neetforge.in/",
-      logo: "https://neetforge.in/favicon.ico",
-      description:
-        "AI-powered NEET preparation platform for daily practice, mock test analysis, revision planning, and weak-area improvement.",
+      "@id": "https://neetforge.in/#organization",
+      "name": "NEETFORGE",
+      "url": "https://neetforge.in",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://neetforge.in/apple-touch-icon.png",
+        "width": 180,
+        "height": 180
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "support@neetforge.in",
+        "contactType": "customer support"
+      },
+      "sameAs": [
+        "https://twitter.com/neetforge",
+        "https://youtube.com/@neetforge",
+        "https://t.me/neetforge"
+      ]
     },
     {
-      "@context": "https://schema.org",
       "@type": "WebSite",
-      name: "NEETFORGE",
-      url: "https://neetforge.in/",
-      description:
-        "NEET preparation website focused on practice, analytics, revision, and performance improvement.",
+      "@id": "https://neetforge.in/#website",
+      "name": "NEETFORGE",
+      "url": "https://neetforge.in",
+      "publisher": {
+        "@id": "https://neetforge.in/#organization"
+      }
     },
     {
-      "@context": "https://schema.org",
       "@type": "SoftwareApplication",
-      name: "NEETFORGE",
-      operatingSystem: "Android, Web",
-      applicationCategory: "EducationApplication",
-      offers: {
+      "@id": "https://neetforge.in/#app",
+      "name": "NEETFORGE",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Android, iOS, Web",
+      "offers": {
         "@type": "Offer",
-        price: "0",
-        priceCurrency: "INR",
-      },
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: "4.8",
-        ratingCount: "1200",
-      },
-    },
-    faqSchema,
-  ];
+        "price": "0",
+        "priceCurrency": "INR"
+      }
+    }
+  ]
+};
 
+export default function Home() {
   return (
     <div className="min-h-screen bg-white font-inter">
       <Seo
-        title="NEETFORGE | AI-Powered NEET Preparation, Mock Tests and Revision"
-        description="NEETFORGE helps NEET aspirants practice daily, analyze mock tests, revise weak chapters, and improve accuracy with an AI-powered preparation workflow."
+        title="NEETFORGE — AI-Powered NEET Preparation App 2025"
+        description="NEETFORGE is India's smartest NEET preparation app. Daily DPP, NTA-style mock tests, AI weak-area detection, spaced repetition revision (NeuronZ), and formula cards. Free to start."
         canonicalPath="/"
-        schema={schema}
+        schema={homeSchema}
       />
       <NeetNavbar />
       <NeetHero />

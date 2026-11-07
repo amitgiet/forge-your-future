@@ -1,11 +1,16 @@
 
 import React from "react";
 import LandingLayout from "../components/neetforge/LandingLayout";
+import Seo from "../components/Seo";
 
 export default function PrivacyPolicy() {
     return (
         <LandingLayout>
-            <title>Privacy Policy | NEETFORGE</title>
+            <Seo
+                title="Privacy Policy | NEETFORGE"
+                description="NEETFORGE privacy policy detailing student data protection, encrypted telemetry, cookie usage, and adherence to Indian digital personal data privacy regulations."
+                canonicalPath="/privacy-policy"
+            />
             <div className="max-w-3xl mx-auto px-5 py-28">
                 <h1 className="text-4xl font-black text-[#0f172a] mb-3">Privacy Policy</h1>
                 <p className="text-gray-500 text-sm mb-10">Last updated: March 2025</p>

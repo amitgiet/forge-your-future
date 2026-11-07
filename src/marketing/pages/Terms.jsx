@@ -1,10 +1,15 @@
 import React from "react";
 import LandingLayout from "../components/neetforge/LandingLayout";
+import Seo from "../components/Seo";
 
 export default function Terms() {
     return (
         <LandingLayout>
-            <title>Terms of Service | NEETFORGE</title>
+            <Seo
+                title="Terms of Service | NEETFORGE"
+                description="Terms and conditions governing the use of NEETFORGE web and mobile applications, subscription billing, fair practice policies, and intellectual property rights."
+                canonicalPath="/terms"
+            />
             <div className="max-w-3xl mx-auto px-5 py-28">
                 <h1 className="text-4xl font-black text-[#0f172a] mb-3">Terms of Service</h1>
                 <p className="text-gray-500 text-sm mb-10">Last updated: March 2025</p>

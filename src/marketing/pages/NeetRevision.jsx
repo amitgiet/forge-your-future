@@ -2,7 +2,7 @@
 import React from "react";
 import LandingLayout from "../components/neetforge/LandingLayout";
 import { ArrowRight, RefreshCw, CheckCircle, Zap, Brain, Clock } from "lucide-react";
-import useSEO from "../hooks/useSEO";
+import Seo from "../components/Seo";
 
 const faqs = [
     { q: "What is spaced repetition in NEET preparation?", a: "Spaced repetition is a proven memory technique where you revisit questions at increasing intervals — just before you're about to forget them. This maximises long-term retention with minimum revision time." },
@@ -12,34 +12,13 @@ const faqs = [
 ];
 
 export default function NeetRevision() {
-    useSEO({
-        title: "NEET Revision System (NeuronZ) — Spaced Repetition for NEET 2025 | NEETFORGE",
-        description: "NeuronZ is NEETFORGE's spaced repetition revision system for NEET. Revisit your wrong answers at the perfect interval across 5 memory levels. Never forget a topic again.",
-        keywords: "NEET revision, NEET spaced repetition, NEET NeuronZ, NEET revision system, NEET memory technique, NEET 2025 revision, NEET wrong answer revision",
-        canonical: "https://neetforge.in/neet-revision",
-        jsonLd: [
-            {
-                "@context": "https://schema.org",
-                "@type": "FAQPage",
-                "mainEntity": faqs.map(f => ({
-                    "@type": "Question",
-                    "name": f.q,
-                    "acceptedAnswer": { "@type": "Answer", "text": f.a }
-                }))
-            },
-            {
-                "@context": "https://schema.org",
-                "@type": "BreadcrumbList",
-                "itemListElement": [
-                    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://neetforge.in/" },
-                    { "@type": "ListItem", "position": 2, "name": "NEET Revision System", "item": "https://neetforge.in/neet-revision" }
-                ]
-            }
-        ]
-    });
-
     return (
         <LandingLayout>
+            <Seo
+                title="NEET Revision System (NeuronZ): Spaced Repetition for 650+ Score | NEETFORGE"
+                description="Beat the Ebbinghaus forgetting curve. NEETFORGE's NeuronZ revision algorithm automatically schedules question reviews at optimal intervals for permanent retention."
+                canonicalPath="/neet-revision"
+            />
 
             <section className="pt-28 pb-16 bg-gradient-to-br from-[#F5F3FF] via-white to-[#EFF6FF]">
                 <div className="max-w-4xl mx-auto px-5 text-center">

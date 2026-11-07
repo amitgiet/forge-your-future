@@ -2,7 +2,7 @@
 import React from "react";
 import LandingLayout from "../components/neetforge/LandingLayout";
 import { ArrowRight, CreditCard, CheckCircle, Zap, BookOpen, LayoutGrid } from "lucide-react";
-import useSEO from "../hooks/useSEO";
+import Seo from "../components/Seo";
 
 const faqs = [
     { q: "Which subjects do formula cards cover?", a: "NEETFORGE formula cards cover all three NEET subjects — Physics (laws, equations, constants), Chemistry (reactions, formulas, periodic trends), and Biology (key facts, diagrams, mnemonics)." },
@@ -18,34 +18,13 @@ const subjects = [
 ];
 
 export default function FormulaCards() {
-    useSEO({
-        title: "NEET Formula Cards — Physics, Chemistry & Biology Quick Review | NEETFORGE",
-        description: "Swipe through NEET formula cards for Physics, Chemistry, and Biology. Rapid pre-test review with progress tracking. All key equations, reactions, and facts in one place.",
-        keywords: "NEET formula cards, NEET physics formulas, NEET chemistry formulas, NEET biology notes, NEET quick revision cards, NEET 2025 formula sheet",
-        canonical: "https://neetforge.in/neet-formula-cards",
-        jsonLd: [
-            {
-                "@context": "https://schema.org",
-                "@type": "FAQPage",
-                "mainEntity": faqs.map(f => ({
-                    "@type": "Question",
-                    "name": f.q,
-                    "acceptedAnswer": { "@type": "Answer", "text": f.a }
-                }))
-            },
-            {
-                "@context": "https://schema.org",
-                "@type": "BreadcrumbList",
-                "itemListElement": [
-                    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://neetforge.in/" },
-                    { "@type": "ListItem", "position": 2, "name": "NEET Formula Cards", "item": "https://neetforge.in/neet-formula-cards" }
-                ]
-            }
-        ]
-    });
-
     return (
         <LandingLayout>
+            <Seo
+                title="NEET Formula Cards: Physics, Chemistry & Biology Rapid Revision | NEETFORGE"
+                description="Review all essential NEET formulas, constants, and reaction mechanisms with digital high-yield formula flashcards designed for rapid pre-test recall."
+                canonicalPath="/neet-formula-cards"
+            />
 
             <section className="pt-28 pb-16 bg-gradient-to-br from-[#FFF7ED] via-white to-[#F5F3FF]">
                 <div className="max-w-4xl mx-auto px-5 text-center">

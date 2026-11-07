@@ -1,0 +1,250 @@
+[
+  {
+    "id": "SEO-1-FE",
+    "parentStoryKey": "SEO-1",
+    "title": "Create Head Static Assets and Update Document Head Links",
+    "type": "Frontend/Assets",
+    "status": "Backlog",
+    "priority": "Highest",
+    "targetFiles": [
+      "/public/og-image.png",
+      "/public/favicon.svg",
+      "/public/apple-touch-icon.png",
+      "/public/manifest.json",
+      "/index.html"
+    ],
+    "acceptanceCriteria": [
+      "AC-1.1: og-image.png is valid 1200x630 PNG under 250 KB with NEETFORGE branding",
+      "AC-1.2: favicon.svg is valid scalable SVG vector graphic",
+      "AC-1.3: apple-touch-icon.png is crisp 180x180 square PNG",
+      "AC-1.4: manifest.json contains valid PWA manifest fields and links to icons",
+      "AC-1.5: index.html correctly references apple-touch-icon, favicon.svg, and manifest.json"
+    ],
+    "description": "Generate and place authentic binary and vector static assets in the public directory to eliminate HTML-fallback 404 responses for social media crawlers and mobile browsers. Update index.html head tags to correctly bind apple-touch-icon."
+  },
+  {
+    "id": "SEO-1-QA",
+    "parentStoryKey": "SEO-1",
+    "title": "Validate Static Asset MIME Types, Dimensions, and Response Codes",
+    "type": "QA/Verification",
+    "status": "Backlog",
+    "priority": "Highest",
+    "targetFiles": [
+      "/public/og-image.png",
+      "/public/favicon.svg",
+      "/public/apple-touch-icon.png",
+      "/public/manifest.json"
+    ],
+    "acceptanceCriteria": [
+      "AC-1.1: Image resolution 1200x630 confirmed; MIME type image/png",
+      "AC-1.2: SVG valid XML structure; MIME type image/svg+xml",
+      "AC-1.3: Apple touch icon resolution 180x180; MIME type image/png",
+      "AC-1.4: manifest.json passes JSON lint and PWA audit",
+      "AC-1.5: Zero responses contain <!doctype html> fallback"
+    ],
+    "description": "Execute automated assertions inspecting HTTP response headers, MIME types, image dimensions, and JSON schema parsing to verify no soft 404 fallbacks occur on asset URLs."
+  },
+  {
+    "id": "SEO-2-FE",
+    "parentStoryKey": "SEO-2",
+    "title": "Configure Vercel HTTP Security Headers and 1-Year Immutable Asset Caching",
+    "type": "DevOps/Config",
+    "status": "Backlog",
+    "priority": "High",
+    "targetFiles": [
+      "/vercel.json"
+    ],
+    "acceptanceCriteria": [
+      "AC-2.1: Cache-Control: public, max-age=31536000, immutable configured for /assets/(.*)",
+      "AC-2.2: Strict security headers (nosniff, SAMEORIGIN, Referrer-Policy, Permissions-Policy, HSTS preload) applied to all routes",
+      "AC-2.3: SPA rewrite scoped to prevent soft-404 masking on missing static assets"
+    ],
+    "description": "Update vercel.json with production edge headers for 1-year immutable caching on content-hashed Vite assets, enterprise HTTP security headers, and rewrite boundaries isolating client-side SPA routing."
+  },
+  {
+    "id": "SEO-2-QA",
+    "parentStoryKey": "SEO-2",
+    "title": "Verify Edge Headers, Cache-Control Directives, and 404 Error Codes",
+    "type": "QA/Verification",
+    "status": "Backlog",
+    "priority": "High",
+    "targetFiles": [
+      "/vercel.json"
+    ],
+    "acceptanceCriteria": [
+      "AC-2.1: curl -I confirms max-age=31536000, immutable on /assets/ paths",
+      "AC-2.2: curl -I validates presence of all 5 mandatory security headers on HTML responses",
+      "AC-2.3: curl -I on invalid paths returns HTTP 404 rather than HTTP 200 index.html"
+    ],
+    "description": "Run automated curl and HTTP inspection scripts against build preview and edge staging to guarantee strict security compliance and confirm soft 404 vulnerability elimination."
+  },
+  {
+    "id": "SEO-3-FE",
+    "parentStoryKey": "SEO-3",
+    "title": "Implement Route Code-Splitting and Rollup Vendor Chunking in App.tsx",
+    "type": "Frontend/Architecture",
+    "status": "Backlog",
+    "priority": "High",
+    "targetFiles": [
+      "/src/App.tsx",
+      "/vite.config.ts"
+    ],
+    "acceptanceCriteria": [
+      "AC-3.1: Public marketing routes separated from heavy authenticated app via React.lazy",
+      "AC-3.2: Recharts, test playback engine, and internal app components isolated into deferred chunks",
+      "AC-3.3: Rollup manualChunks splits vendor-react, vendor-icons, and vendor-charts cleanly",
+      "AC-3.4: Suspense fallback prevents layout shift during route navigation"
+    ],
+    "description": "Refactor App.tsx to dynamically import private app routes and marketing subpages using React.lazy and Suspense. Configure Rollup manualChunks in vite.config.ts to isolate third-party vendor libraries."
+  },
+  {
+    "id": "SEO-3-QA",
+    "parentStoryKey": "SEO-3",
+    "title": "Measure Marketing Bundle Size and Verify Async Route Transitions",
+    "type": "QA/Verification",
+    "status": "Backlog",
+    "priority": "High",
+    "targetFiles": [
+      "/src/App.tsx",
+      "/vite.config.ts"
+    ],
+    "acceptanceCriteria": [
+      "AC-3.1: Initial marketing JavaScript footprint < 100 KB gzipped (< 250 KB uncompressed)",
+      "AC-3.2: Recharts bundle does not load on marketing landing routes",
+      "AC-3.3: Authenticated route navigation loads chunks smoothly without console runtime errors"
+    ],
+    "description": "Analyze build output chunk sizes via Rollup build report, verify chunk isolation between public and private routes, and test client navigation to ensure smooth Suspense hydration."
+  },
+  {
+    "id": "SEO-4-FE",
+    "parentStoryKey": "SEO-4",
+    "title": "Standardize Route Metadata and Implement Static Pre-Rendering for 13 Routes",
+    "type": "Frontend/Build",
+    "status": "Backlog",
+    "priority": "Highest",
+    "targetFiles": [
+      "/src/marketing/components/Seo.jsx",
+      "/src/marketing/pages/Home.jsx",
+      "/src/marketing/pages/DailyPractice.jsx",
+      "/src/marketing/pages/MockTests.jsx",
+      "/src/marketing/pages/AIAnalysis.jsx",
+      "/src/marketing/pages/FormulaCards.jsx",
+      "/src/marketing/pages/NeetRevision.jsx",
+      "/src/marketing/pages/About.jsx",
+      "/src/marketing/pages/Contact.jsx",
+      "/src/marketing/pages/Careers.jsx",
+      "/src/marketing/pages/Campus.jsx",
+      "/src/marketing/pages/FAQ.jsx",
+      "/src/marketing/pages/PrivacyPolicy.jsx",
+      "/src/marketing/pages/Terms.jsx",
+      "/scripts/prerender.mjs",
+      "/package.json"
+    ],
+    "acceptanceCriteria": [
+      "AC-4.1: Unified Seo component configured with distinct title, meta description, and self-referencing canonical on all 13 routes",
+      "AC-4.2: Build pipeline pre-renders static HTML for all 13 routes into dist/",
+      "AC-4.3: Raw HTML contains full semantic content, headings, and distinct canonical links",
+      "AC-4.4: Canonical cannibalization trap completely removed from raw HTML output"
+    ],
+    "description": "Standardize SEO metadata across all 13 public marketing routes using a unified Seo component. Create a build-time pre-rendering pipeline that outputs distinct static HTML files with pre-populated meta tags and semantic body text."
+  },
+  {
+    "id": "SEO-4-QA",
+    "parentStoryKey": "SEO-4",
+    "title": "Verify Raw HTML Titles, Canonicals, and Semantic DOM Across 13 URLs",
+    "type": "QA/Verification",
+    "status": "Backlog",
+    "priority": "Highest",
+    "targetFiles": [
+      "/dist/index.html",
+      "/scripts/prerender.mjs"
+    ],
+    "acceptanceCriteria": [
+      "AC-4.1: Automated curl test confirms distinct title on each of the 13 raw HTML files",
+      "AC-4.2: Automated curl test confirms self-referencing canonical on each of the 13 routes",
+      "AC-4.3: Zero raw HTML files contain empty <div id=\"root\"></div>",
+      "AC-4.4: Pre-rendered HTML hydrates cleanly in browser without React hydration mismatch warnings"
+    ],
+    "description": "Execute crawler simulation scripts against dist/ artifacts to verify raw HTML meta tags, self-referencing canonical links, and rendered body copy before JavaScript execution."
+  },
+  {
+    "id": "SEO-5-FE",
+    "parentStoryKey": "SEO-5",
+    "title": "Consolidate Schema.org Graph on Homepage and Implement FAQ Rich Snippets",
+    "type": "Frontend/Schema",
+    "status": "Backlog",
+    "priority": "High",
+    "targetFiles": [
+      "/index.html",
+      "/src/marketing/pages/Home.jsx",
+      "/src/marketing/pages/FAQ.jsx",
+      "/src/marketing/components/neetforge/NeetFAQ.jsx"
+    ],
+    "acceptanceCriteria": [
+      "AC-5.1: Duplicate JSON-LD scripts removed from index.html",
+      "AC-5.2: Single consolidated @graph schema on Homepage with verified Organization, WebSite, and SoftwareApplication",
+      "AC-5.3: Fictitious SearchAction and self-serving aggregateRating removed",
+      "AC-5.4: Verified sameAs social profiles linked in Organization entity",
+      "AC-5.5: FAQPage schema on /faq matches all 12 visible questions and answers; accordion text accessible in DOM"
+    ],
+    "description": "Eliminate colliding structured data in index.html, establish a single valid Schema.org graph on Home.jsx adhering to Google Rich Results guidelines, and ensure FAQPage schema matches visible DOM content."
+  },
+  {
+    "id": "SEO-5-QA",
+    "parentStoryKey": "SEO-5",
+    "title": "Validate JSON-LD Schema Graphs and Rich Snippet Compliance",
+    "type": "QA/Verification",
+    "status": "Backlog",
+    "priority": "High",
+    "targetFiles": [
+      "/src/marketing/pages/Home.jsx",
+      "/src/marketing/pages/FAQ.jsx"
+    ],
+    "acceptanceCriteria": [
+      "AC-5.1: Schema validation test confirms single @graph schema on homepage with zero syntax errors",
+      "AC-5.2: Validation confirms absence of SearchAction and aggregateRating",
+      "AC-5.3: FAQPage schema validates successfully against Google Rich Results schema definitions with all 12 Q&A pairs matching DOM"
+    ],
+    "description": "Run structured data linter and Google Rich Results conformance tests to ensure zero schema warnings or errors on both homepage and FAQ routes."
+  },
+  {
+    "id": "SEO-6-FE",
+    "parentStoryKey": "SEO-6",
+    "title": "Clean Sitemap, Update Robots.txt Directives, and Add Auth Noindex Metadata",
+    "type": "DevOps/Frontend",
+    "status": "Backlog",
+    "priority": "Medium",
+    "targetFiles": [
+      "/public/robots.txt",
+      "/public/sitemap.xml",
+      "/src/pages/Login.tsx",
+      "/src/pages/Signup.tsx"
+    ],
+    "acceptanceCriteria": [
+      "AC-6.1: public/sitemap.xml contains exactly the 13 canonical marketing URLs with correct priorities; auth URLs purged",
+      "AC-6.2: public/robots.txt includes explicit Disallow: /app/ directive and valid Sitemap URL",
+      "AC-6.3: Login.tsx and Signup.tsx dynamically set <meta name=\"robots\" content=\"noindex, nofollow\">"
+    ],
+    "description": "Direct search crawlers exclusively to high-value marketing pages by pruning thin auth routes from sitemap.xml, disallowing private app paths in robots.txt, and setting noindex robot tags on authentication screens."
+  },
+  {
+    "id": "SEO-6-QA",
+    "parentStoryKey": "SEO-6",
+    "title": "Validate Robots Directives, Sitemap XML Syntax, and Auth Noindex Tags",
+    "type": "QA/Verification",
+    "status": "Backlog",
+    "priority": "Medium",
+    "targetFiles": [
+      "/public/robots.txt",
+      "/public/sitemap.xml",
+      "/src/pages/Login.tsx",
+      "/src/pages/Signup.tsx"
+    ],
+    "acceptanceCriteria": [
+      "AC-6.1: XML schema validator verifies sitemap.xml has zero syntax errors and exactly 13 URLs",
+      "AC-6.2: Robots parser confirms /app/* is disallowed and sitemap link is reachable",
+      "AC-6.3: Headless test verifies noindex, nofollow tag present when navigating to /app/login and /app/signup"
+    ],
+    "description": "Execute automated XML linting and robots parser verification to confirm crawl budget isolation and shield private application screens from search engine indexation."
+  }
+]

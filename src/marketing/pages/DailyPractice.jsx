@@ -2,7 +2,7 @@
 import React from "react";
 import LandingLayout from "../components/neetforge/LandingLayout";
 import { ArrowRight, Flame, CheckCircle, Zap, Calendar, TrendingUp } from "lucide-react";
-import useSEO from "../hooks/useSEO";
+import Seo from "../components/Seo";
 
 const faqs = [
     { q: "What is a Daily Practice Problem (DPP) in NEET prep?", a: "A DPP is a curated daily set of 10–20 NEET-level questions across subjects. It builds consistent study habits and ensures you cover new questions every day rather than repeating the same material." },
@@ -12,34 +12,13 @@ const faqs = [
 ];
 
 export default function DailyPractice() {
-    useSEO({
-        title: "NEET Daily Practice Problems (DPP) 2025 — Build Consistency | NEETFORGE",
-        description: "Solve 10–20 fresh NEET-level questions every day with NEETFORGE Daily Practice. Build consistency with streaks, timed solving, and weekly progress tracking. Free to start.",
-        keywords: "NEET daily practice, NEET DPP, NEET daily practice problems, NEET practice questions daily, NEET 2025 preparation, NEET consistency",
-        canonical: "https://neetforge.in/neet-daily-practice",
-        jsonLd: [
-            {
-                "@context": "https://schema.org",
-                "@type": "FAQPage",
-                "mainEntity": faqs.map(f => ({
-                    "@type": "Question",
-                    "name": f.q,
-                    "acceptedAnswer": { "@type": "Answer", "text": f.a }
-                }))
-            },
-            {
-                "@context": "https://schema.org",
-                "@type": "BreadcrumbList",
-                "itemListElement": [
-                    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://neetforge.in/" },
-                    { "@type": "ListItem", "position": 2, "name": "NEET Daily Practice", "item": "https://neetforge.in/neet-daily-practice" }
-                ]
-            }
-        ]
-    });
-
     return (
         <LandingLayout>
+            <Seo
+                title="NEET Daily Practice Problems (DPP) 2025 — Chapter-Wise Consistency Engine | NEETFORGE"
+                description="Master NEET with curated daily practice problems. Chapter-wise Physics, Chemistry, and Biology questions aligned to the latest NTA NEET syllabus."
+                canonicalPath="/neet-daily-practice"
+            />
 
             <section className="pt-28 pb-16 bg-gradient-to-br from-[#FFF7ED] via-white to-[#EFF6FF]">
                 <div className="max-w-4xl mx-auto px-5 text-center">

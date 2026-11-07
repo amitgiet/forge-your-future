@@ -14,24 +14,12 @@ export default function FAQ() {
   return (
     <LandingLayout>
       <Seo
-        title="NEETFORGE FAQ — All Your NEET Prep Questions Answered"
-        description="Everything you need to know about NEETFORGE — how it works, what's free, how AI analysis helps, and why thousands of NEET aspirants choose it for daily practice and revision."
+        title="NEETFORGE FAQ — All Your NEET Prep & Subscription Questions Answered | NEETFORGE"
+        description="Frequently asked questions regarding NEETFORGE daily practice problems, NTA mock tests, AI score analysis, pro subscriptions, and platform access."
         canonicalPath="/faq"
-        schema={{
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          mainEntity: faqs.map((faq) => ({
-            "@type": "Question",
-            name: faq.question,
-            acceptedAnswer: {
-              "@type": "Answer",
-              text: faq.answer,
-            },
-          })),
-        }}
+        schema={faqSchema}
       />
       <div className="pt-28 pb-20 max-w-4xl mx-auto px-5">
-        {/* Header */}
         <div className="text-center mb-14">
           <span className="inline-block bg-blue-50 border border-blue-200 text-[#2563EB] text-xs font-bold px-4 py-2 rounded-full mb-5 uppercase tracking-wider">
             FAQ
@@ -44,7 +32,6 @@ export default function FAQ() {
           </p>
         </div>
 
-        {/* Accordion */}
         <Accordion type="single" collapsible defaultValue="faq-0" className="space-y-3">
           {faqs.map((faq, index) => (
             <AccordionItem
@@ -67,7 +54,6 @@ export default function FAQ() {
           ))}
         </Accordion>
 
-        {/* CTA */}
         <div className="mt-14 text-center">
           <p className="text-gray-500 mb-5">Still have questions?</p>
           <a

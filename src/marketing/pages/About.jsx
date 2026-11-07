@@ -1,7 +1,7 @@
 import React from "react";
 import LandingLayout from "../components/neetforge/LandingLayout";
 import { Target, Zap, Brain, ArrowRight } from "lucide-react";
-import useSEO from "../hooks/useSEO";
+import Seo from "../components/Seo";
 
 const values = [
     { icon: Target, title: "Performance-First", desc: "Every feature is built around one question: does this improve your NEET score? We don't add features for the sake of it." },
@@ -10,25 +10,14 @@ const values = [
 ];
 
 export default function About() {
-    useSEO({
-        title: "About NEETFORGE — Our Mission & Story",
-        description: "NEETFORGE was built to give every NEET aspirant access to the performance intelligence that only toppers had. Learn about our mission, values, and what drives us.",
-        keywords: "about NEETFORGE, NEET preparation app, NEET app mission, NEETFORGE story, best NEET app India",
-        canonical: "https://neetforge.in/about",
-        jsonLd: {
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://neetforge.in/" },
-                { "@type": "ListItem", "position": 2, "name": "About", "item": "https://neetforge.in/about" }
-            ]
-        }
-    });
-
     return (
         <LandingLayout>
+            <Seo
+                title="About NEETFORGE — Our Mission, Story & Pedagogy | NEETFORGE"
+                description="Learn about the mission behind NEETFORGE: empowering every medical aspirant in India with personalized, accessible, and high-impact digital preparation tools."
+                canonicalPath="/about"
+            />
             <div className="pt-28 pb-20">
-                {/* Hero */}
                 <section className="max-w-4xl mx-auto px-5 text-center mb-20">
                     <span className="inline-block bg-blue-50 border border-blue-200 text-[#2563EB] text-xs font-bold px-4 py-2 rounded-full mb-5 uppercase tracking-wider">
                         Our Story
@@ -42,7 +31,6 @@ export default function About() {
                     </p>
                 </section>
 
-                {/* Mission */}
                 <section className="bg-[#0f172a] py-16 mb-20">
                     <div className="max-w-4xl mx-auto px-5 text-center">
                         <h2 className="text-3xl font-black text-white mb-4">Our Mission</h2>
@@ -52,7 +40,6 @@ export default function About() {
                     </div>
                 </section>
 
-                {/* Values */}
                 <section className="max-w-5xl mx-auto px-5 mb-20">
                     <h2 className="text-3xl font-black text-[#0f172a] text-center mb-10">What We Stand For</h2>
                     <div className="grid md:grid-cols-3 gap-6">
@@ -68,7 +55,6 @@ export default function About() {
                     </div>
                 </section>
 
-                {/* CTA */}
                 <section className="max-w-2xl mx-auto px-5 text-center">
                     <h2 className="text-3xl font-black text-[#0f172a] mb-4">Ready to Try It?</h2>
                     <p className="text-gray-500 mb-8">See for yourself why thousands of NEET aspirants practice on NEETFORGE every day.</p>

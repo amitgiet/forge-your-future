@@ -2,7 +2,7 @@
 import React from "react";
 import LandingLayout from "../components/neetforge/LandingLayout";
 import { ArrowRight, Clock, FileText, BarChart2, Target, CheckCircle, Zap } from "lucide-react";
-import useSEO from "../hooks/useSEO";
+import Seo from "../components/Seo";
 
 const faqs = [
     { q: "Are the mock tests NTA-pattern?", a: "Yes. Every NEETFORGE mock test follows the official NTA pattern — 180 MCQs, Physics/Chemistry/Biology split, -1 negative marking, and a 200-minute timer." },
@@ -12,34 +12,13 @@ const faqs = [
 ];
 
 export default function MockTests() {
-    useSEO({
-        title: "NEET Mock Tests 2025 — NTA Pattern Full Length Tests | NEETFORGE",
-        description: "Practice with 29+ NTA-pattern NEET mock tests. Full-length 180 MCQs, 200-minute timer, negative marking, and AI-powered chapter-wise analysis after every test. Free to start.",
-        keywords: "NEET mock test 2025, NTA pattern mock test, NEET full length test, NEET practice test, free NEET mock test, NEET 2025 test series",
-        canonical: "https://neetforge.in/neet-mock-tests",
-        jsonLd: [
-            {
-                "@context": "https://schema.org",
-                "@type": "FAQPage",
-                "mainEntity": faqs.map(f => ({
-                    "@type": "Question",
-                    "name": f.q,
-                    "acceptedAnswer": { "@type": "Answer", "text": f.a }
-                }))
-            },
-            {
-                "@context": "https://schema.org",
-                "@type": "BreadcrumbList",
-                "itemListElement": [
-                    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://neetforge.in/" },
-                    { "@type": "ListItem", "position": 2, "name": "NEET Mock Tests", "item": "https://neetforge.in/neet-mock-tests" }
-                ]
-            }
-        ]
-    });
-
     return (
         <LandingLayout>
+            <Seo
+                title="NEET Mock Tests 2025: NTA Pattern 720-Mark Full Syllabus Series | NEETFORGE"
+                description="Take authentic NTA pattern NEET mock tests with standard 720-mark scoring, negative marking calculation, national percentile benchmarking, and in-depth question analysis."
+                canonicalPath="/neet-mock-tests"
+            />
 
             {/* Hero */}
             <section className="pt-28 pb-16 bg-gradient-to-br from-[#EFF6FF] via-white to-[#F0FDF4]">

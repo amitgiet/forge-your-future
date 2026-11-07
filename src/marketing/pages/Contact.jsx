@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import NeetNavbar from '../components/neetforge/NeetNavbar';
 import NeetFooter from '../components/neetforge/NeetFooter';
+import Seo from '../components/Seo';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,11 @@ export default function Contact() {
 
     return (
         <div className="min-h-screen bg-background">
+            <Seo
+                title="Contact NEETFORGE: Academic Counseling & Student Support | NEETFORGE"
+                description="Get in touch with NEETFORGE academic counseling, technical support, and campus coordinators. We are here to support your medical entrance journey."
+                canonicalPath="/contact"
+            />
             <NeetNavbar />
 
             <section className="pt-28 pb-16 md:pt-32 md:pb-24">

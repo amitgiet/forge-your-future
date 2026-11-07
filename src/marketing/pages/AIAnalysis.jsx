@@ -1,7 +1,7 @@
 import React from "react";
 import LandingLayout from "../components/neetforge/LandingLayout";
 import { ArrowRight, Brain, BarChart2, AlertTriangle, CheckCircle, Zap, Target } from "lucide-react";
-import useSEO from "../hooks/useSEO";
+import Seo from "../components/Seo";
 
 const faqs = [
     { q: "How does AI analysis detect weak chapters?", a: "NEETFORGE's AI maps every question you attempt to a specific chapter and topic. It tracks your accuracy per concept, detects where your error rate is highest, and surfaces those areas as priority revision targets." },
@@ -11,34 +11,13 @@ const faqs = [
 ];
 
 export default function AIAnalysis() {
-    useSEO({
-        title: "NEET AI Analysis — Weak Chapter Detection & Score Improvement | NEETFORGE",
-        description: "NEETFORGE AI detects your weak NEET chapters, maps concept-level errors, and generates targeted quizzes to fix them. Stop guessing — know exactly what to study next.",
-        keywords: "NEET AI analysis, NEET weak chapter detection, NEET performance analysis, NEET AI study tool, NEET score improvement, NEET 2025 AI",
-        canonical: "https://neetforge.in/neet-ai-analysis",
-        jsonLd: [
-            {
-                "@context": "https://schema.org",
-                "@type": "FAQPage",
-                "mainEntity": faqs.map(f => ({
-                    "@type": "Question",
-                    "name": f.q,
-                    "acceptedAnswer": { "@type": "Answer", "text": f.a }
-                }))
-            },
-            {
-                "@context": "https://schema.org",
-                "@type": "BreadcrumbList",
-                "itemListElement": [
-                    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://neetforge.in/" },
-                    { "@type": "ListItem", "position": 2, "name": "NEET AI Analysis", "item": "https://neetforge.in/neet-ai-analysis" }
-                ]
-            }
-        ]
-    });
-
     return (
         <LandingLayout>
+            <Seo
+                title="NEET AI Analysis: Pinpoint Weak Chapters & Negative Marking Trends | NEETFORGE"
+                description="Stop repeating the same mistakes. NEETFORGE AI analyzes your test attempts to uncover hidden syllabus blindspots, guess-pattern penalties, and time-trap questions."
+                canonicalPath="/neet-ai-analysis"
+            />
 
             <section className="pt-28 pb-16 bg-gradient-to-br from-[#F5F3FF] via-white to-[#EFF6FF]">
                 <div className="max-w-4xl mx-auto px-5 text-center">
