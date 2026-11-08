@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Trophy, Clock, Target, AlertCircle, CheckCircle, XCircle,
   ArrowRight, ArrowLeft, BarChart3, Timer, Zap, BookOpen, Flag, RotateCcw,
-  PieChart as PieChartIcon, Gauge, BrainCircuit
+  PieChart as PieChartIcon, Gauge, BrainCircuit, Filter
 } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts';
@@ -14,6 +14,8 @@ import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import BottomNav from '@/components/BottomNav';
 import DiagramGallery from '@/components/questions/DiagramGallery';
+import DiagramLightboxViewer from '@/components/questions/DiagramLightboxViewer';
+import MathMarkdown from '@/components/MathMarkdown';
 import type { QuestionMeta } from '@/components/NTATestPlayer';
 import {
   AnswerPayload,
@@ -39,6 +41,132 @@ function formatDuration(seconds: number): string {
 const optionLabels = ['A', 'B', 'C', 'D'];
 const OUTCOME_COLORS = ['#16a34a', '#dc2626', '#f59e0b', '#0ea5e9'];
 
+const DEFAULT_AR_OPTIONS = [
+  'Both (A) and (R) are true and (R) is the correct explanation of (A)',
+  'Both (A) and (R) are true but (R) is NOT the correct explanation of (A)',
+  '(A) is true but (R) is false',
+  'Both (A) and (R) are false',
+];
+
+const DEFAULT_STMT_OPTIONS = [
+  'Both Statement I and Statement II are correct',
+  'Both Statement I and Statement II are incorrect',
+  'Statement I is correct but Statement II is incorrect',
+  'Statement I is incorrect but Statement II is correct',
+];
+
+const getAnswerIndex = (value: unknown): number | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') {
+    if (Number.isFinite(value) && value >= 0) return Math.floor(value);
+    return null;
+  }
+  if (typeof value === 'string') {
+    const v = value.trim().toUpperCase();
+    if (/^[A-D]$/.test(v)) return v.charCodeAt(0) - 65;
+    const num = Number(v);
+    if (Number.isFinite(num) && num >= 0) return Math.floor(num);
+    return null;
+  }
+  return null;
+};
+
+const getSubjectEmoji = (subject: string): string => {
+  const s = subject.toLowerCase();
+  if (s.includes('physic')) return '⚙️';
+  if (s.includes('chem')) return '🧪';
+  if (s.includes('botan')) return '🌿';
+  if (s.includes('zool')) return '🐾';
+  if (s.includes('bio')) return '🧬';
+  if (s.includes('math')) return '📐';
+  return '📚';
+};
+
+const getOptionsList = (q: any): string[] => {
+  const kind = String(q.typeData?.kind || q.type || 'mcq').toLowerCase();
+  if (kind === 'assertion_reason' || kind === 'assertion-reason') {
+    return optionLabels.map((label, idx) => {
+      if (Array.isArray(q.options) && q.options[idx]) return String(q.options[idx]);
+      if (Array.isArray(q.typeData?.options) && q.typeData.options[idx]) return String(q.typeData.options[idx]);
+      if (q.options && typeof q.options === 'object') {
+        const val = q.options[label] ?? q.options[label.toLowerCase()];
+        if (val) return String(val);
+      }
+      return DEFAULT_AR_OPTIONS[idx];
+    });
+  }
+  if (kind === 'statement') {
+    return optionLabels.map((label, idx) => {
+      if (Array.isArray(q.options) && q.options[idx]) return String(q.options[idx]);
+      if (Array.isArray(q.typeData?.options) && q.typeData.options[idx]) return String(q.typeData.options[idx]);
+      if (q.options && typeof q.options === 'object') {
+        const val = q.options[label] ?? q.options[label.toLowerCase()];
+        if (val) return String(val);
+      }
+      return DEFAULT_STMT_OPTIONS[idx];
+    });
+  }
+  if (Array.isArray(q.typeData?.options)) {
+    return q.typeData.options.map((o: any) => String(o?.text || o?.value || o || ''));
+  }
+  if (Array.isArray(q.options)) {
+    return q.options.map((o: any) => String(o?.text || o?.value || o || ''));
+  }
+  if (q.options && typeof q.options === 'object') {
+    return optionLabels.map((l) => String(q.options[l] ?? q.options[l.toLowerCase()] ?? ''));
+  }
+  return [];
+};
+
+const getQuestionStatus = (q: any): 'correct' | 'incorrect' | 'skipped' => {
+  const payload = q.userAnswer as AnswerPayload | null;
+  const kind = String(q.typeData?.kind || q.type || 'mcq').toLowerCase();
+
+  if (kind === 'match' || q.type === 'match' || q.typeData?.matrixData) {
+    const pairsObj = payload?.kind === 'match' ? payload.pairs : (payload?.pairs || payload);
+    if (!pairsObj || typeof pairsObj !== 'object' || Object.keys(pairsObj).length === 0) {
+      return 'skipped';
+    }
+    const correctPairsObj = q.typeData?.matrixData?.correctPairs || q.correctPairs;
+    if (correctPairsObj && typeof correctPairsObj === 'object') {
+      return JSON.stringify(pairsObj) === JSON.stringify(correctPairsObj) ? 'correct' : 'incorrect';
+    }
+    return q.evaluationStatus === 'correct' ? 'correct' : 'incorrect';
+  }
+
+  if (kind === 'fillup' || kind === 'cloze' || kind === 'syllable' || q.type === 'fillup' || q.type === 'numeric' || q.type === 'numerical') {
+    const val = typeof payload === 'string'
+      ? payload
+      : payload?.value != null
+        ? String(payload.value)
+        : '';
+    if (!val.trim()) return 'skipped';
+    if (q.evaluationStatus === 'correct') return 'correct';
+    if (q.evaluationStatus === 'incorrect' || q.evaluationStatus === 'wrong') return 'incorrect';
+    const correctVal = String(q.typeData?.primaryAnswer || q.typeData?.answer || q.correctAnswer || '');
+    return correctVal.trim() && val.trim().toLowerCase() === correctVal.trim().toLowerCase()
+      ? 'correct'
+      : 'incorrect';
+  }
+
+  const selectedIdx = payload?.kind === 'mcq'
+    ? getAnswerIndex(payload.selectedOption)
+    : getAnswerIndex(payload);
+
+  if (selectedIdx === null || selectedIdx === -1) {
+    return 'skipped';
+  }
+
+  const correctIdx = getAnswerIndex(getCorrectOptionIndex(q));
+  if (q.evaluationStatus === 'correct') return 'correct';
+  if (q.evaluationStatus === 'incorrect' || q.evaluationStatus === 'wrong') return 'incorrect';
+
+  if (correctIdx !== null && selectedIdx === correctIdx) {
+    return 'correct';
+  }
+  return 'incorrect';
+};
+
 const scoreTone = (value: number) => {
   if (value >= 80) return 'text-emerald-600 dark:text-emerald-400';
   if (value >= 50) return 'text-amber-600 dark:text-amber-400';
@@ -60,6 +188,8 @@ export default function TestReport() {
   const [loading, setLoading] = useState(true);
   const [openExplanations, setOpenExplanations] = useState<Record<string, boolean>>({});
   const [reviewQuestions, setReviewQuestions] = useState<any[]>([]);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'incorrect' | 'skipped' | 'correct'>('all');
+  const [filterSubject, setFilterSubject] = useState<'all' | string>('all');
   const returnTo: string | null = (location.state as any)?.returnTo ?? null;
   const returnLabel: string = (location.state as any)?.returnLabel ?? 'Back';
   const returnState: Record<string, unknown> | null = (location.state as any)?.returnState ?? null;
@@ -106,7 +236,11 @@ export default function TestReport() {
         'questionDiagramRefs' in stateQuestions[0] &&
         'resolvedQuestionDiagrams' in stateQuestions[0]
       );
-      return alreadyNormalized ? stateQuestions : normalizeQuestions(stateQuestions);
+      const list = alreadyNormalized ? stateQuestions : normalizeQuestions(stateQuestions);
+      return list.map((q: any, idx: number) => ({
+        ...q,
+        canonicalIndex: q.canonicalIndex || idx + 1,
+      }));
     }
 
     const testQuestions = Array.isArray(attempt?.testId?.questions)
@@ -132,9 +266,11 @@ export default function TestReport() {
         ...question,
         _id: questionId || String(idx),
         id: questionId || String(idx),
+        canonicalIndex: idx + 1,
         userAnswer: answerPayloadFromAttempt(question, answer),
         evaluationStatus: answer?.evaluationStatus || null,
         evaluationReason: answer?.evaluationReason || null,
+        isIgnoredExceedLimit: Boolean(answer?.isIgnoredExceedLimit),
       };
     });
   }, [attempt, location.state]);
@@ -215,8 +351,21 @@ export default function TestReport() {
     });
 
     const subjectInsights = (results.subjectWise || []).map((subject: any) => {
-      const timing = subjectTimingMap.get(String(subject.subject)) || { total: 0, correct: 0, attempted: 0, totalTime: 0 };
-      const avgSubjectTime = subject.total > 0 ? timing.totalTime / subject.total : 0;
+      const timing = subjectTimingMap.get(String(subject.subject)) || {
+        total: Number(subject.total || 0),
+        correct: Number(subject.correct || 0),
+        attempted: Number(subject.correct || 0),
+        totalTime: 0,
+      };
+      const totalCount = Number(subject.total || timing.total || 0);
+      const correctCount = Number(subject.correct || timing.correct || 0);
+      const attemptedCount = timing.attempted || correctCount;
+      const incorrectCount = Math.max(0, attemptedCount - correctCount);
+      const skippedCount = Math.max(0, totalCount - attemptedCount);
+      const marks = correctCount * 4 - incorrectCount * 1;
+      const maxMarks = totalCount >= 45 ? 180 : totalCount * 4;
+      const progressPercent = Math.max(0, Math.min(100, Math.round((Math.max(0, marks) / (maxMarks || 1)) * 100)));
+      const avgSubjectTime = totalCount > 0 ? timing.totalTime / totalCount : 0;
       const accuracy = Number(subject.accuracy || 0);
       const efficiencyScore = Math.max(
         0,
@@ -229,8 +378,15 @@ export default function TestReport() {
       return {
         subject: String(subject.subject),
         accuracy,
-        correct: Number(subject.correct || 0),
-        total: Number(subject.total || 0),
+        correct: correctCount,
+        incorrect: incorrectCount,
+        skipped: skippedCount,
+        attempted: attemptedCount,
+        marks,
+        maxMarks,
+        progressPercent,
+        emoji: getSubjectEmoji(String(subject.subject)),
+        total: totalCount,
         avgTime: avgSubjectTime,
         efficiencyScore,
       };
@@ -299,122 +455,333 @@ export default function TestReport() {
     };
   }, [attempt, ntaMeta, reviewQuestions, totalTimeTaken]);
 
+  const filterCounts = useMemo(() => {
+    let all = reviewQuestions.length;
+    let incorrect = 0;
+    let skipped = 0;
+    let correct = 0;
+    const subjectMap: Record<string, number> = {};
+
+    reviewQuestions.forEach((q) => {
+      const st = getQuestionStatus(q);
+      if (st === 'incorrect') incorrect++;
+      else if (st === 'skipped') skipped++;
+      else if (st === 'correct') correct++;
+
+      const subj = String(q.subject || 'General').trim() || 'General';
+      subjectMap[subj] = (subjectMap[subj] || 0) + 1;
+    });
+
+    return {
+      all,
+      incorrect,
+      skipped,
+      correct,
+      subjectMap,
+    };
+  }, [reviewQuestions]);
+
+  const availableSubjects = useMemo(() => {
+    const subjectsFromQuestions = Object.keys(filterCounts.subjectMap);
+    const neetOrder = ['Physics', 'Chemistry', 'Botany', 'Zoology', 'Biology'];
+    return subjectsFromQuestions.sort((a, b) => {
+      const idxA = neetOrder.findIndex((s) => s.toLowerCase() === a.toLowerCase());
+      const idxB = neetOrder.findIndex((s) => s.toLowerCase() === b.toLowerCase());
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+  }, [filterCounts.subjectMap]);
+
+  const filteredQuestions = useMemo(() => {
+    return reviewQuestions.filter((q) => {
+      if (filterSubject !== 'all') {
+        const qSubj = String(q.subject || 'General').toLowerCase().trim();
+        if (!qSubj.includes(filterSubject.toLowerCase())) {
+          return false;
+        }
+      }
+      if (filterStatus === 'all') return true;
+      const st = getQuestionStatus(q);
+      return st === filterStatus;
+    });
+  }, [reviewQuestions, filterStatus, filterSubject]);
+
   const renderAnswerReview = (q: any) => {
     const payload = q.userAnswer as AnswerPayload | null;
+    const kind = String(q.typeData?.kind || q.type || 'mcq').toLowerCase();
 
-    if (q.type === 'mcq') {
-      const options = Array.isArray(q.typeData?.options) ? q.typeData.options : [];
-      const selectedIdx = payload?.kind === 'mcq' ? payload.selectedOption : null;
-      const correctIdx = getCorrectOptionIndex(q);
-      const isCorrect = selectedIdx !== null && correctIdx !== null && selectedIdx === correctIdx;
+    // 1. Assertion-Reason Question
+    if (kind === 'assertion_reason' || kind === 'assertion-reason' || q.type === 'assertion_reason') {
+      const arData = q.typeData?.assertionReason;
+      const assertionText = arData?.assertion || q.assertion || '';
+      const reasonText = arData?.reason || q.reason || '';
+      const options = getOptionsList(q);
+      const selectedIdx = payload?.kind === 'mcq'
+        ? getAnswerIndex(payload.selectedOption)
+        : getAnswerIndex(payload);
+      const correctIdx = getAnswerIndex(getCorrectOptionIndex(q));
       const isUnattempted = selectedIdx === null;
+      const isCorrect = !isUnattempted && correctIdx !== null && selectedIdx === correctIdx;
 
       return (
-        <>
-          <div className="space-y-1.5 mb-2">
+        <div className="space-y-2 mb-2">
+          {assertionText && (
+            <div className="rounded-lg border border-border bg-card/60 p-2.5 text-xs">
+              <span className="font-bold text-primary mr-1.5">Assertion (A):</span>
+              <MathMarkdown content={assertionText} inline />
+            </div>
+          )}
+          {reasonText && (
+            <div className="rounded-lg border border-border bg-card/60 p-2.5 text-xs">
+              <span className="font-bold text-primary mr-1.5">Reason (R):</span>
+              <MathMarkdown content={reasonText} inline />
+            </div>
+          )}
+          <div className="space-y-1.5 pt-1">
             {options.map((opt: string, optIdx: number) => {
               const isSelected = selectedIdx === optIdx;
               const isRight = correctIdx === optIdx;
               const rowClass = isRight
-                ? 'border-emerald-500/40 bg-emerald-500/10'
+                ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-950 dark:text-emerald-100 font-medium'
                 : isSelected && !isRight
-                  ? 'border-destructive/40 bg-destructive/10'
-                  : 'border-border bg-card';
+                  ? 'border-destructive/50 bg-destructive/10 text-destructive'
+                  : 'border-border bg-card/80 text-foreground';
 
               return (
-                <div key={optIdx} className={`rounded-lg border px-2.5 py-2 text-xs ${rowClass}`}>
-                  <span className="font-semibold mr-1">{optionLabels[optIdx]}.</span>
-                  <span>{opt}</span>
+                <div key={optIdx} className={`rounded-lg border px-3 py-2 text-xs flex items-start gap-2 ${rowClass}`}>
+                  <span className="font-bold shrink-0">{optionLabels[optIdx] || optIdx + 1}.</span>
+                  <div className="flex-1 min-w-0">
+                    <MathMarkdown content={opt} inline />
+                  </div>
+                  {isRight && <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />}
+                  {isSelected && !isRight && <XCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />}
                 </div>
               );
             })}
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
-            <p className="text-muted-foreground">
-              Your Answer:{' '}
-              <span className={isUnattempted ? 'text-muted-foreground' : isCorrect ? 'text-emerald-600 font-semibold' : 'text-destructive font-semibold'}>
-                {isUnattempted ? 'Not Attempted' : optionLabels[selectedIdx ?? -1] || 'Invalid'}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] pt-1">
+            <p className="text-muted-foreground flex items-center gap-1">
+              <span>Your Answer:</span>
+              <span className={isUnattempted ? 'text-muted-foreground font-medium' : isCorrect ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-destructive font-bold'}>
+                {isUnattempted ? 'Not Attempted' : `Option ${optionLabels[selectedIdx ?? -1] || (selectedIdx !== null ? selectedIdx + 1 : 'Not Attempted')}`}
               </span>
             </p>
-            <p className="text-muted-foreground">
-              Correct Answer:{' '}
-              <span className="text-emerald-600 font-semibold">
-                {correctIdx === null ? 'N/A' : optionLabels[correctIdx] || 'N/A'}
+            <p className="text-muted-foreground flex items-center gap-1">
+              <span>Correct Answer:</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                {correctIdx === null || correctIdx < 0 ? 'N/A' : `Option ${optionLabels[correctIdx] || correctIdx + 1}`}
               </span>
             </p>
           </div>
-        </>
-      );
-    }
-
-    if (q.type === 'fillup') {
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
-          <p className="text-muted-foreground">Your Answer: <span className="text-foreground font-semibold">{payload?.kind === 'fillup' && payload.value ? payload.value : 'Not Attempted'}</span></p>
-          <p className="text-muted-foreground">Accepted Answer(s): <span className="text-emerald-600 font-semibold">{(q.typeData?.acceptedAnswers || []).join(', ') || 'N/A'}</span></p>
         </div>
       );
     }
 
-    if (q.type === 'match') {
+    // 2. Statement Question
+    if (kind === 'statement' || q.type === 'statement') {
+      const stmtData = q.typeData?.statementData;
+      const stmt1Text = stmtData?.statement1 || q.statement1 || '';
+      const stmt2Text = stmtData?.statement2 || q.statement2 || '';
+      const options = getOptionsList(q);
+      const selectedIdx = payload?.kind === 'mcq'
+        ? getAnswerIndex(payload.selectedOption)
+        : getAnswerIndex(payload);
+      const correctIdx = getAnswerIndex(getCorrectOptionIndex(q));
+      const isUnattempted = selectedIdx === null;
+      const isCorrect = !isUnattempted && correctIdx !== null && selectedIdx === correctIdx;
+
+      return (
+        <div className="space-y-2 mb-2">
+          {stmt1Text && (
+            <div className="rounded-lg border border-border bg-card/60 p-2.5 text-xs">
+              <span className="font-bold text-primary mr-1.5">Statement I:</span>
+              <MathMarkdown content={stmt1Text} inline />
+            </div>
+          )}
+          {stmt2Text && (
+            <div className="rounded-lg border border-border bg-card/60 p-2.5 text-xs">
+              <span className="font-bold text-primary mr-1.5">Statement II:</span>
+              <MathMarkdown content={stmt2Text} inline />
+            </div>
+          )}
+          <div className="space-y-1.5 pt-1">
+            {options.map((opt: string, optIdx: number) => {
+              const isSelected = selectedIdx === optIdx;
+              const isRight = correctIdx === optIdx;
+              const rowClass = isRight
+                ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-950 dark:text-emerald-100 font-medium'
+                : isSelected && !isRight
+                  ? 'border-destructive/50 bg-destructive/10 text-destructive'
+                  : 'border-border bg-card/80 text-foreground';
+
+              return (
+                <div key={optIdx} className={`rounded-lg border px-3 py-2 text-xs flex items-start gap-2 ${rowClass}`}>
+                  <span className="font-bold shrink-0">{optionLabels[optIdx] || optIdx + 1}.</span>
+                  <div className="flex-1 min-w-0">
+                    <MathMarkdown content={opt} inline />
+                  </div>
+                  {isRight && <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />}
+                  {isSelected && !isRight && <XCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />}
+                </div>
+              );
+            })}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] pt-1">
+            <p className="text-muted-foreground flex items-center gap-1">
+              <span>Your Answer:</span>
+              <span className={isUnattempted ? 'text-muted-foreground font-medium' : isCorrect ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-destructive font-bold'}>
+                {isUnattempted ? 'Not Attempted' : `Option ${optionLabels[selectedIdx ?? -1] || (selectedIdx !== null ? selectedIdx + 1 : 'Not Attempted')}`}
+              </span>
+            </p>
+            <p className="text-muted-foreground flex items-center gap-1">
+              <span>Correct Answer:</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                {correctIdx === null || correctIdx < 0 ? 'N/A' : `Option ${optionLabels[correctIdx] || correctIdx + 1}`}
+              </span>
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. Matrix Match
+    if (kind === 'match' || q.type === 'match' || q.typeData?.matrixData) {
       const pairs = Array.isArray(q.typeData?.pairs) ? q.typeData.pairs : [];
-      const userPairs = payload?.kind === 'match' ? payload.pairs : {};
+      const userPairs = payload?.kind === 'match' ? payload.pairs : (payload?.pairs || payload || {});
+      const hasPairs = userPairs && typeof userPairs === 'object' && Object.keys(userPairs).length > 0;
+      const isUnattempted = !hasPairs;
+
       return (
-        <div className="space-y-1.5">
-          {pairs.map((pair: any) => {
-            const userValue = userPairs?.[pair.id] || '';
-            const correct = userValue && userValue === pair.right;
-            return (
-              <div key={pair.id} className={`rounded-lg border px-2.5 py-2 text-xs ${correct ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-border bg-card'}`}>
-                <div className="font-semibold text-foreground">{pair.left}</div>
-                <div className="mt-1 text-muted-foreground">Your match: {userValue || 'Not matched'}</div>
-                <div className="text-emerald-600">Correct match: {pair.right}</div>
-              </div>
-            );
-          })}
+        <div className="space-y-1.5 mb-2">
+          {pairs.length > 0 ? (
+            pairs.map((pair: any, pIdx: number) => {
+              const userVal = userPairs?.[pair.id] ?? userPairs?.[pIdx] ?? '';
+              const correctVal = pair.right;
+              const isRight = Boolean(userVal && userVal === correctVal);
+
+              return (
+                <div
+                  key={pair.id || pIdx}
+                  className={`rounded-lg border px-3 py-2 text-xs ${
+                    isRight
+                      ? 'border-emerald-500/40 bg-emerald-500/10'
+                      : userVal
+                        ? 'border-destructive/40 bg-destructive/10'
+                        : 'border-border bg-card'
+                  }`}
+                >
+                  <div className="font-semibold text-foreground">
+                    <MathMarkdown content={pair.left} inline />
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px]">
+                    <span className={userVal ? (isRight ? 'text-emerald-600 font-semibold' : 'text-destructive font-semibold') : 'text-muted-foreground'}>
+                      Your Match: {userVal || 'Not matched'}
+                    </span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                      Correct: {correctVal}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-xs text-muted-foreground">
+              {isUnattempted ? 'Not Attempted' : 'Matrix match completed.'}
+            </div>
+          )}
+          <div className="text-[11px] text-muted-foreground pt-1">
+            <span>Status: </span>
+            <span className={isUnattempted ? 'text-muted-foreground' : q.evaluationStatus === 'correct' ? 'text-emerald-600 font-bold' : 'text-destructive font-bold'}>
+              {isUnattempted ? 'Not Attempted' : q.evaluationStatus === 'correct' ? 'Correct Matrix Match' : 'Incorrect Matrix Match'}
+            </span>
+          </div>
         </div>
       );
     }
 
+    // 4. Fillup / Numeric / Syllable / Cloze
+    if (kind === 'fillup' || kind === 'cloze' || kind === 'syllable' || q.type === 'fillup' || q.type === 'numeric' || q.type === 'numerical') {
+      const val = typeof payload === 'string'
+        ? payload
+        : payload?.value != null
+          ? String(payload.value)
+          : '';
+      const isUnattempted = !val.trim();
+      const correctVal = String(q.typeData?.primaryAnswer || q.typeData?.answer || q.correctAnswer || (q.typeData?.acceptedAnswers || [])[0] || '');
+      const isCorrect = !isUnattempted && (
+        q.evaluationStatus === 'correct' ||
+        (correctVal.trim() !== '' && val.trim().toLowerCase() === correctVal.trim().toLowerCase())
+      );
+
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] mb-2 pt-1">
+          <p className="text-muted-foreground">
+            Your Answer:{' '}
+            <span className={isUnattempted ? 'text-muted-foreground font-medium' : isCorrect ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-destructive font-bold'}>
+              {isUnattempted ? 'Not Attempted' : val}
+            </span>
+          </p>
+          <p className="text-muted-foreground">
+            Accepted Answer(s):{' '}
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+              {(q.typeData?.acceptedAnswers || [correctVal]).filter(Boolean).join(', ') || 'N/A'}
+            </span>
+          </p>
+        </div>
+      );
+    }
+
+    // 5. Order
     if (q.type === 'order') {
       const items = Array.isArray(q.typeData?.items) ? q.typeData.items : [];
       const orderedIds = payload?.kind === 'order' ? payload.orderedIds : [];
       const currentOrder = orderedIds.length ? orderedIds : items.map((item: any) => item.id);
       return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-2">
           <div className="rounded-lg border border-border bg-card p-2.5">
             <p className="font-semibold text-foreground mb-2">Your Order</p>
-            <div className="space-y-1">{currentOrder.map((id: string, index: number) => <div key={`${id}-${index}`}>{index + 1}. {items.find((item: any) => item.id === id)?.text || id}</div>)}</div>
+            <div className="space-y-1">
+              {currentOrder.map((id: string, index: number) => (
+                <div key={`${id}-${index}`}>{index + 1}. {items.find((item: any) => item.id === id)?.text || id}</div>
+              ))}
+            </div>
           </div>
           <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5">
             <p className="font-semibold text-foreground mb-2">Correct Order</p>
-            <div className="space-y-1">{(q.typeData?.correctOrder || []).map((id: string, index: number) => <div key={`${id}-correct-${index}`}>{index + 1}. {items.find((item: any) => item.id === id)?.text || id}</div>)}</div>
+            <div className="space-y-1">
+              {(q.typeData?.correctOrder || []).map((id: string, index: number) => (
+                <div key={`${id}-correct-${index}`}>{index + 1}. {items.find((item: any) => item.id === id)?.text || id}</div>
+              ))}
+            </div>
           </div>
         </div>
       );
     }
 
+    // 6. Flashcard
     if (q.type === 'flashcard') {
       return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-2">
           <div className="rounded-lg border border-border bg-card p-2.5">
             <p className="font-semibold text-foreground mb-2">Front</p>
-            <p className="text-foreground/85 whitespace-pre-wrap">{q.typeData?.front || q.question}</p>
+            <MathMarkdown content={q.typeData?.front || q.question} />
           </div>
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5">
             <p className="font-semibold text-foreground mb-2">Back</p>
-            <p className="text-foreground/85 whitespace-pre-wrap">{q.typeData?.back || q.explanation}</p>
+            <MathMarkdown content={q.typeData?.back || q.explanation} />
             <p className="mt-2 text-muted-foreground">Status: {payload?.kind === 'flashcard' && payload.completed ? 'Completed' : 'Viewed'}</p>
           </div>
         </div>
       );
     }
 
+    // 7. Video
     if (q.type === 'video') {
       const videoUrl = q.videoUrl || q.typeData?.videoUrl;
       return (
-        <div className="rounded-lg border border-border bg-card p-2.5 text-xs">
+        <div className="rounded-lg border border-border bg-card p-2.5 text-xs mb-2">
           <p className="font-semibold text-foreground mb-1">Video Question</p>
           <p className="text-muted-foreground">Status: {payload?.kind === 'video' && payload.completed ? 'Completed' : 'Not completed'}</p>
           {videoUrl ? <a href={videoUrl} target="_blank" rel="noreferrer" className="text-primary font-semibold">Open video</a> : null}
@@ -422,7 +789,56 @@ export default function TestReport() {
       );
     }
 
-    return <div className="rounded-lg border border-border bg-card p-2.5 text-xs text-muted-foreground">Unsupported question data.</div>;
+    // 8. Standard MCQ / single choice fallback
+    const options = getOptionsList(q);
+    const selectedIdx = payload?.kind === 'mcq'
+      ? getAnswerIndex(payload.selectedOption)
+      : getAnswerIndex(payload);
+    const correctIdx = getAnswerIndex(getCorrectOptionIndex(q));
+    const isUnattempted = selectedIdx === null;
+    const isCorrect = !isUnattempted && correctIdx !== null && selectedIdx === correctIdx;
+
+    return (
+      <>
+        <div className="space-y-1.5 mb-2">
+          {options.map((opt: string, optIdx: number) => {
+            const isSelected = selectedIdx === optIdx;
+            const isRight = correctIdx === optIdx;
+            const rowClass = isRight
+              ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-950 dark:text-emerald-100 font-medium'
+              : isSelected && !isRight
+                ? 'border-destructive/50 bg-destructive/10 text-destructive'
+                : 'border-border bg-card/80 text-foreground';
+
+            return (
+              <div key={optIdx} className={`rounded-lg border px-3 py-2 text-xs flex items-start gap-2 ${rowClass}`}>
+                <span className="font-bold shrink-0">{optionLabels[optIdx] || optIdx + 1}.</span>
+                <div className="flex-1 min-w-0">
+                  <MathMarkdown content={opt} inline />
+                </div>
+                {isRight && <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />}
+                {isSelected && !isRight && <XCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] pt-1">
+          <p className="text-muted-foreground flex items-center gap-1">
+            <span>Your Answer:</span>
+            <span className={isUnattempted ? 'text-muted-foreground font-medium' : isCorrect ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-destructive font-bold'}>
+              {isUnattempted ? 'Not Attempted' : `Option ${optionLabels[selectedIdx ?? -1] || (selectedIdx !== null ? selectedIdx + 1 : 'Not Attempted')}`}
+            </span>
+          </p>
+          <p className="text-muted-foreground flex items-center gap-1">
+            <span>Correct Answer:</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+              {correctIdx === null || correctIdx < 0 ? 'N/A' : `Option ${optionLabels[correctIdx] || correctIdx + 1}`}
+            </span>
+          </p>
+        </div>
+      </>
+    );
   };
 
   if (loading) {
@@ -605,16 +1021,51 @@ export default function TestReport() {
                   </BarChart>
                 </ChartContainer>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {analytics.subjectInsights.map((item) => (
-                    <div key={item.subject} className="rounded-xl border border-border bg-muted/30 p-3">
+                    <div key={item.subject} className="rounded-xl border border-border bg-muted/30 p-3 space-y-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-foreground">{item.subject}</p>
-                        <Badge variant="secondary">Efficiency {item.efficiencyScore}</Badge>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-base select-none">{item.emoji}</span>
+                          <p className="text-sm font-bold text-foreground truncate">{item.subject}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs font-bold text-primary">{item.marks} / {item.maxMarks}</span>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">Eff {item.efficiencyScore}</Badge>
+                        </div>
                       </div>
-                      <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{item.correct}/{item.total} correct</span>
-                        <span>{Math.round(item.avgTime || 0)}s avg</span>
+
+                      <Progress value={item.progressPercent} className="h-1.5" />
+
+                      {/* Responsive 2x2 Sub-Grid */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1.5 flex items-center gap-1.5 min-w-0">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 truncate">
+                            +{item.correct * 4} ({item.correct} correct)
+                          </span>
+                        </div>
+
+                        <div className="rounded-lg border border-destructive/25 bg-destructive/10 px-2.5 py-1.5 flex items-center gap-1.5 min-w-0">
+                          <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                          <span className="text-xs font-semibold text-destructive truncate">
+                            -{item.incorrect} ({item.incorrect} wrong)
+                          </span>
+                        </div>
+
+                        <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-2.5 py-1.5 flex items-center gap-1.5 min-w-0">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 truncate">
+                            {item.skipped} skipped
+                          </span>
+                        </div>
+
+                        <div className="rounded-lg border border-primary/25 bg-primary/10 px-2.5 py-1.5 flex items-center gap-1.5 min-w-0">
+                          <Target className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="text-xs font-bold text-foreground truncate">
+                            {Math.round(item.accuracy)}% • {Math.round(item.avgTime || 0)}s
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -628,38 +1079,59 @@ export default function TestReport() {
           <motion.div {...anim(0.14)} className="grid gap-4 lg:grid-cols-[1fr_1fr_0.9fr]">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Timer className="w-4 h-4 text-primary" />
-                  Time Analysis
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Timer className="w-4 h-4 text-primary" />
+                    Time & Pace Analysis
+                  </CardTitle>
+                  {(analytics.bookmarked > 0 || analytics.markedReview > 0) && (
+                    <span className="text-[10px] text-muted-foreground">
+                      {analytics.bookmarked > 0 ? `${analytics.bookmarked} bookmarked` : ''}
+                      {analytics.bookmarked > 0 && analytics.markedReview > 0 ? ' • ' : ''}
+                      {analytics.markedReview > 0 ? `${analytics.markedReview} marked` : ''}
+                    </span>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-border bg-muted/30 p-3">
-                    <p className="text-[11px] text-muted-foreground">Total Time</p>
-                    <p className="text-lg font-bold text-foreground">{formatDuration(analytics.totalTime)}</p>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  <div className="rounded-xl border border-border bg-muted/30 p-2.5 sm:p-3">
+                    <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase">
+                      <Clock className="w-3 h-3 text-sky-500 shrink-0" />
+                      <span className="truncate">Total Time</span>
+                    </div>
+                    <p className="mt-1 text-base sm:text-lg font-bold text-foreground truncate">
+                      {formatDuration(analytics.totalTime)}
+                    </p>
                   </div>
-                  <div className="rounded-xl border border-border bg-muted/30 p-3">
-                    <p className="text-[11px] text-muted-foreground">Avg / Question</p>
-                    <p className="text-lg font-bold text-foreground">{Math.round(analytics.avgTime)}s</p>
+                  <div className="rounded-xl border border-border bg-muted/30 p-2.5 sm:p-3">
+                    <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase">
+                      <Gauge className="w-3 h-3 text-purple-500 shrink-0" />
+                      <span className="truncate">Avg Speed / Q</span>
+                    </div>
+                    <p className="mt-1 text-base sm:text-lg font-bold text-foreground truncate">
+                      {Math.round(analytics.avgTime)}s
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-2.5 sm:p-3">
+                    <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase">
+                      <Zap className="w-3 h-3 text-emerald-500 shrink-0" />
+                      <span className="truncate">Fastest</span>
+                    </div>
+                    <p className="mt-1 text-xs sm:text-sm font-bold text-foreground truncate">
+                      {analytics.fastest ? `${analytics.fastest.label} • ${formatDuration(analytics.fastest.timeSpent)}` : 'N/A'}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-2.5 sm:p-3">
+                    <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase">
+                      <Timer className="w-3 h-3 text-amber-500 shrink-0" />
+                      <span className="truncate">Slowest</span>
+                    </div>
+                    <p className="mt-1 text-xs sm:text-sm font-bold text-foreground truncate">
+                      {analytics.slowest ? `${analytics.slowest.label} • ${formatDuration(analytics.slowest.timeSpent)}` : 'N/A'}
+                    </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
-                    <p className="text-[11px] text-muted-foreground">Fastest</p>
-                    <p className="text-sm font-bold text-foreground">{analytics.fastest ? `${analytics.fastest.label} • ${formatDuration(analytics.fastest.timeSpent)}` : 'N/A'}</p>
-                  </div>
-                  <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
-                    <p className="text-[11px] text-muted-foreground">Slowest</p>
-                    <p className="text-sm font-bold text-foreground">{analytics.slowest ? `${analytics.slowest.label} • ${formatDuration(analytics.slowest.timeSpent)}` : 'N/A'}</p>
-                  </div>
-                </div>
-                {(analytics.bookmarked > 0 || analytics.markedReview > 0) && (
-                  <div className="flex flex-wrap gap-2">
-                    {analytics.bookmarked > 0 && <Badge variant="secondary">Bookmarked {analytics.bookmarked}</Badge>}
-                    {analytics.markedReview > 0 && <Badge variant="secondary">Marked for review {analytics.markedReview}</Badge>}
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -819,100 +1291,291 @@ export default function TestReport() {
         {reviewQuestions.length > 0 && (
           <motion.div {...anim(0.28)}>
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Flag className="w-4 h-4 text-primary" />
-                  Answer Review
-                </CardTitle>
+              <CardHeader className="pb-3 border-b border-border/50">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Flag className="w-4 h-4 text-primary" />
+                    <span>Answer Review</span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      ({filteredQuestions.length} of {reviewQuestions.length})
+                    </span>
+                  </CardTitle>
+                  {(filterStatus !== 'all' || filterSubject !== 'all') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFilterStatus('all');
+                        setFilterSubject('all');
+                      }}
+                      className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <RotateCcw className="w-3 h-3 mr-1" />
+                      Reset
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {reviewQuestions.map((q: any, idx: number) => {
-                  const reviewKey = String(q._id || q.id || idx);
-                  const isUnattempted = !q.userAnswer;
-                  const isCorrect = q.evaluationStatus === 'correct';
-                  const hasExplanation = Boolean(String(q.explanation || '').trim()) || Boolean(q.explanationImageUrl) || Boolean(q.resolvedExplanationDiagrams?.length);
-                  const isExplanationOpen = Boolean(openExplanations[reviewKey]);
-                  const timeSpent = Number(
-                    ntaMeta?.[idx]?.timeSpent ??
-                    attempt?.answers?.find((answer: any) => String(answer?.questionId?._id || answer?.questionId || '') === reviewKey)?.timeSpent ??
-                    0
-                  );
-
-                  return (
-                    <div key={q._id || q.id || idx} className="rounded-xl border border-border p-3 bg-muted/30">
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <p className="text-xs font-semibold text-foreground">Q{idx + 1}. {q.question}</p>
-                        <Badge
-                          variant="secondary"
-                          className={
-                            isUnattempted
-                              ? 'bg-muted text-muted-foreground'
-                              : isCorrect
-                                ? 'bg-emerald-500/15 text-emerald-600'
-                                : q.evaluationStatus === 'partial'
-                                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
-                                  : q.evaluationStatus === 'ungraded'
-                                    ? 'bg-primary/10 text-primary'
-                                    : 'bg-destructive/15 text-destructive'
-                          }
+              <CardContent className="pt-4 space-y-4">
+                {/* ═══ Dual-Tier Interactive Sticky Filter Bar ═══ */}
+                <div className="sticky top-[53px] z-10 bg-card/95 backdrop-blur-md border border-border/80 rounded-2xl p-2.5 sm:p-3 shadow-sm space-y-2.5">
+                  {/* Tier 1: Outcome Status */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
+                    {[
+                      { id: 'all' as const, label: 'All', count: filterCounts.all, activeColor: 'bg-primary text-primary-foreground' },
+                      { id: 'incorrect' as const, label: '✗ Incorrect', count: filterCounts.incorrect, activeColor: 'bg-destructive text-destructive-foreground' },
+                      { id: 'skipped' as const, label: '⊘ Skipped', count: filterCounts.skipped, activeColor: 'bg-amber-500 text-white' },
+                      { id: 'correct' as const, label: '✓ Correct', count: filterCounts.correct, activeColor: 'bg-emerald-600 text-white' },
+                    ].map((chip) => {
+                      const isSelected = filterStatus === chip.id;
+                      return (
+                        <button
+                          key={chip.id}
+                          type="button"
+                          onClick={() => setFilterStatus(chip.id)}
+                          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                            isSelected
+                              ? `${chip.activeColor} shadow-sm`
+                              : 'bg-muted/50 hover:bg-muted text-muted-foreground border border-border/50'
+                          }`}
                         >
-                          {isUnattempted
-                            ? 'Skipped'
-                            : isCorrect
-                              ? 'Correct'
-                              : q.evaluationStatus === 'partial'
-                                ? 'Partial'
-                                : q.evaluationStatus === 'ungraded'
-                                  ? 'Ungraded'
-                                  : 'Wrong'}
-                        </Badge>
-                      </div>
+                          <span>{chip.label}</span>
+                          <span
+                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${
+                              isSelected ? 'bg-black/20 text-white' : 'bg-muted-foreground/15 text-muted-foreground'
+                            }`}
+                          >
+                            {chip.count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                      <div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-1 border border-border">
-                          <Clock className="w-3 h-3" />
-                          {formatDuration(timeSpent)}
-                        </span>
-                      </div>
+                  {/* Tier 2: Subject Selector */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setFilterSubject('all')}
+                      className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        filterSubject === 'all'
+                          ? 'bg-primary/15 text-primary border-primary/40 font-semibold'
+                          : 'bg-card text-muted-foreground hover:bg-muted/50 border-border/60'
+                      }`}
+                    >
+                      All Subjects ({filterCounts.all})
+                    </button>
+                    {availableSubjects.map((subj) => {
+                      const isSelected = filterSubject.toLowerCase() === subj.toLowerCase();
+                      const count = filterCounts.subjectMap[subj] || 0;
+                      return (
+                        <button
+                          key={subj}
+                          type="button"
+                          onClick={() => setFilterSubject(subj)}
+                          className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            isSelected
+                              ? 'bg-primary/15 text-primary border-primary/40 font-semibold'
+                              : 'bg-card text-muted-foreground hover:bg-muted/50 border-border/60'
+                          }`}
+                        >
+                          {subj} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-                      {q.imageUrl ? (
-                        <div className="mb-3 rounded-xl overflow-hidden border border-border bg-card">
-                          <img src={q.imageUrl} alt={`Question ${idx + 1}`} className="w-full object-contain max-h-60" loading="lazy" />
-                        </div>
-                      ) : null}
-
-                      <DiagramGallery diagrams={q.resolvedQuestionDiagrams} className="mb-3" />
-
-                      {renderAnswerReview(q)}
-
-                      <div className="mt-2 flex items-start justify-between gap-2">
-                        <div className="text-[11px] text-muted-foreground flex-1">
-                          {q.evaluationReason || (isUnattempted ? 'Not attempted.' : isCorrect ? 'Correct.' : 'Incorrect.')}
-                        </div>
-                        {hasExplanation && (
-                          <Button variant="outline" size="sm" className="h-7 text-[11px] shrink-0" onClick={() => toggleExplanation(reviewKey)}>
-                            {isExplanationOpen ? 'Close Explanation' : 'View Explanation'}
-                          </Button>
-                        )}
-                      </div>
-
-                      {hasExplanation && isExplanationOpen && (
-                        <div className="mt-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-2">
-                          <p className="text-[11px] font-semibold text-primary mb-1">Explanation</p>
-                          <p className="text-xs text-foreground/85 leading-relaxed whitespace-pre-wrap">
-                            {String(q.explanation)}
-                          </p>
-                          {q.explanationImageUrl ? (
-                            <div className="mt-2 rounded-xl overflow-hidden border border-border bg-card">
-                              <img src={q.explanationImageUrl} alt={`Explanation ${idx + 1}`} className="w-full object-contain max-h-60" loading="lazy" />
-                            </div>
-                          ) : null}
-                          <DiagramGallery diagrams={q.resolvedExplanationDiagrams} className="mt-2" />
-                        </div>
+                {/* ═══ Celebratory Empty Filter State ═══ */}
+                {filteredQuestions.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-border bg-card/60 p-8 text-center flex flex-col items-center justify-center my-4">
+                    <div
+                      className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 ${
+                        filterStatus === 'incorrect'
+                          ? 'bg-amber-500/15 text-amber-500'
+                          : filterStatus === 'skipped'
+                            ? 'bg-emerald-500/15 text-emerald-600'
+                            : 'bg-primary/15 text-primary'
+                      }`}
+                    >
+                      {filterStatus === 'incorrect' ? (
+                        <Trophy className="w-7 h-7" />
+                      ) : filterStatus === 'skipped' ? (
+                        <CheckCircle className="w-7 h-7" />
+                      ) : (
+                        <Filter className="w-7 h-7" />
                       )}
                     </div>
-                  );
-                })}
+
+                    <h3 className="text-base font-bold text-foreground">
+                      {filterStatus === 'incorrect'
+                        ? 'Flawless Execution!'
+                        : filterStatus === 'skipped'
+                          ? 'Zero Skipped Questions!'
+                          : 'No Questions Match Filter'}
+                    </h3>
+
+                    <p className="text-xs text-muted-foreground max-w-sm mt-1 mb-4 leading-relaxed">
+                      {filterStatus === 'incorrect'
+                        ? 'Zero incorrect questions found in this selection. Excellent accuracy!'
+                        : filterStatus === 'skipped'
+                          ? 'You attempted every single question in this category.'
+                          : 'Try clearing your filters to see questions across all subjects and outcomes.'}
+                    </p>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setFilterStatus('all');
+                        setFilterSubject('all');
+                      }}
+                      className="text-xs"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                      Show All Questions
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3.5">
+                    {filteredQuestions.map((q: any, idx: number) => {
+                      const reviewKey = String(q._id || q.id || q.canonicalIndex || idx);
+                      const qCanonicalIdx = (q.canonicalIndex || idx + 1) - 1;
+                      const timeSpent = Number(
+                        ntaMeta?.[qCanonicalIdx]?.timeSpent ??
+                        attempt?.answers?.find((answer: any) => String(answer?.questionId?._id || answer?.questionId || '') === reviewKey)?.timeSpent ??
+                        0
+                      );
+                      const isIgnoredExceedLimit = Boolean(q.isIgnoredExceedLimit || q.userAnswer?.isIgnoredExceedLimit);
+                      const st = getQuestionStatus(q);
+                      const isUnattempted = st === 'skipped';
+                      const isCorrect = st === 'correct';
+                      const hasExplanation = Boolean(String(q.explanation || q.solution || '').trim()) || Boolean(q.explanationImageUrl) || Boolean(q.resolvedExplanationDiagrams?.length);
+                      const isExplanationOpen = Boolean(openExplanations[reviewKey]);
+
+                      return (
+                        <div
+                          key={q._id || q.id || idx}
+                          className={`rounded-xl border border-border p-3.5 bg-card/60 border-l-4 transition-all ${
+                            isIgnoredExceedLimit
+                              ? 'border-l-amber-500'
+                              : isUnattempted
+                                ? 'border-l-muted-foreground/40'
+                                : isCorrect
+                                  ? 'border-l-emerald-500'
+                                  : q.evaluationStatus === 'partial'
+                                    ? 'border-l-amber-500'
+                                    : 'border-l-destructive'
+                          }`}
+                        >
+                          {/* Question Header */}
+                          <div className="flex items-start justify-between gap-3 mb-2.5">
+                            <div className="text-xs sm:text-sm font-semibold text-foreground flex-1 min-w-0">
+                              <span className="font-bold text-primary mr-1">Q{q.canonicalIndex || idx + 1}.</span>
+                              <MathMarkdown content={q.question || q.text || ''} inline />
+                            </div>
+                            <Badge
+                              variant="secondary"
+                              className={`shrink-0 font-bold text-xs ${
+                                isIgnoredExceedLimit
+                                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                                  : isUnattempted
+                                    ? 'bg-muted text-muted-foreground border-border'
+                                    : isCorrect
+                                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                                      : q.evaluationStatus === 'partial'
+                                        ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                                        : 'bg-destructive/15 text-destructive border-destructive/30'
+                              }`}
+                            >
+                              {isIgnoredExceedLimit
+                                ? 'Ignored (10/15)'
+                                : isUnattempted
+                                  ? 'Skipped'
+                                  : isCorrect
+                                    ? '+4 Correct'
+                                    : q.evaluationStatus === 'partial'
+                                      ? 'Partial'
+                                      : '-1 Incorrect'}
+                            </Badge>
+                          </div>
+
+                          {/* Metadata Pills */}
+                          <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5 border border-border/60">
+                              <Clock className="w-3 h-3 text-muted-foreground" />
+                              {formatDuration(timeSpent)}
+                            </span>
+                            {q.subject && (
+                              <span className="inline-flex items-center rounded-md bg-muted/50 px-2 py-0.5 border border-border/60">
+                                {q.subject}
+                              </span>
+                            )}
+                            {q.chapter && (
+                              <span className="inline-flex items-center rounded-md bg-muted/50 px-2 py-0.5 border border-border/60 truncate max-w-[220px]">
+                                {q.chapter}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Question Diagram with Lightbox Inspector */}
+                          {q.imageUrl ? (
+                            <div className="mb-3">
+                              <DiagramLightboxViewer
+                                imageUrl={q.imageUrl}
+                                title={`Question ${q.canonicalIndex || idx + 1} Diagram`}
+                                thumbnailHeight={240}
+                              />
+                            </div>
+                          ) : null}
+
+                          <DiagramGallery diagrams={q.resolvedQuestionDiagrams} className="mb-3" />
+
+                          {/* Polymorphic Answer Review */}
+                          {renderAnswerReview(q)}
+
+                          {/* Evaluation Reason & Explanation Toggle */}
+                          <div className="mt-2.5 flex items-start justify-between gap-2 pt-1 border-t border-border/40">
+                            <div className="text-[11px] text-muted-foreground flex-1">
+                              {q.evaluationReason || (isUnattempted ? 'Not attempted.' : isCorrect ? 'Correct solution.' : 'Incorrect answer.')}
+                            </div>
+                            {hasExplanation && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-[11px] shrink-0"
+                                onClick={() => toggleExplanation(reviewKey)}
+                              >
+                                {isExplanationOpen ? 'Close Explanation' : 'View Explanation'}
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Explanation with KaTeX Markdown & Lightbox */}
+                          {hasExplanation && isExplanationOpen && (
+                            <div className="mt-3 rounded-xl border border-primary/25 bg-primary/5 p-3 sm:p-3.5 space-y-2">
+                              <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary uppercase tracking-wider">
+                                <BookOpen className="w-3.5 h-3.5" />
+                                <span>Explanation & Solution</span>
+                              </div>
+                              <MathMarkdown content={String(q.explanation || q.solution || '')} />
+                              {q.explanationImageUrl ? (
+                                <div className="mt-2.5">
+                                  <DiagramLightboxViewer
+                                    imageUrl={q.explanationImageUrl}
+                                    title={`Explanation ${q.canonicalIndex || idx + 1} Diagram`}
+                                    thumbnailHeight={240}
+                                  />
+                                </div>
+                              ) : null}
+                              <DiagramGallery diagrams={q.resolvedExplanationDiagrams} className="mt-2.5" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
