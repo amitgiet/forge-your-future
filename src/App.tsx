@@ -73,6 +73,7 @@ const DoubtDetail = lazy(() => import("./pages/DoubtDetail"));
 const FormulaCards = lazy(() => import("./pages/FormulaCards"));
 const FormulaChapterDetail = lazy(() => import("./pages/FormulaChapterDetail"));
 const FormulaCardViewer = lazy(() => import("./pages/FormulaCardViewer"));
+const FlashcardViewer = lazy(() => import("./pages/FlashcardViewer"));
 const ToppersEssentials = lazy(() => import("./pages/ToppersEssentials"));
 const StudyPlanner = lazy(() => import("./pages/StudyPlanner"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -96,6 +97,7 @@ const legacyAppRoots = new Set([
   "my-learning-paths",
   "doubts",
   "formula-cards",
+  "flashcards",
   "quiz-generator",
   "study-plan",
   "leaderboard",
@@ -202,8 +204,10 @@ const App = () => (
                       <Route path="/app/doubts" element={<ProtectedRoute><DoubtForum /></ProtectedRoute>} />
                       <Route path="/app/doubts/:id" element={<ProtectedRoute><DoubtDetail /></ProtectedRoute>} />
                       <Route path="/app/formula-cards" element={<ProtectedRoute><FormulaCards /></ProtectedRoute>} />
-                      <Route path="/app/formula-cards/:chapterId" element={<ProtectedRoute><FormulaChapterDetail /></ProtectedRoute>} />
+                      <Route path="/app/formula-cards/flashcard-viewer" element={<ProtectedRoute><FlashcardViewer /></ProtectedRoute>} />
+                      <Route path="/app/flashcards/viewer" element={<ProtectedRoute><FlashcardViewer /></ProtectedRoute>} />
                       <Route path="/app/formula-cards/viewer" element={<ProtectedRoute><FormulaCardViewer /></ProtectedRoute>} />
+                      <Route path="/app/formula-cards/:chapterId" element={<ProtectedRoute><FormulaChapterDetail /></ProtectedRoute>} />
                       <Route path="/app/toppers-essentials/*" element={<ProtectedRoute><ToppersEssentials /></ProtectedRoute>} />
                       <Route path="*" element={<LegacyAppRedirect />} />
                     </Routes>

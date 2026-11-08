@@ -176,6 +176,29 @@ export const apiService = {
     getTopicProgress: (topicTitle: string) => api.get(`/formulas/progress/topic/${encodeURIComponent(topicTitle)}`),
     updateCardProgress: (cardId: string, data: { status?: string; isBookmarked?: boolean; chapterTitle?: string; topicTitle?: string }) =>
       api.post(`/formulas/progress/${cardId}`, data),
+    getDueDeck: (params?: { chapterTitle?: string; topicTitle?: string; limit?: number }) =>
+      api.get('/formulas/deck/due', { params }),
+    syncBatchProgress: (data: any) =>
+      api.post('/formulas/progress/batch', data),
+  },
+
+  // Flashcards APIs
+  flashcards: {
+    getSubjects: () => api.get('/flashcards/subjects'),
+    getChapterDeck: (chapterTitle: string, params?: { status?: string; limit?: number; offset?: number }) =>
+      api.get(`/flashcards/chapters/${encodeURIComponent(chapterTitle)}/deck`, { params }),
+    getDueDeck: (params?: { chapterTitle?: string; limit?: number }) =>
+      api.get('/flashcards/deck/due', { params }),
+    syncBatchProgress: (data: { chapterTitle?: string; lastCardIndex?: number; reviews: Array<{ cardId: string; quality: number; timeSpentSeconds?: number; isBookmarked?: boolean; topicTitle?: string }> }) =>
+      api.post('/flashcards/progress/batch', data),
+    updateCardProgress: (cardId: string, data: { status?: string; isBookmarked?: boolean; chapterTitle?: string; topicTitle?: string; quality?: number }) =>
+      api.post(`/flashcards/progress/${cardId}`, data),
+    getHubSummary: () => api.get('/flashcards/hub/summary'),
+  },
+
+  // Unified Revision APIs
+  revision: {
+    getHubSummary: () => api.get('/revision/hub/summary'),
   },
 
   chapterResources: {

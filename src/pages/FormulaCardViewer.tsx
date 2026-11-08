@@ -85,6 +85,25 @@ const FormulaCardViewer: React.FC = () => {
     const fetchData = async () => {
       let activeCards = stateCards;
 
+      // Fetch cards if mode === 'due'
+      const searchParams = new URLSearchParams(location.search);
+      const isDueMode = searchParams.get('mode') === 'due';
+
+      if (!activeCards.length && isDueMode) {
+        try {
+          const res = await apiService.formulas.getDueDeck({ limit: 30 });
+          if (res.data?.success && Array.isArray(res.data.data)) {
+            activeCards = (res.data.data || []).map((card: any) => ({
+              ...card,
+              imgUrl: toDirectFormulaImageUrl(card.imgUrl || card.diagramUrl)
+            }));
+            setCards(activeCards);
+          }
+        } catch (error) {
+          console.error('Failed to load due cards:', error);
+        }
+      }
+
       // Fallback fetch if missing
       if (!activeCards.length && stateTopicTitle) {
         try {
