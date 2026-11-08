@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, X } from 'lucide-react';
+import type { AnswerPayload, NormalizedQuestion } from '@/lib/questionNormalization';
+import { AssertionReasonRenderer } from '@/components/questions/AssertionReasonRenderer';
+import { StatementRenderer } from '@/components/questions/StatementRenderer';
+import { MatchColumnRenderer } from '@/components/questions/MatchColumnRenderer';
+import { SyllableChipAssembler } from '@/components/questions/SyllableChipAssembler';
 
-type QuestionType = 'mcq' | 'fill-blank' | 'match' | 'diagram-label' | 'numeric' | 'numerical';
+type LegacyQuestionType = 'mcq' | 'fill-blank' | 'match' | 'diagram-label' | 'numeric' | 'numerical' | 'assertion_reason' | 'statement' | 'fillup' | 'order' | 'flashcard' | 'video';
 
 interface OptionItem {
   key?: string;
@@ -16,48 +21,139 @@ interface DiagramLabel {
   y: number;
 }
 
-interface QuestionData {
-  questionType?: QuestionType;
-  type?: QuestionType;
-  options?: OptionItem[] | string[];
-  typeData?: {
-    template?: string;
-    correctAnswer?: string;
-    leftItems?: string[];
-    rightItems?: string[];
-    correctPairs?: [number, number][];
-    imageUrl?: string;
-    labels?: DiagramLabel[];
-    correctValue?: number;
-    unit?: string;
-    tolerance?: number;
-  };
-}
-
-interface QuestionRendererProps {
-  question: QuestionData;
-  onAnswer: (answer: unknown) => void;
+export interface QuestionRendererProps {
+  question: any;
+  answerPayload?: AnswerPayload | null;
+  onAnswer?: (answer: unknown) => void;
+  onChange?: (answer: AnswerPayload | null) => void;
   showResult?: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
 }
 
-const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = false }: QuestionRendererProps) => {
+export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
+  question,
+  answerPayload,
+  onAnswer,
+  onChange,
+  showResult = false,
+  disabled = false,
+  readOnly = false,
+}) => {
+  const isLocked = Boolean(disabled || readOnly);
   const [selectedAnswer, setSelectedAnswer] = useState<unknown>(null);
   const [matches, setMatches] = useState<Array<[number, number]>>([]);
   const [selectedLeftIndex, setSelectedLeftIndex] = useState<number | null>(null);
-  const questionType = question.questionType || question.type;
 
-  const handleAnswer = (answer: unknown) => {
-    if (disabled) return;
-    setSelectedAnswer(answer);
-    onAnswer(answer);
+  const questionType: LegacyQuestionType = (question?.questionType || question?.type || 'mcq') as LegacyQuestionType;
+  const kind = question?.typeData?.kind;
+
+  const currentPayload: AnswerPayload | null = answerPayload ?? (
+    typeof selectedAnswer === 'number'
+      ? { kind: 'mcq', selectedOption: selectedAnswer }
+      : typeof selectedAnswer === 'string'
+        ? { kind: 'fillup', value: selectedAnswer }
+        : (selectedAnswer as AnswerPayload | null)
+  );
+
+  const handleSpecializedChange = (payload: AnswerPayload | null) => {
+    if (isLocked) return;
+    setSelectedAnswer(payload);
+    onChange?.(payload);
+    if (onAnswer) {
+      if (payload?.kind === 'mcq') {
+        onAnswer(payload.selectedOption);
+      } else if (payload?.kind === 'fillup') {
+        onAnswer(payload.value);
+      } else {
+        onAnswer(payload);
+      }
+    }
   };
 
+  const handleAnswer = (answer: unknown) => {
+    if (isLocked) return;
+    setSelectedAnswer(answer);
+    onAnswer?.(answer);
+    if (onChange) {
+      if (typeof answer === 'number') {
+        onChange({ kind: 'mcq', selectedOption: answer });
+      } else if (typeof answer === 'string') {
+        onChange({ kind: 'fillup', value: answer });
+      } else if (typeof answer === 'object' && answer !== null && 'kind' in answer) {
+        onChange(answer as AnswerPayload);
+      }
+    }
+  };
+
+  // 1. Assertion-Reason High Fidelity Routing
+  if (kind === 'assertion_reason' || questionType === 'assertion_reason') {
+    return (
+      <AssertionReasonRenderer
+        question={question as NormalizedQuestion}
+        answerPayload={currentPayload}
+        onChange={handleSpecializedChange}
+        readOnly={isLocked}
+      />
+    );
+  }
+
+  // 2. Statement I & II High Fidelity Routing
+  if (kind === 'statement' || questionType === 'statement') {
+    return (
+      <StatementRenderer
+        question={question as NormalizedQuestion}
+        answerPayload={currentPayload}
+        onChange={handleSpecializedChange}
+        readOnly={isLocked}
+      />
+    );
+  }
+
+  // 3. Matrix Match Column Routing
+  if (kind === 'match' || question?.typeData?.matrixData) {
+    return (
+      <MatchColumnRenderer
+        question={question as NormalizedQuestion}
+        answerPayload={currentPayload}
+        onChange={handleSpecializedChange}
+        readOnly={isLocked}
+      />
+    );
+  }
+
+  // 4. Syllable Chip Cloze Assembler Routing
+  if (
+    (questionType === 'fillup' || questionType === 'fill-blank') &&
+    question?.typeData?.syllables?.syllableTokens?.length
+  ) {
+    return (
+      <SyllableChipAssembler
+        question={question as NormalizedQuestion}
+        answerPayload={currentPayload}
+        onChange={handleSpecializedChange}
+        readOnly={isLocked}
+      />
+    );
+  }
+
+  // 5. Standard Multiple Choice (MCQ)
   if (questionType === 'mcq') {
+    const rawOptions = question.options || question.typeData?.options;
+    const optionsArray = Array.isArray(rawOptions)
+      ? rawOptions
+      : typeof rawOptions === 'object' && rawOptions !== null
+        ? ['A', 'B', 'C', 'D'].map((key) => rawOptions[key] ?? rawOptions[key.toLowerCase()] ?? '')
+        : [];
+
     return (
       <div className="space-y-3 w-full">
-        {question.options?.map((option: OptionItem | string, index: number) => {
-          const isSelected = selectedAnswer === index;
+        {optionsArray.map((option: OptionItem | string, index: number) => {
+          const isSelected =
+            currentPayload?.kind === 'mcq'
+              ? currentPayload.selectedOption === index
+              : selectedAnswer === index;
+
           const optionObj: OptionItem = typeof option === 'string' ? { text: option } : option;
           const isCorrect = showResult && Boolean(optionObj.isCorrect);
           const isWrong = showResult && isSelected && !optionObj.isCorrect;
@@ -68,7 +164,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
             <motion.button
               key={index}
               onClick={() => handleAnswer(index)}
-              disabled={disabled}
+              disabled={isLocked}
               className={`w-full p-4 rounded-xl border-2 text-left transition-all block ${
                 isCorrect
                   ? 'bg-success/20 border-success'
@@ -78,13 +174,13 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
                       ? 'bg-primary/20 border-primary'
                       : 'bg-card border-border hover:border-primary/50'
               }`}
-              whileTap={!disabled ? { scale: 0.98 } : {}}
+              whileTap={!isLocked ? { scale: 0.98 } : {}}
             >
               <div className="flex items-center gap-3 w-full">
                 <span className="w-8 h-8 rounded-lg bg-background/50 flex items-center justify-center text-sm font-medium flex-shrink-0">
                   {optionObj.key || String.fromCharCode(65 + index)}
                 </span>
-                <span className="font-medium text-foreground flex-1">{optionText}</span>
+                <span className="font-medium text-foreground flex-1 whitespace-pre-wrap">{optionText}</span>
                 {showResult && isCorrect && <Check className="w-5 h-5 text-success flex-shrink-0" />}
                 {showResult && isWrong && <X className="w-5 h-5 text-destructive flex-shrink-0" />}
               </div>
@@ -95,28 +191,35 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
     );
   }
 
-  if (questionType === 'fill-blank') {
-    const { template, correctAnswer } = question.typeData || {};
+  // 6. Fill in the Blank (Generic)
+  if (questionType === 'fill-blank' || questionType === 'fillup') {
+    const { template, correctAnswer, primaryAnswer } = question.typeData || {};
+    const expected = correctAnswer || primaryAnswer || question.correctAnswer;
+    const value = currentPayload?.kind === 'fillup' ? currentPayload.value : String(selectedAnswer || '');
+
     return (
       <div className="space-y-4">
-        <p className="text-lg font-medium text-foreground mb-4 whitespace-pre-wrap">{template}</p>
+        {template ? (
+          <p className="text-lg font-medium text-foreground mb-4 whitespace-pre-wrap">{template}</p>
+        ) : null}
         <input
           type="text"
+          value={value}
           onChange={(e) => handleAnswer(e.target.value)}
-          disabled={disabled}
+          disabled={isLocked}
           placeholder="Type your answer..."
           className="w-full px-4 py-3 rounded-xl bg-background border-2 border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         />
-        {showResult && (
+        {showResult && expected && (
           <div
             className={`p-3 rounded-xl ${
-              String(selectedAnswer || '').toLowerCase() === String(correctAnswer || '').toLowerCase()
+              String(value).toLowerCase() === String(expected).toLowerCase()
                 ? 'bg-success/20 border border-success/30'
                 : 'bg-destructive/20 border border-destructive/30'
             }`}
           >
             <p className="text-sm font-medium">
-              Correct Answer: <span className="font-bold">{correctAnswer}</span>
+              Correct Answer: <span className="font-bold">{expected}</span>
             </p>
           </div>
         )}
@@ -124,6 +227,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
     );
   }
 
+  // 7. Interactive Match
   if (questionType === 'match') {
     const { leftItems, rightItems } = question.typeData || {};
 
@@ -148,6 +252,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
             {leftItems?.map((item: string, index: number) => (
               <button
                 key={index}
+                disabled={isLocked}
                 onClick={() => setSelectedLeftIndex(index)}
                 className={`w-full p-3 rounded-xl border text-sm font-medium text-left ${
                   selectedLeftIndex === index
@@ -163,6 +268,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
             {rightItems?.map((item: string, index: number) => (
               <button
                 key={index}
+                disabled={isLocked}
                 onClick={() => {
                   if (selectedLeftIndex !== null) {
                     handleMatch(selectedLeftIndex, index);
@@ -179,18 +285,23 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
     );
   }
 
+  // 8. Diagram Labeling
   if (questionType === 'diagram-label') {
     const { imageUrl, labels } = question.typeData || {};
     return (
       <div className="space-y-4">
         <div className="relative">
-          <img src={imageUrl} alt="Diagram" className="w-full rounded-xl" />
+          {imageUrl && <img src={imageUrl} alt="Diagram" className="w-full rounded-xl" />}
           {labels?.map((label: DiagramLabel, index: number) => (
             <div key={index} className="absolute" style={{ left: `${label.x}%`, top: `${label.y}%` }}>
               <input
                 type="text"
+                disabled={isLocked}
                 onChange={(e) =>
-                  handleAnswer({ ...(typeof selectedAnswer === 'object' && selectedAnswer ? selectedAnswer as Record<string, string> : {}), [label.id]: e.target.value })
+                  handleAnswer({
+                    ...(typeof selectedAnswer === 'object' && selectedAnswer ? (selectedAnswer as Record<string, string>) : {}),
+                    [label.id]: e.target.value,
+                  })
                 }
                 placeholder={`Label ${index + 1}`}
                 className="w-24 px-2 py-1 text-xs rounded bg-background border border-border"
@@ -202,6 +313,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
     );
   }
 
+  // 9. Numeric / Numerical
   if (questionType === 'numeric' || questionType === 'numerical') {
     const { correctValue, unit, tolerance } = question.typeData || {};
     return (
@@ -210,7 +322,7 @@ const QuestionRenderer = ({ question, onAnswer, showResult = false, disabled = f
           <input
             type="number"
             onChange={(e) => handleAnswer(parseFloat(e.target.value))}
-            disabled={disabled}
+            disabled={isLocked}
             placeholder="Enter value"
             className="flex-1 px-4 py-3 rounded-xl bg-background border-2 border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />

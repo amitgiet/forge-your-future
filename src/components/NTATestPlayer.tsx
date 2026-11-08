@@ -19,6 +19,11 @@ import {
   isAnswerPayloadAttempted, getCorrectOptionIndex,
 } from '@/lib/questionNormalization';
 import DiagramGallery from '@/components/questions/DiagramGallery';
+import { DiagramLightboxViewer } from '@/components/questions/DiagramLightboxViewer';
+import { MatchColumnRenderer } from '@/components/questions/MatchColumnRenderer';
+import { SyllableChipAssembler } from '@/components/questions/SyllableChipAssembler';
+import { AssertionReasonRenderer } from '@/components/questions/AssertionReasonRenderer';
+import { StatementRenderer } from '@/components/questions/StatementRenderer';
 import { apiService } from '@/lib/apiService';
 
 export type NTAQuestion = NormalizedQuestion;
@@ -307,15 +312,69 @@ const UnsupportedRenderer: React.FC<RendererProps> = ({ question }) => (
 );
 
 const QuestionRenderer: React.FC<RendererProps> = (props) => {
-  if (!props.question.isSupported) return <UnsupportedRenderer {...props} />;
-  switch (props.question.type) {
-    case 'mcq': return <MCQRenderer {...props} />;
-    case 'fillup': return <FillupRenderer {...props} />;
-    case 'match': return <MatchRenderer {...props} />;
-    case 'order': return <OrderRenderer {...props} />;
-    case 'flashcard': return <FlashcardRenderer {...props} />;
-    case 'video': return <VideoRenderer {...props} />;
-    default: return <UnsupportedRenderer {...props} />;
+  const { question, answerPayload, onChange, readOnly } = props;
+  if (!question.isSupported) return <UnsupportedRenderer {...props} />;
+
+  const kind = question.typeData?.kind;
+
+  if (kind === 'assertion_reason' || question.type === 'assertion_reason') {
+    return (
+      <AssertionReasonRenderer
+        question={question}
+        answerPayload={answerPayload}
+        onChange={onChange}
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  if (kind === 'statement' || question.type === 'statement') {
+    return (
+      <StatementRenderer
+        question={question}
+        answerPayload={answerPayload}
+        onChange={onChange}
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  if (kind === 'match' || question.typeData?.matrixData) {
+    return (
+      <MatchColumnRenderer
+        question={question}
+        answerPayload={answerPayload}
+        onChange={onChange}
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  switch (question.type) {
+    case 'mcq':
+      return <MCQRenderer {...props} />;
+    case 'fillup':
+      if (question.typeData?.syllables?.syllableTokens?.length) {
+        return (
+          <SyllableChipAssembler
+            question={question}
+            answerPayload={answerPayload}
+            onChange={onChange}
+            readOnly={readOnly}
+          />
+        );
+      }
+      return <FillupRenderer {...props} />;
+    case 'match':
+      return <MatchRenderer {...props} />;
+    case 'order':
+      return <OrderRenderer {...props} />;
+    case 'flashcard':
+      return <FlashcardRenderer {...props} />;
+    case 'video':
+      return <VideoRenderer {...props} />;
+    default:
+      return <UnsupportedRenderer {...props} />;
   }
 };
 
@@ -434,8 +493,52 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
     });
   };
 
+  const q = questions[currentQ];
+  const curMeta = meta[currentQ];
+
+  const isSectionB = useMemo(() => {
+    if (q?.sectionKey) return q.sectionKey.endsWith('_B');
+    if (currentQ >= 35 && currentQ <= 49) return true;
+    if (currentQ >= 85 && currentQ <= 99) return true;
+    if (currentQ >= 135 && currentQ <= 149) return true;
+    if (currentQ >= 185 && currentQ <= 199) return true;
+    return false;
+  }, [currentQ, q?.sectionKey]);
+
+  const sectionBQuestionIndices = useMemo(() => {
+    if (!isSectionB) return [];
+    if (q?.sectionKey) {
+      const list: number[] = [];
+      questions.forEach((question, idx) => {
+        if (question.sectionKey === q.sectionKey) list.push(idx);
+      });
+      if (list.length > 0) return list;
+    }
+    if (currentQ >= 35 && currentQ <= 49) return Array.from({ length: 15 }, (_, i) => 35 + i);
+    if (currentQ >= 85 && currentQ <= 99) return Array.from({ length: 15 }, (_, i) => 85 + i);
+    if (currentQ >= 135 && currentQ <= 149) return Array.from({ length: 15 }, (_, i) => 135 + i);
+    if (currentQ >= 185 && currentQ <= 199) return Array.from({ length: 15 }, (_, i) => 185 + i);
+    return [];
+  }, [currentQ, isSectionB, q?.sectionKey, questions]);
+
+  const sectionBAttemptedCount = useMemo(() => {
+    if (!isSectionB || sectionBQuestionIndices.length === 0) return 0;
+    return sectionBQuestionIndices.reduce((count, idx) => {
+      const entry = meta[idx];
+      const attempted = entry && (entry.state === 'answered' || entry.state === 'answered-marked' || isAttempted(entry.answerPayload));
+      return count + (attempted ? 1 : 0);
+    }, 0);
+  }, [isSectionB, sectionBQuestionIndices, meta]);
+
+  const isCurrentAttempted = useMemo(() => {
+    return isAttempted(curMeta?.answerPayload) || curMeta?.state === 'answered' || curMeta?.state === 'answered-marked';
+  }, [curMeta]);
+
+  const isCurrentLocked = isSectionB && sectionBAttemptedCount >= 10 && !isCurrentAttempted;
+
   const handleAnswerPayloadChange = (answerPayload: AnswerPayload | null) => {
     if (readOnly) return;
+    if (isCurrentLocked && isAttempted(answerPayload)) return;
     updateCurrentMeta((current) => {
       const attempted = isAttempted(answerPayload);
       const marked = current.state === 'marked-review' || current.state === 'answered-marked';
@@ -466,8 +569,6 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
     }
   };
 
-  const q = questions[currentQ];
-  const curMeta = meta[currentQ];
   const currentQuestionElapsed = useMemo(() => {
     const stored = Number(curMeta?.timeSpent || 0);
     if (readOnly || isSubmitting) return stored;
@@ -541,14 +642,32 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
               </p>
             </div>
 
-            {/* Consolidate Diagram Display: Show either the main imageUrl (or fallback) OR the gallery warnings, but not both if they represent the same thing */}
+            {/* Section B Indicator & Lock Warning */}
+            {isSectionB && (
+              <div className="mb-3 space-y-2">
+                <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
+                  sectionBAttemptedCount >= 10
+                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                    : 'bg-muted text-muted-foreground border-border'
+                }`}>
+                  Section B Attempted: {sectionBAttemptedCount} / 10
+                </div>
+                {isCurrentLocked && (
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" />
+                    <span>Maximum 10 questions selected for Section B. Deselect an answered question to attempt this one.</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Consolidate Diagram Display with Lightbox */}
             {(q?.imageUrl || (q?.questionId && fetchedImages[String(q.questionId)])) ? (
-              <div className="mb-4 rounded-xl overflow-hidden border border-border bg-card">
-                <img 
-                  src={q?.imageUrl || fetchedImages[String(q?.questionId)]} 
-                  alt={`Question ${currentQ + 1}`} 
-                  className="w-full object-contain max-h-72" 
-                  loading="lazy" 
+              <div className="mb-4">
+                <DiagramLightboxViewer
+                  imageUrl={q?.imageUrl || fetchedImages[String(q?.questionId)]}
+                  title={`Question ${currentQ + 1} Diagram`}
+                  thumbnailHeight={260}
                 />
               </div>
             ) : null}
@@ -561,7 +680,12 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
               className="mb-4" 
             />
 
-            <QuestionRenderer question={q} answerPayload={curMeta?.answerPayload} onChange={handleAnswerPayloadChange} readOnly={readOnly} />
+            <QuestionRenderer
+              question={q}
+              answerPayload={curMeta?.answerPayload}
+              onChange={handleAnswerPayloadChange}
+              readOnly={readOnly || isCurrentLocked}
+            />
 
             {readOnly && (q?.explanation || q?.resolvedExplanationDiagrams?.length) && (
               <div className="mt-4 p-3 rounded-xl bg-muted/50 border border-border">
@@ -572,8 +696,12 @@ const NTATestPlayer: React.FC<NTATestPlayerProps> = ({
                   </p>
                 ) : null}
                 {q?.explanationImageUrl ? (
-                  <div className="mt-3 rounded-xl overflow-hidden border border-border bg-card">
-                    <img src={q.explanationImageUrl} alt={`Explanation ${currentQ + 1}`} className="w-full object-contain max-h-60" loading="lazy" />
+                  <div className="mt-3">
+                    <DiagramLightboxViewer
+                      imageUrl={q.explanationImageUrl}
+                      title={`Question ${currentQ + 1} Solution Diagram`}
+                      thumbnailHeight={240}
+                    />
                   </div>
                 ) : null}
                 <DiagramGallery diagrams={q?.resolvedExplanationDiagrams} className="mt-3" />

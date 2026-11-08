@@ -5,7 +5,7 @@ import {
   isAnswerPayloadAttempted,
 } from '@/lib/questionNormalization';
 
-const GRADED_TYPES = new Set(['mcq', 'fillup', 'match', 'order']);
+const GRADED_TYPES = new Set(['mcq', 'fillup', 'match', 'order', 'assertion_reason', 'statement']);
 
 const normalizeTextAnswer = (value: unknown) =>
   String(value || '')
@@ -59,7 +59,7 @@ const evaluateLocalAnswer = (question: NTAQuestion, answerPayload: AnswerPayload
     };
   }
 
-  if (question.type === 'mcq') {
+  if (question.type === 'mcq' || question.type === 'assertion_reason' || question.type === 'statement') {
     const selectedOption = answerPayload?.kind === 'mcq' ? answerPayload.selectedOption : null;
     const correctOption = getCorrectOptionIndex(question);
     const isCorrect = selectedOption !== null && correctOption !== null && selectedOption === correctOption;
